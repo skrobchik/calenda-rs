@@ -7,7 +7,7 @@ use crate::timeslot::TIMESLOT_RANGE;
 use rand::prelude::*;
 use std::{collections::HashMap, fmt::Display};
 
-type ClassId = usize;
+pub type ClassId = usize;
 
 #[derive(Hash, Eq, PartialEq, Clone)]
 pub struct Session {

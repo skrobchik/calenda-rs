@@ -8,3 +8,5 @@ edition = "2021"
 [dependencies]
 rand = "0.8.5"
 clearscreen = "1.0.9"
+eframe = "0.17.0"
+egui = "0.17.0"
