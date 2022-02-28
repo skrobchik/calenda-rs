@@ -33,7 +33,7 @@ impl epi::App for MyApp {
     fn name(&self) -> &str {
         "My egui App"
     }
-   
+    
     fn update(&mut self, ctx: &egui::Context, frame: &epi::Frame) {
         self.simulation.step(MyApp::temperature(self.simulation.get_step_count() as f32 / 1000000 as f32), &mut self.rng);
 

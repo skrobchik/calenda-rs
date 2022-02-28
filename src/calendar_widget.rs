@@ -57,10 +57,7 @@ impl Widget for CalendarWidget<'_> {
                         }
                     }
                 } else {
-                    let color = match (day % 2 == 0) ^ (timeslot % 2 == 0) {
-                        true => Color32::GRAY,
-                        false => Color32::DARK_GRAY,
-                    };
+                    let color = Color32::DARK_GRAY;
                     let timeslot_rect = Rect::from_x_y_ranges(x1..=x2, y1..=y2);
                     painter.rect_stroke(timeslot_rect, Rounding::none(), Stroke::new(1.0, color));
                 }

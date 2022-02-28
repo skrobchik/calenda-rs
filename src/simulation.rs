@@ -36,6 +36,7 @@ impl Simulation {
             (-(new_energy - self.current_energy) / temperature).exp()
         }
     }
+
     fn calculate_energy(&self, state: &CalendarState) -> f32 {
         let e1 = evaluators::Colliding::new(5.0);
         let e2 = evaluators::Daylight::new(timeslot::TIMESLOT_10_00, timeslot::TIMESLOT_18_00, 2.0);
