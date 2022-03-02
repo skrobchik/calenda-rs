@@ -1,6 +1,6 @@
 use std::ops::Range;
 
-use rand::{prelude::ThreadRng, Rng};
+use rand::{prelude::StdRng, Rng};
 
 pub const TIMESLOT_COUNT: usize = 24;
 pub const DAY_COUNT: usize = 5;
@@ -24,7 +24,7 @@ impl DayTimeSlot {
             timeslot
         }
     }
-    pub fn random(rng: &mut ThreadRng) -> DayTimeSlot {
+    pub fn random(rng: &mut StdRng) -> DayTimeSlot {
         DayTimeSlot {
             day: rng.gen_range(DAY_RANGE),
             timeslot: rng.gen_range(TIMESLOT_RANGE)

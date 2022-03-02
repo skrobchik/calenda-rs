@@ -4,7 +4,6 @@ use crate::timeslot::DAY_COUNT;
 use crate::timeslot::DAY_RANGE;
 use crate::timeslot::TIMESLOT_COUNT;
 use crate::timeslot::TIMESLOT_RANGE;
-use rand::prelude::*;
 use std::{collections::HashMap, fmt::Display};
 
 pub type ClassId = usize;
@@ -76,17 +75,6 @@ impl CalendarState {
 
     pub fn new() -> Self {
         Default::default()
-    }
-
-    pub fn random_new(class_hours: &Vec<(ClassId, usize)>, rng: &mut ThreadRng) -> Self {
-        let mut state = CalendarState::new();
-        for (class_id, hours) in class_hours {
-            for _ in 0..*hours {
-                let t = DayTimeSlot::random(rng);
-                state.add_session(*class_id, t)
-            }
-        }
-        state
     }
 
     pub fn add_session(&mut self, class_id: usize, t: DayTimeSlot) {

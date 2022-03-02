@@ -1,5 +1,3 @@
-use std::sync::mpsc::Receiver;
-
 use egui::{Widget, Vec2, Sense, Rounding, Color32, Rect, Stroke};
 
 use crate::calendars::CalendarState;
