@@ -1,4 +1,5 @@
 use crate::calendars::CalendarState;
+use itertools::Itertools;
 
 pub struct GapCount {
     weight: f32,
@@ -108,5 +109,38 @@ impl Evaluator for DailyWorkDifference {
             min_sessions = min_sessions.min(x);
         }
         (max_sessions - min_sessions) as f32 * self.weight
+    }
+}
+
+pub struct SessionLengthLimits {
+    weight: f32,
+    min_len: usize,
+    max_len: usize,
+}
+
+impl SessionLengthLimits {
+    pub fn new(weight: f32, min_len: usize, max_len: usize) -> Self {
+        Self {
+            weight,
+            min_len,
+            max_len,
+        }
+    }
+}
+
+impl Evaluator for SessionLengthLimits {
+    fn evaluate(&self, state: &CalendarState) -> f32 {
+        let mut count = 0;
+        for (_class_id, class_schedule) in state.get_class_schedules() {
+            for day in class_schedule {
+                for (_key, group) in &Itertools::group_by(day.iter(), |x| **x > 0) {
+                    let group_len = group.count();
+                    if group_len > self.max_len || group_len < self.min_len {
+                        count += 1;
+                    }
+                }
+            }
+        }
+        count as f32 * self.weight
     }
 }

@@ -16,7 +16,7 @@ pub struct Session {
 
 #[derive(Clone)]
 pub struct CalendarState {
-    class_schedules: HashMap<ClassId, RealCounter<DayTimeSlot>>,
+    class_schedules: HashMap<ClassId, [[usize; TIMESLOT_COUNT]; DAY_COUNT]>,
     schedule_matrix: [[RealCounter<ClassId>; TIMESLOT_COUNT]; DAY_COUNT],
     session_set: RealCounter<Session>,
 }
@@ -32,7 +32,7 @@ impl Default for CalendarState {
 }
 
 impl CalendarState {
-    pub fn get_class_schedules(&self) -> &HashMap<ClassId, RealCounter<DayTimeSlot>> {
+    pub fn get_class_schedules(&self) -> &HashMap<ClassId, [[usize; TIMESLOT_COUNT]; DAY_COUNT]> {
         &self.class_schedules
     }
 
@@ -56,8 +56,8 @@ impl CalendarState {
         target_sessions.increment(class_id);
 
         let class_schedule = self.class_schedules.get_mut(&class_id).ok_or(())?;
-        class_schedule.decrement(&source).ok_or(())?;
-        class_schedule.increment(target.clone());
+        class_schedule[source.day][source.timeslot] -= 1;
+        class_schedule[target.day][target.timeslot] += 1;
 
         self.session_set
             .decrement(&Session {
@@ -79,10 +79,7 @@ impl CalendarState {
 
     pub fn add_session(&mut self, class_id: usize, t: DayTimeSlot) {
         self.schedule_matrix[t.day][t.timeslot].increment(class_id);
-        self.class_schedules
-            .entry(class_id)
-            .or_default()
-            .increment(t.clone());
+        self.class_schedules.entry(class_id).or_default()[t.day][t.timeslot] += 1;
         self.session_set.increment(Session { class_id, t });
     }
 }

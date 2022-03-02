@@ -60,7 +60,12 @@ impl Simulation {
         let e2 = evaluators::Daylight::new(timeslot::TIMESLOT_10_00, timeslot::TIMESLOT_18_00, 2.0);
         let e3 = evaluators::GapCount::new(2.0);
         let e4 = evaluators::DailyWorkDifference::new(2.0);
-        e1.evaluate(&state) + e2.evaluate(&state) + e3.evaluate(&state) + e4.evaluate(&state)
+        let e5 = evaluators::SessionLengthLimits::new(3.0, 2, 4);
+        e1.evaluate(&state)
+            + e2.evaluate(&state)
+            + e3.evaluate(&state)
+            + e4.evaluate(&state)
+            + e5.evaluate(&state)
     }
     fn get_random_neighbor(&mut self) -> Option<CalendarState> {
         let session = self
