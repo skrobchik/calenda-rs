@@ -9,8 +9,8 @@ use crate::calendars::{CalendarState, ClassId};
 
 /// Returns x-1 or x+1 randomly as long as the result is withing the range's bounds. If x-1 or x+1 are not inside the range, returns x.
 fn random_shift_bounded(x: usize, range: std::ops::Range<usize>, rng: &mut StdRng) -> usize {
-    let smaller_available = range.contains(&(x - 1));
-    let larger_available = range.contains(&(x + 1));
+    let smaller_available = range.start < x;
+    let larger_available = range.end > x+1;
     if !smaller_available && !larger_available {
         return x;
     }
@@ -26,6 +26,20 @@ fn random_shift_bounded(x: usize, range: std::ops::Range<usize>, rng: &mut StdRn
     }
 }
 
+pub enum ClassRoomType {
+    SmallClassroom,
+    BigClassroom,
+    PhysicsLab,
+    ChemistryLab,
+}
+
+pub struct Class {
+    name: String,
+    hours: usize,
+    classroom_type: ClassRoomType,
+    professor_id: usize
+}
+
 pub struct Simulation {
     current_state: CalendarState,
     current_energy: f32,
@@ -33,9 +47,20 @@ pub struct Simulation {
     temperature_function: Box<dyn Fn(usize) -> f32 + Send + Sync>,
     acceptance_probability_function: Box<dyn Fn(f32, f32, f32) -> f32 + Send + Sync>,
     rng: StdRng,
+    evaluators: Vec<Box<dyn Evaluator + Send>>
 }
 
 impl Simulation {
+    pub fn default_evaluators() -> Vec<Box<dyn Evaluator + Send>>{
+        let evaluators: Vec<Box<dyn Evaluator + Send>> = vec![
+            Box::new(evaluators::Colliding::new(5.0)),
+            Box::new(evaluators::Daylight::new(timeslot::TIMESLOT_10_00, timeslot::TIMESLOT_18_00, 2.0)),
+            Box::new(evaluators::GapCount::new(2.0)),
+            Box::new(evaluators::DailyWorkDifference::new(2.0)),
+            Box::new(evaluators::SessionLengthLimits::new(3.0, 2, 4))
+        ];
+        evaluators
+    }
     pub fn from_entropy() -> Self {
         Self {
             current_state: Default::default(),
@@ -44,6 +69,7 @@ impl Simulation {
             temperature_function: Box::new(default_temperature_function),
             acceptance_probability_function: Box::new(default_acceptance_probability_function),
             rng: StdRng::from_entropy(),
+            evaluators: Self::default_evaluators(),
         }
     }
     pub fn add_class_hours(&mut self, class_hours: &Vec<(ClassId, usize)>) {
@@ -55,17 +81,16 @@ impl Simulation {
         }
         self.current_energy = self.calculate_energy(&self.current_state);
     }
+    pub fn get_evaluators_mut(&mut self) -> &mut Vec<Box<dyn Evaluator + Send>> {
+        let evaluators = &mut self.evaluators;
+        evaluators
+    }
     fn calculate_energy(&self, state: &CalendarState) -> f32 {
-        let e1 = evaluators::Colliding::new(5.0);
-        let e2 = evaluators::Daylight::new(timeslot::TIMESLOT_10_00, timeslot::TIMESLOT_18_00, 2.0);
-        let e3 = evaluators::GapCount::new(2.0);
-        let e4 = evaluators::DailyWorkDifference::new(2.0);
-        let e5 = evaluators::SessionLengthLimits::new(3.0, 2, 4);
-        e1.evaluate(&state)
-            + e2.evaluate(&state)
-            + e3.evaluate(&state)
-            + e4.evaluate(&state)
-            + e5.evaluate(&state)
+        let mut energy: f32 = 0.0;
+        for evaluator in &self.evaluators {
+            energy += evaluator.evaluate(&state);
+        }
+        energy
     }
     fn get_random_neighbor(&mut self) -> Option<CalendarState> {
         let session = self

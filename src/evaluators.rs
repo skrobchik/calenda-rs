@@ -1,6 +1,31 @@
 use crate::calendars::CalendarState;
 use itertools::Itertools;
 
+pub enum ParameterValue<'a> {
+    F32(&'a mut f32),
+    Usize(&'a mut usize)
+}
+
+pub struct EvaluatorParameter<'a> {
+    pub name: &'a str,
+    pub value: ParameterValue<'a>,
+}
+
+impl<'a> EvaluatorParameter<'a> {
+    fn from_f32(value: &'a mut f32, name: &'a str) -> Self {
+        Self {
+            name,
+            value: ParameterValue::F32(value),
+        }
+    }
+    fn from_usize(value: &'a mut usize, name: &'a str) -> Self {
+        Self {
+            name,
+            value: ParameterValue::Usize(value),
+        }
+    }
+}
+
 pub struct GapCount {
     weight: f32,
 }
@@ -12,10 +37,20 @@ impl GapCount {
 }
 
 pub trait Evaluator {
+    fn get_name(&self) -> &str;
+    fn get_parameters_mut(&mut self) -> Vec<EvaluatorParameter>;
     fn evaluate(&self, state: &CalendarState) -> f32;
 }
 
 impl Evaluator for GapCount {
+    fn get_name(&self) -> &str {
+        "Gap Count"
+    }
+    fn get_parameters_mut(&mut self) -> Vec<EvaluatorParameter> {
+        vec![
+            EvaluatorParameter::from_f32(&mut self.weight, "Weight"),
+        ]
+    }
     fn evaluate(&self, state: &CalendarState) -> f32 {
         let mut count = 0;
         for day in state.get_schedule_matrix().iter() {
@@ -51,6 +86,16 @@ impl Daylight {
 }
 
 impl Evaluator for Daylight {
+    fn get_name(&self) -> &str {
+        "Daylight"
+    }
+    fn get_parameters_mut(&mut self) -> Vec<EvaluatorParameter> {
+        vec![
+            EvaluatorParameter::from_f32(&mut self.weight, "Weight"),
+            EvaluatorParameter::from_usize(&mut self.wake_up_time, "Wake up time"),
+            EvaluatorParameter::from_usize(&mut self.sleep_time, "Sleep time")
+        ]
+    }
     fn evaluate(&self, state: &CalendarState) -> f32 {
         state
             .get_session_set()
@@ -70,6 +115,14 @@ pub struct Colliding {
 }
 
 impl Evaluator for Colliding {
+    fn get_name(&self) -> &str {
+        "Colliding"
+    }
+    fn get_parameters_mut(&mut self) -> Vec<EvaluatorParameter> {
+        vec![
+            EvaluatorParameter::from_f32(&mut self.weight, "Weight"),
+        ]
+    }
     fn evaluate(&self, state: &CalendarState) -> f32 {
         state
             .get_schedule_matrix()
@@ -100,6 +153,14 @@ impl DailyWorkDifference {
 }
 
 impl Evaluator for DailyWorkDifference {
+    fn get_name(&self) -> &str {
+        "Daily Work Difference"
+    }
+    fn get_parameters_mut(&mut self) -> Vec<EvaluatorParameter> {
+        vec![
+            EvaluatorParameter::from_f32(&mut self.weight, "Weight"),
+        ]
+    }
     fn evaluate(&self, state: &CalendarState) -> f32 {
         let mut max_sessions = 0;
         let mut min_sessions = usize::MAX;
@@ -129,6 +190,16 @@ impl SessionLengthLimits {
 }
 
 impl Evaluator for SessionLengthLimits {
+    fn get_name(&self) -> &str {
+        "Session Length"
+    }
+    fn get_parameters_mut(&mut self) -> Vec<EvaluatorParameter> {
+        vec![
+            EvaluatorParameter::from_f32(&mut self.weight, "Weight"),
+            EvaluatorParameter::from_usize(&mut self.min_len, "Minimum Length"),
+            EvaluatorParameter::from_usize(&mut self.max_len, "Maximum Length")
+        ]
+    }
     fn evaluate(&self, state: &CalendarState) -> f32 {
         let mut count = 0;
         for (_class_id, class_schedule) in state.get_class_schedules() {

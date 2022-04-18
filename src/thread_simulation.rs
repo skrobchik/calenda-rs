@@ -15,7 +15,7 @@ struct ProgressReport {
 }
 
 pub struct ThreadSimulation {
-    simulation: Arc<Mutex<Simulation>>,
+    pub simulation: Arc<Mutex<Simulation>>,
     running: Arc<AtomicBool>,
     rx: Option<Receiver<ProgressReport>>,
     latest_progress_report: ProgressReport,
