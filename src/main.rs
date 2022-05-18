@@ -6,6 +6,7 @@ pub mod simulation;
 pub mod thread_simulation;
 pub mod timeslot;
 pub mod app;
+pub mod metadata_register;
 
 use simulation::Simulation;
 use thread_simulation::ThreadSimulation;

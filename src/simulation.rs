@@ -26,20 +26,6 @@ fn random_shift_bounded(x: usize, range: std::ops::Range<usize>, rng: &mut StdRn
     }
 }
 
-pub enum ClassRoomType {
-    SmallClassroom,
-    BigClassroom,
-    PhysicsLab,
-    ChemistryLab,
-}
-
-pub struct Class {
-    name: String,
-    hours: usize,
-    classroom_type: ClassRoomType,
-    professor_id: usize
-}
-
 pub struct Simulation {
     current_state: CalendarState,
     current_energy: f32,

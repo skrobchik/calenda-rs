@@ -82,6 +82,28 @@ impl CalendarState {
         self.class_schedules.entry(class_id).or_default()[t.day][t.timeslot] += 1;
         self.session_set.increment(Session { class_id, t });
     }
+
+    pub fn remove_class(&mut self, class_id: usize){
+        for t in TIMESLOT_RANGE {
+            for d in DAY_RANGE {
+                let courses = &mut self.schedule_matrix[d][t];
+                courses.remove(&class_id);
+            }
+        }
+        self.class_schedules.remove(&class_id);
+        self.session_set = self.session_set.iter().filter(|(s, _v)| {s.class_id != class_id}).map(|(s, v)| { (s.to_owned(), v.to_owned()) }).collect(); 
+    }
+
+    pub fn clear(&mut self){
+        for t in TIMESLOT_RANGE {
+            for d in DAY_RANGE {
+                let courses = &mut self.schedule_matrix[d][t];
+                courses.clear();
+            }
+        }
+        self.class_schedules.clear();
+        self.session_set.clear();
+    }
 }
 
 impl Display for CalendarState {

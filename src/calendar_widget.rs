@@ -4,19 +4,21 @@ use crate::calendars::CalendarState;
 use crate::timeslot;
 
 pub struct CalendarWidget<'a> {
-    state: &'a CalendarState
+    state: &'a CalendarState,
+    timeslot_width: f32,
+    timeslot_height: f32
 }
 
 impl<'a> CalendarWidget<'a> {
-    pub fn new(calendar_state: &CalendarState) -> CalendarWidget {
-        CalendarWidget { state: calendar_state }
+    pub fn new(calendar_state: &CalendarState, timeslot_width: f32, timeslot_height: f32) -> CalendarWidget {
+        CalendarWidget { state: calendar_state, timeslot_width, timeslot_height }
     }
 }
 
 impl Widget for CalendarWidget<'_> {
     fn ui(self, ui: &mut egui::Ui) -> egui::Response {
-        let w = 100.0;
-        let h = 20.0;
+        let w = self.timeslot_width;
+        let h = self.timeslot_height;
         let desired_size = Vec2::new(timeslot::DAY_COUNT as f32*w, timeslot::TIMESLOT_COUNT as f32*h);
         let (response, painter) = ui.allocate_painter(desired_size, Sense::hover());
         let rect = response.rect;

@@ -3,6 +3,8 @@ use std::{
     hash::Hash,
 };
 
+use eframe::emath::Real;
+
 #[derive(Clone)]
 pub struct RealCounter<T>
 where
@@ -34,6 +36,19 @@ where
             return Some(0);
         }
         Some(*v)
+    }
+    pub fn remove(&mut self, k: &T) -> Option<usize> {
+        match self.count.remove(k) {
+            Some(v) => {
+                self.total_count -= v;
+                Some(v)
+            }
+            None => None
+        }
+    }
+    pub fn clear(&mut self) {
+        self.total_count = 0;
+        self.count.clear()
     }
     pub fn get_count(&self, k: &T) -> usize {
         let v = self.count.get(&k);
@@ -71,5 +86,19 @@ where
             count: Default::default(),
             total_count: Default::default(),
         }
+    }
+}
+
+impl<T> FromIterator<(T, usize)> for RealCounter<T> where
+    T: Hash + Eq,
+{
+    fn from_iter<I: IntoIterator<Item=(T, usize)>>(iter: I) -> Self {
+        let mut c = RealCounter::new();
+        for i in iter {
+            c.total_count += i.1;
+            let v = c.count.entry(i.0).or_default();
+            *v = i.1;
+        }
+        c
     }
 }
