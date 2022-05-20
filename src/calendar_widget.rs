@@ -1,4 +1,4 @@
-use egui::{Widget, Vec2, Sense, Rounding, Color32, Rect, Stroke};
+use egui::{Color32, Rect, Rounding, Sense, Stroke, Vec2, Widget};
 
 use crate::calendars::CalendarState;
 use crate::timeslot;
@@ -6,12 +6,20 @@ use crate::timeslot;
 pub struct CalendarWidget<'a> {
     state: &'a CalendarState,
     timeslot_width: f32,
-    timeslot_height: f32
+    timeslot_height: f32,
 }
 
 impl<'a> CalendarWidget<'a> {
-    pub fn new(calendar_state: &CalendarState, timeslot_width: f32, timeslot_height: f32) -> CalendarWidget {
-        CalendarWidget { state: calendar_state, timeslot_width, timeslot_height }
+    pub fn new(
+        calendar_state: &CalendarState,
+        timeslot_width: f32,
+        timeslot_height: f32,
+    ) -> CalendarWidget {
+        CalendarWidget {
+            state: calendar_state,
+            timeslot_width,
+            timeslot_height,
+        }
     }
 }
 
@@ -19,16 +27,19 @@ impl Widget for CalendarWidget<'_> {
     fn ui(self, ui: &mut egui::Ui) -> egui::Response {
         let w = self.timeslot_width;
         let h = self.timeslot_height;
-        let desired_size = Vec2::new(timeslot::DAY_COUNT as f32*w, timeslot::TIMESLOT_COUNT as f32*h);
+        let desired_size = Vec2::new(
+            timeslot::DAY_COUNT as f32 * w,
+            timeslot::TIMESLOT_COUNT as f32 * h,
+        );
         let (response, painter) = ui.allocate_painter(desired_size, Sense::hover());
         let rect = response.rect;
-        
+
         for day in timeslot::DAY_RANGE {
             for timeslot in timeslot::TIMESLOT_RANGE {
                 let x0 = rect.left_top().x;
                 let y0 = rect.left_top().y;
-                let x1 = x0 + w*(day as f32);
-                let y1 = y0 + h*(timeslot as f32);
+                let x1 = x0 + w * (day as f32);
+                let y1 = y0 + h * (timeslot as f32);
                 let x2 = x1 + w;
                 let y2 = y1 + h;
                 let classes = &self.state.get_schedule_matrix()[day][timeslot];
@@ -47,7 +58,7 @@ impl Widget for CalendarWidget<'_> {
                                 5 => Color32::LIGHT_GREEN,
                                 6 => Color32::LIGHT_RED,
                                 7 => Color32::KHAKI,
-                                _ => Color32::BLACK
+                                _ => Color32::BLACK,
                             };
                             let cx1 = x1 + cw * class_j as f32;
                             let cx2 = cx1 + cw;
@@ -63,7 +74,7 @@ impl Widget for CalendarWidget<'_> {
                 }
             }
         }
-        
+
         response
     }
 }

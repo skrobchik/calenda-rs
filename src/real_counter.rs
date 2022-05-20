@@ -3,8 +3,6 @@ use std::{
     hash::Hash,
 };
 
-use eframe::emath::Real;
-
 #[derive(Clone)]
 pub struct RealCounter<T>
 where
@@ -43,7 +41,7 @@ where
                 self.total_count -= v;
                 Some(v)
             }
-            None => None
+            None => None,
         }
     }
     pub fn clear(&mut self) {
@@ -89,10 +87,11 @@ where
     }
 }
 
-impl<T> FromIterator<(T, usize)> for RealCounter<T> where
+impl<T> FromIterator<(T, usize)> for RealCounter<T>
+where
     T: Hash + Eq,
 {
-    fn from_iter<I: IntoIterator<Item=(T, usize)>>(iter: I) -> Self {
+    fn from_iter<I: IntoIterator<Item = (T, usize)>>(iter: I) -> Self {
         let mut c = RealCounter::new();
         for i in iter {
             c.total_count += i.1;

@@ -6,7 +6,14 @@ pub enum ClassRoomType {
 }
 
 pub enum SemesterNumber {
-    S1, S2, S3, S4, S5, S6, S7, S8
+    S1,
+    S2,
+    S3,
+    S4,
+    S5,
+    S6,
+    S7,
+    S8,
 }
 
 pub struct ClassMetadata {
@@ -17,17 +24,20 @@ pub struct ClassMetadata {
 }
 
 pub struct ProfessorMetadata {
-    pub name: String
+    pub name: String,
 }
 
 pub struct MetadataRegister {
     class_register: Vec<ClassMetadata>,
-    professor_register: Vec<ProfessorMetadata>
+    professor_register: Vec<ProfessorMetadata>,
 }
 
 impl Default for MetadataRegister {
     fn default() -> Self {
-        Self { class_register: Default::default(), professor_register: Default::default() }
+        Self {
+            class_register: Default::default(),
+            professor_register: Default::default(),
+        }
     }
 }
 
@@ -41,7 +51,10 @@ impl MetadataRegister {
     pub fn get_class_metadata_mut(&mut self, class_id: usize) -> Option<&mut ClassMetadata> {
         self.class_register.get_mut(class_id)
     }
-    pub fn get_professor_metadata_mut(&mut self, professor_id: usize) -> Option<&mut ProfessorMetadata> {
+    pub fn get_professor_metadata_mut(
+        &mut self,
+        professor_id: usize,
+    ) -> Option<&mut ProfessorMetadata> {
         self.professor_register.get_mut(professor_id)
     }
     pub fn professor_register_len(&self) -> usize {
@@ -52,6 +65,6 @@ impl MetadataRegister {
     }
     pub fn add_professor(&mut self, metadata: ProfessorMetadata) -> usize {
         self.professor_register.push(metadata);
-        self.professor_register.len()-1
+        self.professor_register.len() - 1
     }
 }
