@@ -7,13 +7,13 @@ pub mod real_counter;
 pub mod thread_simulation;
 pub mod timeslot;
 
-use thread_simulation::ThreadSimulation;
-
 use crate::app::MyApp;
 
 fn main() {
-    let thread_simulation = ThreadSimulation::new();
-
-    let options = eframe::NativeOptions::default();
-    eframe::run_native(Box::new(MyApp::new(thread_simulation)), options);
+  let options = eframe::NativeOptions::default();
+  eframe::run_native(
+    "my_app",
+    options,
+    Box::new(|cc| Box::new(MyApp::new(cc))),
+  );
 }

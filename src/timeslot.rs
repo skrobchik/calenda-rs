@@ -1,6 +1,7 @@
 use std::ops::Range;
 
 use rand::{prelude::StdRng, Rng};
+use serde::{Deserialize, Serialize};
 
 pub const TIMESLOT_COUNT: usize = 24;
 pub const DAY_COUNT: usize = 5;
@@ -11,25 +12,22 @@ pub const DAY_RANGE: Range<usize> = 0..DAY_COUNT;
 pub type Timeslot = usize;
 pub type Day = usize;
 
-#[derive(Ord, PartialOrd, PartialEq, Eq, Hash, Clone)]
+#[derive(Ord, PartialOrd, PartialEq, Eq, Hash, Clone, Deserialize, Serialize)]
 pub struct DayTimeSlot {
-    pub day: Day,
-    pub timeslot: Timeslot,
+  pub day: Day,
+  pub timeslot: Timeslot,
 }
 
 impl DayTimeSlot {
-    pub fn new(day: Day, timeslot: Timeslot) -> DayTimeSlot {
-        DayTimeSlot {
-            day,
-            timeslot
-        }
+  pub fn new(day: Day, timeslot: Timeslot) -> DayTimeSlot {
+    DayTimeSlot { day, timeslot }
+  }
+  pub fn random(rng: &mut StdRng) -> DayTimeSlot {
+    DayTimeSlot {
+      day: rng.gen_range(DAY_RANGE),
+      timeslot: rng.gen_range(TIMESLOT_RANGE),
     }
-    pub fn random(rng: &mut StdRng) -> DayTimeSlot {
-        DayTimeSlot {
-            day: rng.gen_range(DAY_RANGE),
-            timeslot: rng.gen_range(TIMESLOT_RANGE)
-        }
-    }
+  }
 }
 
 pub const TIMESLOT_08_00: usize = 0;
