@@ -83,44 +83,23 @@ pub struct ThreadSimulation {
   #[serde(skip)]
   running: Arc<AtomicBool>,
   #[serde(skip)]
-  rx: Option<Receiver<usize>>,
+  rx: Option<Receiver<(CalendarState, usize)>>,
   #[serde(skip)]
   job_join_handle: Option<JoinHandle<CalendarState>>,
+  #[serde(skip)]
+  job_step: usize,
+  #[serde(skip)]
+  job_steps: usize
 }
 
 #[derive(Debug)]
 pub struct SimulationRunningError;
 
 impl ThreadSimulation {
-  pub fn new() -> Self {
-    ThreadSimulation {
-      state: CalendarState::new(),
-      running: Arc::new(AtomicBool::new(false)),
-      rx: None,
-      evaluators: Vec::new(),
-      job_join_handle: None,
-    }
+  pub fn receive_latest_progress_report(&mut self) -> Option<()> {
+      (self.state, self.job_step) = self.rx.as_ref()?.try_iter().last()?;
+      Some(())
   }
-
-  /*
-  fn receive_latest_progress_report(&mut self) {
-      if self.rx.is_none() {
-          return;
-      }
-      if let Some(progress_report) = self.rx.as_ref().unwrap().try_iter().last() {
-          //self.latest_progress_report = progress_report;
-      }
-  }
-  */
-
-  /*pub fn get_job_step(&mut self) -> Option<usize> {
-      if self.is_running() {
-          self.receive_latest_progress_report();
-          Some(self.latest_progress_report.step)
-      } else {
-          None
-      }
-  }*/
 
   pub fn is_job_running(&mut self) -> bool {
     let is_running = self.running.load(Ordering::Relaxed);
@@ -134,8 +113,7 @@ impl ThreadSimulation {
 
   pub fn run_sim_job(
     &mut self,
-    sim_job_steps: usize,
-    progress_report_interval: usize,
+    sim_job_steps: usize
   ) -> Result<(), SimulationRunningError> {
     if self.is_job_running() {
       return Err(SimulationRunningError {});
@@ -143,6 +121,7 @@ impl ThreadSimulation {
     if sim_job_steps == 0 {
       return Ok(());
     }
+    let progress_report_interval = (sim_job_steps/1000).max(1);
 
     let (tx, rx) = mpsc::channel();
 
@@ -150,21 +129,17 @@ impl ThreadSimulation {
 
     let evaluators_copy = self.evaluators.clone();
     let mut sim_job = SimulationJob::new(self.state.clone(), sim_job_steps, evaluators_copy);
+    
+    self.job_step = 0;
+    self.job_steps = sim_job_steps;
 
     let local_running_flag = self.running.clone();
     self.running.store(true, Ordering::Relaxed);
     self.job_join_handle = Some(thread::spawn(move || {
       for step in 1..=sim_job_steps {
-        /*
         if progress_report_interval != 0 && step % progress_report_interval == 0 {
-            tx.send(ProgressReport {
-                state: sim.get_current_state().clone(),
-                energy: sim.get_current_energy(),
-                step,
-                total_run_steps: sim_job_steps,
-            })
-            .unwrap();
-        }*/
+            tx.send((sim_job.state.clone(), step)).unwrap();
+        }
         sim_job.step();
       }
       local_running_flag.store(false, Ordering::Relaxed);
@@ -172,6 +147,10 @@ impl ThreadSimulation {
     }));
 
     Ok(())
+  }
+
+  pub fn get_job_progress(&self) -> f32 {
+    self.job_step as f32 / self.job_steps as f32
   }
 }
 
@@ -183,6 +162,8 @@ impl Default for ThreadSimulation {
       running: Arc::new(AtomicBool::new(false)),
       rx: None,
       job_join_handle: None,
+      job_step: Default::default(),
+      job_steps: Default::default(),
     }
   }
 }

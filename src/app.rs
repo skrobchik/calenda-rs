@@ -6,11 +6,28 @@ use crate::{
   },
   thread_simulation::ThreadSimulation,
 };
-use eframe::{egui};
-use egui::{Context, TextStyle};
+use eframe::egui;
+use egui::{Context, ProgressBar, TextStyle};
 use serde::{Deserialize, Serialize};
 
 use evaluators::Evaluator;
+
+const DEFAULT_EVALUATORS: [Evaluator; 6] = [
+  Evaluator::GapCount { weight: 1.0 },
+  Evaluator::Daylight {
+    weight: 1.0,
+    wake_up_time: 4,
+    sleep_time: 12,
+  },
+  Evaluator::Colliding { weight: 1.0 },
+  Evaluator::DailyWorkDifference { weight: 1.0 },
+  Evaluator::SessionLengthLimits {
+    weight: 1.0,
+    min_len: 2,
+    max_len: 4,
+  },
+  Evaluator::ClassSeparation { weight: 1.0 },
+];
 
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
@@ -18,7 +35,6 @@ pub struct MyApp {
   simulation: ThreadSimulation,
   is_simulation_running: bool,
   sim_run_steps: usize,
-  sim_progress_report_interval: usize,
   show_professor_editor: bool,
   show_class_time_editor: bool,
   show_simulation_parameter_editor: bool,
@@ -70,6 +86,9 @@ impl MyApp {
     egui::SidePanel::right("parameter_edit_panel").show(ctx, |ui| {
       ui.add_enabled_ui(!self.is_simulation_running, |ui| {
         ui.label("Parametros de Simulacion");
+        if ui.button("Reset").clicked() {
+          self.simulation.evaluators = Vec::from(DEFAULT_EVALUATORS);
+        }
         ui.separator();
         let evaluators = &mut self.simulation.evaluators;
         let text_style = TextStyle::Body;
@@ -97,7 +116,7 @@ impl MyApp {
               });
               ui.separator();
             }
-          })
+          });
       });
     });
   }
@@ -144,7 +163,10 @@ impl MyApp {
       });
     });
   }
-  fn draw_class_editor(&mut self, ctx: &Context, selected_class: usize) {
+  fn draw_class_editor(&mut self, ctx: &Context) {
+    let selected_class = self.selected_class;
+    if selected_class.is_none() { return; }
+    let selected_class = selected_class.unwrap();
     let professors: Vec<ProfessorMetadata> = self.metadata_register.get_professor_list().clone();
     let class = match self
       .metadata_register
@@ -155,21 +177,29 @@ impl MyApp {
     };
     egui::SidePanel::right("class_editor").show(ctx, |ui| {
       ui.add_enabled_ui(!self.is_simulation_running, |ui| {
-        ui.label("Editor de Clase");
+        ui.horizontal(|ui| {
+          if ui.button("x").clicked() {
+            self.selected_class = None;
+          }
+          ui.label("Editor de Clase");
+        });
         ui.separator();
         ui.horizontal(|ui| {
           ui.label("Nombre");
           ui.text_edit_singleline(&mut class.name);
         });
-        ui.horizontal(|ui| {
-          egui::ComboBox::from_label("Profesor")
+        egui::ComboBox::from_label("Profesor")
             .selected_text(&professors[class.professor_id].name)
             .show_ui(ui, |ui| {
               for (i, prof) in professors.iter().enumerate() {
                 ui.selectable_value(&mut class.professor_id, i, &prof.name);
               }
             });
-        });
+        egui::ComboBox::from_label("Semestre").selected_text(class.semester_number.to_string()).show_ui(ui, |ui| {
+          for i in SemesterNumber::iterator() {
+            ui.selectable_value(&mut class.semester_number, *i, i.to_string());
+          }
+        })
       })
     });
   }
@@ -182,6 +212,7 @@ impl eframe::App for MyApp {
 
   fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
     self.is_simulation_running = self.simulation.is_job_running();
+    self.simulation.receive_latest_progress_report();
 
     if self.show_professor_editor {
       self.draw_professor_editor(ctx);
@@ -193,7 +224,7 @@ impl eframe::App for MyApp {
       self.draw_class_time_editor(ctx);
     }
     if let Some(selected_class) = self.selected_class {
-      self.draw_class_editor(ctx, selected_class);
+      self.draw_class_editor(ctx);
     }
 
     egui::CentralPanel::default().show(ctx, |ui| {
@@ -211,25 +242,20 @@ impl eframe::App for MyApp {
         })
       });
 
-      ui.heading("My egui Application");
       ui.add(CalendarWidget::new(&self.simulation.state, 30.0, 10.0));
       ui.horizontal(|ui| {
         ui.label("Steps:");
         ui.add(egui::DragValue::new(&mut self.sim_run_steps));
-      });
-      ui.horizontal(|ui| {
-        ui.label("Progress Report Inteval:");
-        ui.add(egui::DragValue::new(&mut self.sim_progress_report_interval));
       });
       ui.add_enabled_ui(!self.is_simulation_running, |ui| {
         if ui
           .button(format!("Run Simulation for {} steps", self.sim_run_steps))
           .clicked()
         {
-          self
-            .simulation
-            .run_sim_job(self.sim_run_steps, self.sim_progress_report_interval)
-            .unwrap();
+          self.simulation.run_sim_job(self.sim_run_steps).unwrap();
+        }
+        if self.is_simulation_running {
+          ui.add(ProgressBar::new(self.simulation.get_job_progress()));
         }
       })
     });
@@ -241,27 +267,12 @@ impl eframe::App for MyApp {
 
 impl Default for MyApp {
   fn default() -> Self {
-    let mut thread_simulation = ThreadSimulation::new();
-    thread_simulation.evaluators = vec![
-      Evaluator::GapCount { weight: 0.0 },
-      Evaluator::Daylight {
-        weight: 0.0,
-        wake_up_time: 1,
-        sleep_time: 8,
-      },
-      Evaluator::Colliding { weight: 0.0 },
-      Evaluator::DailyWorkDifference { weight: 0.0 },
-      Evaluator::SessionLengthLimits {
-        weight: 0.0,
-        min_len: 2,
-        max_len: 4,
-      },
-    ];
+    let mut thread_simulation = ThreadSimulation::default();
+    thread_simulation.evaluators = Vec::from(DEFAULT_EVALUATORS);
     Self {
       simulation: thread_simulation,
       is_simulation_running: Default::default(),
       sim_run_steps: Default::default(),
-      sim_progress_report_interval: Default::default(),
       show_professor_editor: Default::default(),
       show_class_time_editor: Default::default(),
       show_simulation_parameter_editor: Default::default(),

@@ -1,4 +1,4 @@
-use crate::calendars::CalendarState;
+use crate::{calendars::CalendarState, timeslot::DAY_RANGE};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
@@ -23,6 +23,29 @@ pub enum Evaluator {
     min_len: usize,
     max_len: usize,
   },
+  ClassSeparation {
+    weight: f32
+  }
+}
+
+fn eval_class_separation(weight: f32, state: &CalendarState) -> f32 {
+  let mut separated_groups = 0;
+  for (class_id, class_schedule) in state.get_class_schedules(){
+    for day in DAY_RANGE {
+      let day_array = class_schedule[day];
+      let mut groups = 0;
+      for (key, group) in &day_array.iter().group_by(|x| **x > 0){
+        if key {
+          groups += 1;
+        }
+      }
+      if groups > 0 {
+        groups -= 1;
+      }
+      separated_groups += groups;
+    }
+  }
+  separated_groups as f32
 }
 
 fn eval_gap_count(weight: f32, state: &CalendarState) -> f32 {
@@ -119,6 +142,7 @@ impl Evaluator {
         min_len,
         max_len,
       } => eval_session_length_limits(*weight, *min_len, *max_len, state),
+      Evaluator::ClassSeparation { weight } => eval_class_separation(*weight, state),
     }
   }
   pub fn get_name(&self) -> &str {
@@ -136,6 +160,7 @@ impl Evaluator {
         min_len: _,
         max_len: _,
       } => "Session Length Limits",
+      Evaluator::ClassSeparation { weight: _ } => "Class Separation",
     }
   }
   pub fn get_parameters_mut(&mut self) -> Vec<EvaluatorParameter> {
@@ -163,6 +188,9 @@ impl Evaluator {
         EvaluatorParameter::from_usize(min_len, "Min Length"),
         EvaluatorParameter::from_usize(max_len, "Max Length"),
       ],
+      Evaluator::ClassSeparation { weight } => vec![
+        EvaluatorParameter::from_f32(weight, "Weight"),
+      ]
     }
   }
 }

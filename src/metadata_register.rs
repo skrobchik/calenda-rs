@@ -8,7 +8,7 @@ pub enum ClassRoomType {
   ChemistryLab,
 }
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize, PartialEq, Eq, Copy)]
 pub enum SemesterNumber {
   S1,
   S2,
@@ -18,6 +18,37 @@ pub enum SemesterNumber {
   S6,
   S7,
   S8,
+}
+
+impl ToString for SemesterNumber {
+  fn to_string(&self) -> String {
+    match self {
+      SemesterNumber::S1 => "1er".to_string(),
+      SemesterNumber::S2 => "2do".to_string(),
+      SemesterNumber::S3 => "3ro".to_string(),
+      SemesterNumber::S4 => "4to".to_string(),
+      SemesterNumber::S5 => "5to".to_string(),
+      SemesterNumber::S6 => "6to".to_string(),
+      SemesterNumber::S7 => "7mo".to_string(),
+      SemesterNumber::S8 => "8vo".to_string(),
+    }
+  }
+}
+
+impl SemesterNumber {
+  pub fn iterator() -> core::slice::Iter<'static, SemesterNumber> {
+    static SEMESTERS: [SemesterNumber; 8] = [
+      SemesterNumber::S1,
+      SemesterNumber::S2,
+      SemesterNumber::S3,
+      SemesterNumber::S4,
+      SemesterNumber::S5,
+      SemesterNumber::S6,
+      SemesterNumber::S7,
+      SemesterNumber::S8,
+    ];
+    SEMESTERS.iter()
+  }
 }
 
 #[derive(Clone, Deserialize, Serialize)]
