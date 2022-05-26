@@ -171,7 +171,7 @@ impl MyApp {
                   self.selected_class = Some(row);
                 }
                 if ui.button("-").clicked() {
-                  self.simulation.state.decrement_class_time(row);
+                  self.simulation.state.decrement_class_time(row).expect(&format!("ClassId {} doesn't exist?!", row));
                 }
                 ui.label(format!("{}", self.simulation.state.count_class_time(row)));
                 if ui.button("+").clicked() {
@@ -245,7 +245,7 @@ impl MyApp {
         &mut self.calendar_view_semester,
       );
       match self.calendar_view_type {
-        CalendarView::Semester(semester_number) => {
+        CalendarView::Semester(_semester_number) => {
           self.calendar_view_type = CalendarView::Semester(self.calendar_view_semester)
         }
         _ => (),
@@ -277,7 +277,7 @@ impl eframe::App for MyApp {
     if self.show_class_time_editor {
       self.draw_class_time_editor(ctx);
     }
-    if let Some(selected_class) = self.selected_class {
+    if self.selected_class.is_some() {
       self.draw_class_editor(ctx);
     }
 
@@ -299,12 +299,12 @@ impl eframe::App for MyApp {
       });
 
       let filter: Box<dyn Fn(usize, &MetadataRegister) -> bool> = match &self.calendar_view_type {
-        CalendarView::All => Box::new(|class_id, metadata_register| true),
+        CalendarView::All => Box::new(|_class_id, _metadata_register| true),
         CalendarView::Semester(semester_number) => Box::new(|class_id, metadata_register: &MetadataRegister| {
           let class_semester = metadata_register.get_class_metadata(class_id).unwrap();
           class_semester.semester_number == *semester_number
         }),
-        _ => Box::new(|class_id, metadata_register| true),
+        _ => Box::new(|_class_id, _metadata_register| true),
       };
       ui.add(CalendarWidget::new(
         &self.simulation.state,

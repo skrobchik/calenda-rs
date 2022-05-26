@@ -30,11 +30,11 @@ pub enum Evaluator {
 
 fn eval_class_separation(weight: f32, state: &CalendarState) -> f32 {
   let mut separated_groups = 0;
-  for (class_id, class_schedule) in state.get_class_schedules(){
+  for (_class_id, class_schedule) in state.get_class_schedules(){
     for day in DAY_RANGE {
       let day_array = class_schedule[day];
       let mut groups = 0;
-      for (key, group) in &day_array.iter().group_by(|x| **x > 0){
+      for (key, _group) in &day_array.iter().group_by(|x| **x > 0){
         if key {
           groups += 1;
         }
@@ -45,7 +45,7 @@ fn eval_class_separation(weight: f32, state: &CalendarState) -> f32 {
       separated_groups += groups;
     }
   }
-  separated_groups as f32
+  weight * separated_groups as f32
 }
 
 fn eval_gap_count(weight: f32, state: &CalendarState) -> f32 {

@@ -54,7 +54,7 @@ impl Widget for CalendarWidget<'_> {
         let classes = &self.state.get_schedule_matrix()[day][timeslot];
         let filtered_classes: RealCounter<usize> = classes
           .iter()
-          .filter(|(class_id, count)| (self.filter)(**class_id, self.metadata_register))
+          .filter(|(class_id, _count)| (self.filter)(**class_id, self.metadata_register))
           .map(|(class_id, count)| (*class_id, *count))
           .collect();
         let num_classes = filtered_classes.count_total();
