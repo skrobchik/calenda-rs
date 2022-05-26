@@ -1,24 +1,33 @@
 use egui::{Color32, Rect, Rounding, Sense, Stroke, Vec2, Widget};
 
 use crate::calendars::CalendarState;
+use crate::metadata_register::MetadataRegister;
+use crate::real_counter::RealCounter;
 use crate::timeslot;
 
 pub struct CalendarWidget<'a> {
   state: &'a CalendarState,
   timeslot_width: f32,
   timeslot_height: f32,
+  metadata_register: &'a MetadataRegister,
+  // (class_id, professor_id)
+  filter: Box<dyn 'a + Fn(usize, &MetadataRegister) -> bool>,
 }
 
 impl<'a> CalendarWidget<'a> {
   pub fn new(
-    calendar_state: &CalendarState,
+    calendar_state: &'a CalendarState,
     timeslot_width: f32,
     timeslot_height: f32,
-  ) -> CalendarWidget {
+    metadata_register: &'a MetadataRegister,
+    filter: Box<dyn 'a + Fn(usize, &MetadataRegister) -> bool>,
+  ) -> CalendarWidget<'a> {
     CalendarWidget {
       state: calendar_state,
       timeslot_width,
       timeslot_height,
+      metadata_register,
+      filter,
     }
   }
 }
@@ -43,11 +52,16 @@ impl Widget for CalendarWidget<'_> {
         let x2 = x1 + w;
         let y2 = y1 + h;
         let classes = &self.state.get_schedule_matrix()[day][timeslot];
-        let num_classes = classes.count_total();
+        let filtered_classes: RealCounter<usize> = classes
+          .iter()
+          .filter(|(class_id, count)| (self.filter)(**class_id, self.metadata_register))
+          .map(|(class_id, count)| (*class_id, *count))
+          .collect();
+        let num_classes = filtered_classes.count_total();
         let mut class_j = 0;
         if num_classes > 0 {
           let cw = w / num_classes as f32;
-          for (class_id, count) in classes.iter() {
+          for (class_id, count) in filtered_classes.iter() {
             for _ in 0..*count {
               let color = match class_id {
                 0 => Color32::BLUE,

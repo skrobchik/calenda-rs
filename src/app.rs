@@ -29,6 +29,22 @@ const DEFAULT_EVALUATORS: [Evaluator; 6] = [
   Evaluator::ClassSeparation { weight: 1.0 },
 ];
 
+#[derive(PartialEq, Eq, Serialize, Deserialize, Debug)]
+enum CalendarView {
+  All,
+  Semester(SemesterNumber),
+  EvenSemesters,
+  OddSemesters,
+  Professor(usize),
+  Class(usize),
+}
+
+impl Default for CalendarView {
+  fn default() -> Self {
+    CalendarView::All
+  }
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
 pub struct MyApp {
@@ -40,6 +56,19 @@ pub struct MyApp {
   show_simulation_parameter_editor: bool,
   metadata_register: MetadataRegister,
   selected_class: Option<usize>,
+  calendar_view_type: CalendarView,
+  calendar_view_semester: SemesterNumber,
+  calendar_view_class: usize,
+}
+
+fn draw_semester_selector(ui: &mut egui::Ui, selected: SemesterNumber, value: &mut SemesterNumber) {
+  egui::ComboBox::from_label("Semestre")
+    .selected_text(selected.to_string())
+    .show_ui(ui, |ui| {
+      for i in SemesterNumber::iterator() {
+        ui.selectable_value(value, *i, i.to_string());
+      }
+    });
 }
 
 impl MyApp {
@@ -165,7 +194,9 @@ impl MyApp {
   }
   fn draw_class_editor(&mut self, ctx: &Context) {
     let selected_class = self.selected_class;
-    if selected_class.is_none() { return; }
+    if selected_class.is_none() {
+      return;
+    }
     let selected_class = selected_class.unwrap();
     let professors: Vec<ProfessorMetadata> = self.metadata_register.get_professor_list().clone();
     let class = match self
@@ -189,18 +220,41 @@ impl MyApp {
           ui.text_edit_singleline(&mut class.name);
         });
         egui::ComboBox::from_label("Profesor")
-            .selected_text(&professors[class.professor_id].name)
-            .show_ui(ui, |ui| {
-              for (i, prof) in professors.iter().enumerate() {
-                ui.selectable_value(&mut class.professor_id, i, &prof.name);
-              }
-            });
-        egui::ComboBox::from_label("Semestre").selected_text(class.semester_number.to_string()).show_ui(ui, |ui| {
-          for i in SemesterNumber::iterator() {
-            ui.selectable_value(&mut class.semester_number, *i, i.to_string());
-          }
-        })
+          .selected_text(&professors[class.professor_id].name)
+          .show_ui(ui, |ui| {
+            for (i, prof) in professors.iter().enumerate() {
+              ui.selectable_value(&mut class.professor_id, i, &prof.name);
+            }
+          });
+        draw_semester_selector(ui, class.semester_number, &mut class.semester_number);
       })
+    });
+  }
+  fn draw_calendar_view_selector(&mut self, ctx: &Context) {
+    egui::SidePanel::left("calendar_view_selector").show(ctx, |ui| {
+      ui.label("Vista de Calendario");
+      ui.radio_value(&mut self.calendar_view_type, CalendarView::All, "Todo");
+      ui.radio_value(
+        &mut self.calendar_view_type,
+        CalendarView::Semester(self.calendar_view_semester),
+        "Semestre",
+      );
+      draw_semester_selector(
+        ui,
+        self.calendar_view_semester,
+        &mut self.calendar_view_semester,
+      );
+      match self.calendar_view_type {
+        CalendarView::Semester(semester_number) => {
+          self.calendar_view_type = CalendarView::Semester(self.calendar_view_semester)
+        }
+        _ => (),
+      }
+      /*ui.radio_value(
+        &mut self.calendar_view_type,
+        CalendarView::Class(self.calendar_view_class),
+        "Clase",
+      );*/
     });
   }
 }
@@ -227,6 +281,8 @@ impl eframe::App for MyApp {
       self.draw_class_editor(ctx);
     }
 
+    self.draw_calendar_view_selector(ctx);
+
     egui::CentralPanel::default().show(ctx, |ui| {
       egui::menu::bar(ui, |ui| {
         ui.menu_button("Vista", |ui| {
@@ -242,7 +298,21 @@ impl eframe::App for MyApp {
         })
       });
 
-      ui.add(CalendarWidget::new(&self.simulation.state, 30.0, 10.0));
+      let filter: Box<dyn Fn(usize, &MetadataRegister) -> bool> = match &self.calendar_view_type {
+        CalendarView::All => Box::new(|class_id, metadata_register| true),
+        CalendarView::Semester(semester_number) => Box::new(|class_id, metadata_register: &MetadataRegister| {
+          let class_semester = metadata_register.get_class_metadata(class_id).unwrap();
+          class_semester.semester_number == *semester_number
+        }),
+        _ => Box::new(|class_id, metadata_register| true),
+      };
+      ui.add(CalendarWidget::new(
+        &self.simulation.state,
+        30.0,
+        10.0,
+        &self.metadata_register,
+        filter
+      ));
       ui.horizontal(|ui| {
         ui.label("Steps:");
         ui.add(egui::DragValue::new(&mut self.sim_run_steps));
@@ -278,6 +348,9 @@ impl Default for MyApp {
       show_simulation_parameter_editor: Default::default(),
       metadata_register: Default::default(),
       selected_class: Default::default(),
+      calendar_view_type: Default::default(),
+      calendar_view_semester: Default::default(),
+      calendar_view_class: Default::default(),
     }
   }
 }

@@ -8,7 +8,7 @@ pub enum ClassRoomType {
   ChemistryLab,
 }
 
-#[derive(Clone, Deserialize, Serialize, PartialEq, Eq, Copy)]
+#[derive(Clone, Deserialize, Serialize, PartialEq, Eq, Copy, Debug)]
 pub enum SemesterNumber {
   S1,
   S2,
@@ -18,6 +18,12 @@ pub enum SemesterNumber {
   S6,
   S7,
   S8,
+}
+
+impl Default for SemesterNumber {
+  fn default() -> Self {
+    SemesterNumber::S1
+  }
 }
 
 impl ToString for SemesterNumber {
