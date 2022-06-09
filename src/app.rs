@@ -285,6 +285,11 @@ impl eframe::App for MyApp {
 
     egui::CentralPanel::default().show(ctx, |ui| {
       egui::menu::bar(ui, |ui| {
+        ui.menu_button("Archivo", |ui| {
+          if ui.button("Restaurar Valores Predeterminados").clicked() {
+            *self = MyApp::default();
+          }
+        });
         ui.menu_button("Vista", |ui| {
           if ui.button("Editor de Profesores").clicked() {
             self.show_professor_editor = !self.show_professor_editor;
@@ -295,7 +300,7 @@ impl eframe::App for MyApp {
           if ui.button("Editor de Clases").clicked() {
             self.show_class_time_editor = !self.show_class_time_editor;
           }
-        })
+        });
       });
 
       let filter: Box<dyn Fn(usize, &MetadataRegister) -> bool> = match &self.calendar_view_type {
