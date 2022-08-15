@@ -8,7 +8,7 @@ pub enum ClassRoomType {
   ChemistryLab,
 }
 
-#[derive(Clone, Deserialize, Serialize, PartialEq, Eq, Copy, Debug)]
+#[derive(Clone, Deserialize, Serialize, PartialEq, Eq, Copy, Debug, PartialOrd, Ord)]
 pub enum SemesterNumber {
   S1,
   S2,
@@ -70,7 +70,7 @@ pub struct ProfessorMetadata {
   pub name: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct MetadataRegister {
   class_register: Vec<ClassMetadata>,
   professor_register: Vec<ProfessorMetadata>,

@@ -63,7 +63,7 @@ impl Widget for CalendarWidget<'_> {
           let cw = w / num_classes as f32;
           for (class_id, count) in filtered_classes.iter() {
             for _ in 0..*count {
-              let color = match class_id {
+              let color = match class_id % 16 {
                 0 => Color32::BLUE,
                 1 => Color32::GREEN,
                 2 => Color32::RED,
@@ -72,7 +72,15 @@ impl Widget for CalendarWidget<'_> {
                 5 => Color32::LIGHT_GREEN,
                 6 => Color32::LIGHT_RED,
                 7 => Color32::KHAKI,
-                _ => Color32::BLACK,
+                8 => Color32::BLUE,
+                9 => Color32::DARK_RED,
+                10 => Color32::GOLD,
+                11 => Color32::DARK_GREEN,
+                12 => Color32::LIGHT_YELLOW,
+                13 => Color32::DARK_BLUE,
+                14 => Color32::BROWN,
+                15 => Color32::DARK_GRAY,
+                _ => unreachable!(),
               };
               let cx1 = x1 + cw * class_j as f32;
               let cx2 = cx1 + cw;

@@ -1,6 +1,6 @@
 use rand::{prelude::StdRng, SeedableRng};
 
-use crate::{calendars::CalendarState, evaluators::Evaluator};
+use crate::{calendars::CalendarState, evaluators::Evaluator, metadata_register::MetadataRegister};
 use serde::{Deserialize, Serialize};
 use std::{
   sync::{
@@ -22,10 +22,11 @@ struct SimulationJob {
   acceptance_probability_function: Box<dyn Fn(f32, f32, f32) -> f32 + Send>,
   evaluators: Vec<Evaluator>,
   rng: StdRng,
+  metadata_register: MetadataRegister
 }
 
 impl SimulationJob {
-  pub fn new(state: CalendarState, total_job_steps: usize, evaluators: Vec<Evaluator>) -> Self {
+  pub fn new(state: CalendarState, total_job_steps: usize, evaluators: Vec<Evaluator>, metadata_register: MetadataRegister) -> Self {
     let mut s = SimulationJob {
       current_job_step: 0,
       total_job_steps,
@@ -35,20 +36,21 @@ impl SimulationJob {
       acceptance_probability_function: Box::new(default_acceptance_probability_function),
       evaluators,
       rng: StdRng::from_entropy(),
+      metadata_register
     };
-    s.energy = s.calculate_energy(&s.state);
+    s.energy = s.calculate_energy(&s.state, &s.metadata_register);
     s
   }
-  fn calculate_energy(&self, state: &CalendarState) -> f32 {
+  fn calculate_energy(&self, state: &CalendarState, metadata_register: &MetadataRegister) -> f32 {
     let mut energy: f32 = 0.0;
     for evaluator in &self.evaluators {
-      energy += evaluator.evaluate(&state);
+      energy += evaluator.evaluate(&state, metadata_register);
     }
     energy
   }
   pub fn step(&mut self) {
     let new_state = self.state.get_random_neighbor(&mut self.rng).unwrap();
-    let new_energy = self.calculate_energy(&new_state);
+    let new_energy = self.calculate_energy(&new_state, &self.metadata_register);
     let progress_ratio = (self.current_job_step as f32) / (self.total_job_steps as f32);
     let temperature = (self.temperature_function)(progress_ratio);
     let p = (self.acceptance_probability_function)(self.energy, new_energy, temperature);
@@ -113,7 +115,8 @@ impl ThreadSimulation {
 
   pub fn run_sim_job(
     &mut self,
-    sim_job_steps: usize
+    sim_job_steps: usize,
+    metadata_register: MetadataRegister
   ) -> Result<(), SimulationRunningError> {
     if self.is_job_running() {
       return Err(SimulationRunningError {});
@@ -128,7 +131,7 @@ impl ThreadSimulation {
     self.rx = Some(rx);
 
     let evaluators_copy = self.evaluators.clone();
-    let mut sim_job = SimulationJob::new(self.state.clone(), sim_job_steps, evaluators_copy);
+    let mut sim_job = SimulationJob::new(self.state.clone(), sim_job_steps, evaluators_copy, metadata_register);
     
     self.job_step = 0;
     self.job_steps = sim_job_steps;

@@ -281,7 +281,7 @@ impl eframe::App for MyApp {
       self.draw_class_editor(ctx);
     }
 
-    self.draw_calendar_view_selector(ctx);
+    // self.draw_calendar_view_selector(ctx);
 
     egui::CentralPanel::default().show(ctx, |ui| {
       egui::menu::bar(ui, |ui| {
@@ -303,31 +303,72 @@ impl eframe::App for MyApp {
         });
       });
 
-      let filter: Box<dyn Fn(usize, &MetadataRegister) -> bool> = match &self.calendar_view_type {
+      /*let filter: Box<dyn Fn(usize, &MetadataRegister) -> bool> = match &self.calendar_view_type {
         CalendarView::All => Box::new(|_class_id, _metadata_register| true),
         CalendarView::Semester(semester_number) => Box::new(|class_id, metadata_register: &MetadataRegister| {
           let class_semester = metadata_register.get_class_metadata(class_id).unwrap();
           class_semester.semester_number == *semester_number
         }),
         _ => Box::new(|_class_id, _metadata_register| true),
-      };
-      ui.add(CalendarWidget::new(
-        &self.simulation.state,
-        30.0,
-        10.0,
-        &self.metadata_register,
-        filter
-      ));
+      };*/
+      ui.horizontal(|ui| {
+        ui.vertical(|ui| {
+          ui.label("Semestre 1");
+          ui.add(CalendarWidget::new(
+            &self.simulation.state,
+            30.0,
+            10.0,
+            &self.metadata_register,
+            Box::new(|class_id, metadata_register| { metadata_register.get_class_metadata(class_id).unwrap().semester_number == SemesterNumber::S1 })
+          ));
+        });
+        ui.vertical(|ui| {
+          ui.label("Semestre 3");
+          ui.add(CalendarWidget::new(
+            &self.simulation.state,
+            30.0,
+            10.0,
+            &self.metadata_register,
+            Box::new(|class_id, metadata_register| { metadata_register.get_class_metadata(class_id).unwrap().semester_number == SemesterNumber::S3 })
+          ));
+        });
+      });
+      ui.horizontal(|ui| {
+        ui.vertical(|ui| {
+          ui.label("Semestre 5");
+          ui.add(CalendarWidget::new(
+            &self.simulation.state,
+            30.0,
+            10.0,
+            &self.metadata_register,
+            Box::new(|class_id, metadata_register| { metadata_register.get_class_metadata(class_id).unwrap().semester_number == SemesterNumber::S5 })
+          ));
+        });
+        ui.vertical(|ui| {
+          ui.label("Semestre 7");
+          ui.add(CalendarWidget::new(
+            &self.simulation.state,
+            30.0,
+            10.0,
+            &self.metadata_register,
+            Box::new(|class_id, metadata_register| { metadata_register.get_class_metadata(class_id).unwrap().semester_number == SemesterNumber::S7 })
+          ));
+        });
+      });
+      
+      /*
       ui.horizontal(|ui| {
         ui.label("Steps:");
         ui.add(egui::DragValue::new(&mut self.sim_run_steps));
       });
+      */
       ui.add_enabled_ui(!self.is_simulation_running, |ui| {
         if ui
-          .button(format!("Run Simulation for {} steps", self.sim_run_steps))
+          //.button(format!("Run Simulation for {} steps", self.sim_run_steps))
+          .button(format!("Generar Horario!"))
           .clicked()
         {
-          self.simulation.run_sim_job(self.sim_run_steps).unwrap();
+          self.simulation.run_sim_job(100000, self.metadata_register.clone()).unwrap();
         }
         if self.is_simulation_running {
           ui.add(ProgressBar::new(self.simulation.get_job_progress()));

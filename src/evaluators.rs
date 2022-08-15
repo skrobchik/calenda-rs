@@ -1,6 +1,9 @@
-use crate::{calendars::CalendarState, timeslot::DAY_RANGE};
+use std::collections::{BTreeMap, BTreeSet};
+
+use crate::{calendars::CalendarState, timeslot::DAY_RANGE, metadata_register::SemesterNumber};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+use crate::metadata_register::MetadataRegister;
 
 #[derive(Clone, Deserialize, Serialize)]
 pub enum Evaluator {
@@ -28,7 +31,7 @@ pub enum Evaluator {
   }
 }
 
-fn eval_class_separation(weight: f32, state: &CalendarState) -> f32 {
+fn eval_class_separation(weight: f32, state: &CalendarState, metadata_register: &MetadataRegister) -> f32 {
   let mut separated_groups = 0;
   for (_class_id, class_schedule) in state.get_class_schedules(){
     for day in DAY_RANGE {
@@ -48,7 +51,7 @@ fn eval_class_separation(weight: f32, state: &CalendarState) -> f32 {
   weight * separated_groups as f32
 }
 
-fn eval_gap_count(weight: f32, state: &CalendarState) -> f32 {
+fn eval_gap_count(weight: f32, state: &CalendarState, metadata_register: &MetadataRegister) -> f32 {
   let mut count = 0;
   for day in state.get_schedule_matrix().iter() {
     if let Some(last_class) = day.iter().enumerate().rev().find(|x| !x.1.is_empty()) {
@@ -70,6 +73,7 @@ fn eval_daylight(
   wake_up_time: usize,
   sleep_time: usize,
   state: &CalendarState,
+  metadata_register: &MetadataRegister
 ) -> f32 {
   state
     .get_session_set()
@@ -83,19 +87,34 @@ fn eval_daylight(
     * weight
 }
 
-fn eval_colliding(weight: f32, state: &CalendarState) -> f32 {
-  state
+fn eval_colliding(weight: f32, state: &CalendarState, metadata_register: &MetadataRegister) -> f32 {
+  let e = state
     .get_schedule_matrix()
     .iter()
     .flatten()
-    .map(|x| x.count_total())
-    .filter(|x| *x >= 2)
-    .map(|x| x)
-    .sum::<usize>() as f32
-    * weight
+    .map(|x| {
+      let mut collisions = 0;
+      let mut seen: BTreeSet<SemesterNumber> = BTreeSet::new();
+      for (class_id, count) in x.iter(){
+        let semester = metadata_register.get_class_metadata(*class_id).unwrap().semester_number;
+        let key = (semester, *class_id);
+        for _ in 0..*count {
+          if seen.contains(&semester) {
+            collisions += 1;
+          } else {
+            seen.insert(semester);
+          }
+        }
+      }
+      collisions as f32
+    })
+    .sum::<f32>()
+    * weight;
+  println!("{}", e);
+  e
 }
 
-fn eval_daily_work_difference(weight: f32, state: &CalendarState) -> f32 {
+fn eval_daily_work_difference(weight: f32, state: &CalendarState, metadata_register: &MetadataRegister) -> f32 {
   let mut max_sessions = 0;
   let mut min_sessions = usize::MAX;
   for day in state.get_schedule_matrix() {
@@ -111,6 +130,7 @@ fn eval_session_length_limits(
   min_len: usize,
   max_len: usize,
   state: &CalendarState,
+  metadata_register: &MetadataRegister
 ) -> f32 {
   let mut count = 0;
   for (_class_id, class_schedule) in state.get_class_schedules() {
@@ -127,22 +147,22 @@ fn eval_session_length_limits(
 }
 
 impl Evaluator {
-  pub fn evaluate(&self, state: &CalendarState) -> f32 {
+  pub fn evaluate(&self, state: &CalendarState, metadata_register: &MetadataRegister) -> f32 {
     match self {
-      Evaluator::GapCount { weight } => eval_gap_count(*weight, state),
+      Evaluator::GapCount { weight } => eval_gap_count(*weight, state, metadata_register),
       Evaluator::Daylight {
         weight,
         wake_up_time,
         sleep_time,
-      } => eval_daylight(*weight, *wake_up_time, *sleep_time, state),
-      Evaluator::Colliding { weight } => eval_colliding(*weight, state),
-      Evaluator::DailyWorkDifference { weight } => eval_daily_work_difference(*weight, state),
+      } => eval_daylight(*weight, *wake_up_time, *sleep_time, state, metadata_register),
+      Evaluator::Colliding { weight } => eval_colliding(*weight, state, metadata_register),
+      Evaluator::DailyWorkDifference { weight } => eval_daily_work_difference(*weight, state, metadata_register),
       Evaluator::SessionLengthLimits {
         weight,
         min_len,
         max_len,
-      } => eval_session_length_limits(*weight, *min_len, *max_len, state),
-      Evaluator::ClassSeparation { weight } => eval_class_separation(*weight, state),
+      } => eval_session_length_limits(*weight, *min_len, *max_len, state, metadata_register),
+      Evaluator::ClassSeparation { weight } => eval_class_separation(*weight, state, metadata_register),
     }
   }
   pub fn get_name(&self) -> &str {
