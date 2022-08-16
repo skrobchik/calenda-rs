@@ -6,6 +6,10 @@ pub mod metadata_register;
 pub mod real_counter;
 pub mod thread_simulation;
 pub mod timeslot;
+pub mod week_calendar;
+pub mod timeslots;
+pub mod school_schedule;
+pub mod register;
 
 use crate::app::MyApp;
 
