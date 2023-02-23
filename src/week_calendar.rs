@@ -4,7 +4,8 @@ pub const DAY_COUNT: usize = 7; // 7 days in a week
 
 pub type WeekCalendar<T> = [[T; TIMESLOT_COUNT]; DAY_COUNT];
 
-enum Weekday {
+#[derive(Clone, Copy)]
+pub enum Weekday {
     Monday,
     Tuesday,
     Wednesday,
@@ -26,6 +27,6 @@ pub fn weekday_index(day: Weekday) -> usize {
     }
 }
 
-pub fn get_day<T>(week_calendar: &WeekCalendar<T>, day: Weekday) -> [T; TIMESLOT_COUNT] {
+pub fn get_day<T: Copy>(week_calendar: &WeekCalendar<T>, day: Weekday) -> [T; TIMESLOT_COUNT] {
     week_calendar[weekday_index(day)]
 }

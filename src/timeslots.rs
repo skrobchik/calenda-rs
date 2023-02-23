@@ -11,5 +11,6 @@ pub fn timeslot_start_minute(timeslot: usize) -> u32 {
         1 => 15,
         2 => 30,
         3 => 45,
+        _ => unreachable!()
     }
 }
