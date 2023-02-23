@@ -1,41 +1,44 @@
 use egui::{Color32, Rect, Rounding, Sense, Stroke, Vec2, Widget};
 
-use crate::calendars::CalendarState;
 use crate::metadata_register::MetadataRegister;
 use crate::real_counter::RealCounter;
+use crate::school_schedule::SchoolSchedule;
 use crate::timeslot;
 
-pub struct SimpleCalendarWidget<'a> {
-  state: &'a CalendarState,
+struct Style {
   timeslot_width: f32,
   timeslot_height: f32,
-  metadata_register: &'a MetadataRegister,
-  // (class_id, professor_id)
-  filter: Box<dyn 'a + Fn(usize, &MetadataRegister) -> bool>,
 }
 
-impl<'a> SimpleCalendarWidget<'a> {
-  pub fn new(
-    calendar_state: &'a CalendarState,
-    timeslot_width: f32,
-    timeslot_height: f32,
-    metadata_register: &'a MetadataRegister,
-    filter: Box<dyn 'a + Fn(usize, &MetadataRegister) -> bool>,
-  ) -> SimpleCalendarWidget<'a> {
-    SimpleCalendarWidget {
-      state: calendar_state,
-      timeslot_width,
-      timeslot_height,
-      metadata_register,
-      filter,
+impl Default for Style {
+  fn default() -> Self {
+    Self {
+      timeslot_width: 30.0,
+      timeslot_height: 10.0,
     }
   }
 }
 
-impl Widget for SimpleCalendarWidget<'_> {
+pub struct SimpleScheduleWidget<'a> {
+  state: &'a SchoolSchedule,
+  style: Style
+}
+
+impl<'a> SimpleScheduleWidget<'a> {
+  pub fn new(
+    calendar_state: &'a SchoolSchedule
+  ) -> SimpleScheduleWidget<'a> {
+    SimpleScheduleWidget {
+      state: calendar_state,
+      style: Default::default()
+    }
+  }
+}
+
+impl Widget for SimpleScheduleWidget<'_> {
   fn ui(self, ui: &mut egui::Ui) -> egui::Response {
-    let w = self.timeslot_width;
-    let h = self.timeslot_height;
+    let w = self.style.timeslot_width;
+    let h = self.style.timeslot_height;
     let desired_size = Vec2::new(
       timeslot::DAY_COUNT as f32 * w,
       timeslot::TIMESLOT_COUNT as f32 * h,
