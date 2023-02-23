@@ -39,8 +39,9 @@ struct SimulationInformation {
     class_hours: [u8; MAX_CLASSES],
 }
 
-struct SchoolSchedule {
+pub struct SchoolSchedule {
     class_metadata: [Option<ClassMetadata>; MAX_CLASSES],
+    professor_metadata: [Option<ProfessorMetadata>; MAX_PROFESSORS],
     simulation_information: SimulationInformation,
     schedule: WeekCalendar<[u8; MAX_CLASSES]>
 }
