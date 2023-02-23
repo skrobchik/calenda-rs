@@ -5,7 +5,7 @@ use crate::metadata_register::MetadataRegister;
 use crate::real_counter::RealCounter;
 use crate::timeslot;
 
-pub struct CalendarWidget<'a> {
+pub struct SimpleCalendarWidget<'a> {
   state: &'a CalendarState,
   timeslot_width: f32,
   timeslot_height: f32,
@@ -14,15 +14,15 @@ pub struct CalendarWidget<'a> {
   filter: Box<dyn 'a + Fn(usize, &MetadataRegister) -> bool>,
 }
 
-impl<'a> CalendarWidget<'a> {
+impl<'a> SimpleCalendarWidget<'a> {
   pub fn new(
     calendar_state: &'a CalendarState,
     timeslot_width: f32,
     timeslot_height: f32,
     metadata_register: &'a MetadataRegister,
     filter: Box<dyn 'a + Fn(usize, &MetadataRegister) -> bool>,
-  ) -> CalendarWidget<'a> {
-    CalendarWidget {
+  ) -> SimpleCalendarWidget<'a> {
+    SimpleCalendarWidget {
       state: calendar_state,
       timeslot_width,
       timeslot_height,
@@ -32,7 +32,7 @@ impl<'a> CalendarWidget<'a> {
   }
 }
 
-impl Widget for CalendarWidget<'_> {
+impl Widget for SimpleCalendarWidget<'_> {
   fn ui(self, ui: &mut egui::Ui) -> egui::Response {
     let w = self.timeslot_width;
     let h = self.timeslot_height;
