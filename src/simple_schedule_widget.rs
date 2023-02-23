@@ -48,24 +48,24 @@ impl Widget for SimpleScheduleWidget<'_> {
 
     for day in timeslot::DAY_RANGE {
       for timeslot in timeslot::TIMESLOT_RANGE {
+        let classes = self.state.get_classes(day.try_into().unwrap(), timeslot);
+
         let x0 = rect.left_top().x;
         let y0 = rect.left_top().y;
         let x1 = x0 + w * (day as f32);
         let y1 = y0 + h * (timeslot as f32);
         let x2 = x1 + w;
         let y2 = y1 + h;
-        let classes = &self.state.get_schedule_matrix()[day][timeslot];
-        let filtered_classes: RealCounter<usize> = classes
-          .iter()
-          .filter(|(class_id, _count)| (self.filter)(**class_id, self.metadata_register))
-          .map(|(class_id, count)| (*class_id, *count))
-          .collect();
-        let num_classes = filtered_classes.count_total();
+
+
+        let num_classes = classes.len();
         let mut class_j = 0;
         if num_classes > 0 {
           let cw = w / num_classes as f32;
-          for (class_id, count) in filtered_classes.iter() {
-            for _ in 0..*count {
+          for class in classes.iter() {
+            let count = class.count;
+            let class_id = class.class_id;
+            for _ in 0..count {
               let color = match class_id % 16 {
                 0 => Color32::BLUE,
                 1 => Color32::GREEN,
