@@ -1,5 +1,5 @@
 pub mod app;
-pub mod calendar_widget;
+pub mod simple_calendar_widget;
 pub mod calendars;
 pub mod evaluators;
 pub mod metadata_register;

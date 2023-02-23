@@ -1,5 +1,5 @@
 use crate::{
-  calendar_widget::CalendarWidget,
+  simple_calendar_widget::SimpleCalendarWidget,
   evaluators,
   metadata_register::{
     ClassMetadata, ClassRoomType, MetadataRegister, ProfessorMetadata, SemesterNumber,
@@ -314,7 +314,7 @@ impl eframe::App for MyApp {
       ui.horizontal(|ui| {
         ui.vertical(|ui| {
           ui.label("Semestre 1");
-          ui.add(CalendarWidget::new(
+          ui.add(SimpleCalendarWidget::new(
             &self.simulation.state,
             30.0,
             10.0,
@@ -324,7 +324,7 @@ impl eframe::App for MyApp {
         });
         ui.vertical(|ui| {
           ui.label("Semestre 3");
-          ui.add(CalendarWidget::new(
+          ui.add(SimpleCalendarWidget::new(
             &self.simulation.state,
             30.0,
             10.0,
@@ -336,7 +336,7 @@ impl eframe::App for MyApp {
       ui.horizontal(|ui| {
         ui.vertical(|ui| {
           ui.label("Semestre 5");
-          ui.add(CalendarWidget::new(
+          ui.add(SimpleCalendarWidget::new(
             &self.simulation.state,
             30.0,
             10.0,
@@ -346,7 +346,7 @@ impl eframe::App for MyApp {
         });
         ui.vertical(|ui| {
           ui.label("Semestre 7");
-          ui.add(CalendarWidget::new(
+          ui.add(SimpleCalendarWidget::new(
             &self.simulation.state,
             30.0,
             10.0,
