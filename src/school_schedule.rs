@@ -26,11 +26,11 @@ enum ClassroomType {
   Lab,
 }
 
-struct ClassMetadata {
+pub struct ClassMetadata {
   name: String,
 }
 
-struct Class {
+pub struct Class {
   professor: usize,
   classroom_type: ClassroomType,
   class_hours: u8,
@@ -62,16 +62,17 @@ pub struct ClassData<'a> {
 }
 
 impl SchoolSchedule {
-  pub fn get_classes<'a>(&self, day: Weekday, timeslot: usize) -> Vec<ClassData<'a>> {
+  pub fn get_classes<'a>(&'a self, day: Weekday, timeslot: usize) -> Vec<ClassData<'a>> {
     let slot = self.schedule.get_day(&day)[timeslot];
     let classes = &self.simulation_information.classes;
+    let class_metadata = &self.class_metadata;
     slot
       .iter()
       .enumerate()
       .map(|(class_id, count)| ClassData {
         count: *count,
-        class: &self.simulation_information.classes[class_id].unwrap(),
-        class_metadata: &self.class_metadata[class_id].unwrap(),
+        class: classes[class_id].as_ref().unwrap(),
+        class_metadata: class_metadata[class_id].as_ref().unwrap(),
         class_id,
       })
       .collect_vec()
