@@ -56,7 +56,7 @@ fn generate_schedule(
 
 pub struct ClassData<'a> {
   pub count: u8,
-  #[deprecated] pub class_id: usize,
+  pub class_id: usize,
   pub class: &'a Class,
   pub class_metadata: &'a ClassMetadata,
 }
@@ -64,6 +64,7 @@ pub struct ClassData<'a> {
 impl SchoolSchedule {
   pub fn get_classes<'a>(&self, day: Weekday, timeslot: usize) -> Vec<ClassData<'a>> {
     let slot = self.schedule.get_day(&day)[timeslot];
+    let classes = &self.simulation_information.classes;
     slot
       .iter()
       .enumerate()
