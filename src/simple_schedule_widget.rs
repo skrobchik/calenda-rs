@@ -1,7 +1,5 @@
 use egui::{Color32, Rect, Rounding, Sense, Stroke, Vec2, Widget};
 
-use crate::metadata_register::MetadataRegister;
-use crate::real_counter::RealCounter;
 use crate::school_schedule::SchoolSchedule;
 use crate::timeslot;
 
