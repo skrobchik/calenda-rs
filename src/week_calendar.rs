@@ -1,6 +1,6 @@
 use std::ops::Index;
 
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 
 use crate::timeslots::*;
@@ -25,12 +25,12 @@ impl<T: Default + Copy> Default for DaySchedule<T> {
   }
 }
 
-#[derive(Serialize, Clone, Copy)]
-pub struct WeekCalendar<T: Serialize + DeserializeOwned> {
+#[derive(Serialize, Deserialize, Clone, Copy)]
+pub struct WeekCalendar<T> {
   data: [DaySchedule<T>; DAY_COUNT],
 }
 
-impl<T: Serialize + DeserializeOwned + Default + Copy> Default for WeekCalendar<T> {
+impl<T: Default + Copy> Default for WeekCalendar<T> {
   fn default() -> Self {
     Self {
       data: Default::default(),
@@ -82,7 +82,7 @@ pub trait GetDay<T> {
   fn get_day(&self, day: &Weekday) -> &[T; TIMESLOT_COUNT];
 }
 
-impl<T: Serialize + DeserializeOwned> GetDay<T> for WeekCalendar<T> {
+impl<T> GetDay<T> for WeekCalendar<T> {
   fn get_day(&self, day: &Weekday) -> &[T; TIMESLOT_COUNT] {
     &self.data.get(weekday_index(day)).unwrap().data
   }
