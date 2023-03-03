@@ -334,7 +334,7 @@ impl Default for MyApp {
       calendar_view_type: Default::default(),
       calendar_view_semester: Default::default(),
       calendar_view_class: Default::default(),
-      school_schedule: SchoolSchedule::,
+      school_schedule: Default::default(),
     }
   }
 }
