@@ -1,13 +1,13 @@
 use crate::{
-  simple_calendar_widget::SimpleCalendarWidget,
   evaluators,
   metadata_register::{
     ClassMetadata, ClassRoomType, MetadataRegister, ProfessorMetadata, SemesterNumber,
   },
+  simple_calendar_widget::SimpleCalendarWidget,
   thread_simulation::ThreadSimulation,
 };
 use eframe::egui;
-use egui::{Context, ProgressBar, TextStyle};
+use egui::{Context, ProgressBar, TextStyle, Ui};
 use serde::{Deserialize, Serialize};
 
 use evaluators::Evaluator;
@@ -171,7 +171,11 @@ impl MyApp {
                   self.selected_class = Some(row);
                 }
                 if ui.button("-").clicked() {
-                  self.simulation.state.decrement_class_time(row).expect(&format!("ClassId {} doesn't exist?!", row));
+                  self
+                    .simulation
+                    .state
+                    .decrement_class_time(row)
+                    .expect(&format!("ClassId {} doesn't exist?!", row));
                 }
                 ui.label(format!("{}", self.simulation.state.count_class_time(row)));
                 if ui.button("+").clicked() {
@@ -257,6 +261,26 @@ impl MyApp {
       );*/
     });
   }
+  fn draw_menu_bar(&mut self, ui: &mut Ui) {
+    egui::menu::bar(ui, |ui| {
+      ui.menu_button("Archivo", |ui| {
+        if ui.button("Restaurar Valores Predeterminados").clicked() {
+          *self = MyApp::default();
+        }
+      });
+      ui.menu_button("Vista", |ui| {
+        if ui.button("Editor de Profesores").clicked() {
+          self.show_professor_editor = !self.show_professor_editor;
+        }
+        if ui.button("Editor de Parametros de Simulacion").clicked() {
+          self.show_simulation_parameter_editor = !self.show_simulation_parameter_editor;
+        }
+        if ui.button("Editor de Clases").clicked() {
+          self.show_class_time_editor = !self.show_class_time_editor;
+        }
+      });
+    });
+  }
 }
 
 impl eframe::App for MyApp {
@@ -265,104 +289,16 @@ impl eframe::App for MyApp {
   }
 
   fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
-    self.is_simulation_running = self.simulation.is_job_running();
-    self.simulation.receive_latest_progress_report();
-
-    if self.show_professor_editor {
-      self.draw_professor_editor(ctx);
-    }
-    if self.show_simulation_parameter_editor {
-      self.draw_parameter_editor(ctx);
-    }
-    if self.show_class_time_editor {
-      self.draw_class_time_editor(ctx);
-    }
-    if self.selected_class.is_some() {
-      self.draw_class_editor(ctx);
-    }
-
-    // self.draw_calendar_view_selector(ctx);
-
     egui::CentralPanel::default().show(ctx, |ui| {
-      egui::menu::bar(ui, |ui| {
-        ui.menu_button("Archivo", |ui| {
-          if ui.button("Restaurar Valores Predeterminados").clicked() {
-            *self = MyApp::default();
-          }
-        });
-        ui.menu_button("Vista", |ui| {
-          if ui.button("Editor de Profesores").clicked() {
-            self.show_professor_editor = !self.show_professor_editor;
-          }
-          if ui.button("Editor de Parametros de Simulacion").clicked() {
-            self.show_simulation_parameter_editor = !self.show_simulation_parameter_editor;
-          }
-          if ui.button("Editor de Clases").clicked() {
-            self.show_class_time_editor = !self.show_class_time_editor;
-          }
-        });
-      });
+      self.draw_menu_bar(ui);
 
-      /*let filter: Box<dyn Fn(usize, &MetadataRegister) -> bool> = match &self.calendar_view_type {
-        CalendarView::All => Box::new(|_class_id, _metadata_register| true),
-        CalendarView::Semester(semester_number) => Box::new(|class_id, metadata_register: &MetadataRegister| {
-          let class_semester = metadata_register.get_class_metadata(class_id).unwrap();
-          class_semester.semester_number == *semester_number
-        }),
-        _ => Box::new(|_class_id, _metadata_register| true),
-      };*/
-      ui.horizontal(|ui| {
-        ui.vertical(|ui| {
-          ui.label("Semestre 1");
-          ui.add(SimpleCalendarWidget::new(
-            &self.simulation.state,
-            30.0,
-            10.0,
-            &self.metadata_register,
-            Box::new(|class_id, metadata_register| { metadata_register.get_class_metadata(class_id).unwrap().semester_number == SemesterNumber::S1 })
-          ));
-        });
-        ui.vertical(|ui| {
-          ui.label("Semestre 3");
-          ui.add(SimpleCalendarWidget::new(
-            &self.simulation.state,
-            30.0,
-            10.0,
-            &self.metadata_register,
-            Box::new(|class_id, metadata_register| { metadata_register.get_class_metadata(class_id).unwrap().semester_number == SemesterNumber::S3 })
-          ));
-        });
-      });
-      ui.horizontal(|ui| {
-        ui.vertical(|ui| {
-          ui.label("Semestre 5");
-          ui.add(SimpleCalendarWidget::new(
-            &self.simulation.state,
-            30.0,
-            10.0,
-            &self.metadata_register,
-            Box::new(|class_id, metadata_register| { metadata_register.get_class_metadata(class_id).unwrap().semester_number == SemesterNumber::S5 })
-          ));
-        });
-        ui.vertical(|ui| {
-          ui.label("Semestre 7");
-          ui.add(SimpleCalendarWidget::new(
-            &self.simulation.state,
-            30.0,
-            10.0,
-            &self.metadata_register,
-            Box::new(|class_id, metadata_register| { metadata_register.get_class_metadata(class_id).unwrap().semester_number == SemesterNumber::S7 })
-          ));
-        });
-      });
-      
       /*
       ui.horizontal(|ui| {
         ui.label("Steps:");
         ui.add(egui::DragValue::new(&mut self.sim_run_steps));
       });
       */
-      ui.add_enabled_ui(!self.is_simulation_running, |ui| {
+      /*ui.add_enabled_ui(!self.is_simulation_running, |ui| {
         if ui
           //.button(format!("Run Simulation for {} steps", self.sim_run_steps))
           .button(format!("Generar Horario!"))
@@ -373,7 +309,7 @@ impl eframe::App for MyApp {
         if self.is_simulation_running {
           ui.add(ProgressBar::new(self.simulation.get_job_progress()));
         }
-      })
+      })*/
     });
 
     // Resize the native window to be just the size we need it to be:
