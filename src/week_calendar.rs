@@ -25,9 +25,10 @@ impl<T: Default + Copy> Default for DaySchedule<T> {
   }
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct WeekCalendar<T> {
-  data: [DaySchedule<T>; DAY_COUNT],
+// Box because doesn't fit in stack
+  data: Box<[DaySchedule<T>; DAY_COUNT]>,
 }
 
 impl<T: Default + Copy> Default for WeekCalendar<T> {

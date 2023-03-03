@@ -16,7 +16,7 @@ enum Availability {
   NotAvailable,
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Serialize, Deserialize, Clone)]
 struct Professor {
   availability: WeekCalendar<Availability>,
 }
@@ -46,7 +46,7 @@ pub struct Class {
   class_hours: u8,
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Serialize, Deserialize, Clone)]
 struct SimulationInformation {
   #[serde(with = "BigArray")]
   classes: [Option<Class>; MAX_CLASSES],
