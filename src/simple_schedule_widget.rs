@@ -21,7 +21,7 @@ pub struct SimpleScheduleWidget<'a> {
   state: &'a SchoolSchedule,
   style: Style
 }
-
+  
 impl<'a> SimpleScheduleWidget<'a> {
   pub fn new(
     calendar_state: &'a SchoolSchedule

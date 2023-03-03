@@ -11,3 +11,4 @@ eframe = { version = "0.18.0", features = ["persistence"] }
 serde = { version = "1", features = ["derive"] } # You only need this if you want app persistence
 rand = "0.8.5"
 itertools = "0.10.3"
+serde-big-array = "0.5.0"

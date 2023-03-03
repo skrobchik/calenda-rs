@@ -1,8 +1,31 @@
+use std::ops::Index;
+
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use serde_big_array::BigArray;
+
 use crate::timeslots::*;
 
 pub const DAY_COUNT: usize = 7; // 7 days in a week
 
-pub type WeekCalendar<T> = [[T; TIMESLOT_COUNT]; DAY_COUNT];
+#[derive(Serialize, Deserialize)]
+struct DaySchedule<T: Serialize + DeserializeOwned> {
+    #[serde(with = "BigArray")]
+    data: [T; TIMESLOT_COUNT]
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct WeekCalendar<T: Serialize + DeserializeOwned> {
+    data: [DaySchedule<T>; DAY_COUNT],
+}
+
+impl<T: Serialize + DeserializeOwned> Index<usize> for WeekCalendar<T> {
+    type Output = [T; TIMESLOT_COUNT];
+
+    fn index(&self, index: usize) -> &Self::Output {
+        todo!()
+    }
+}
+
 
 #[derive(Clone, Copy)]
 pub enum Weekday {
@@ -48,8 +71,8 @@ pub trait GetDay<T> {
     fn get_day(&self, day: &Weekday) -> &[T; TIMESLOT_COUNT];
 }
 
-impl<T> GetDay<T> for WeekCalendar<T> {
+impl<T: Serialize + DeserializeOwned> GetDay<T> for WeekCalendar<T> {
     fn get_day(&self, day: &Weekday) -> &[T; TIMESLOT_COUNT] {
-        self.get(weekday_index(day)).unwrap()
+        &self.data.get(weekday_index(day)).unwrap().data
     }
 }
