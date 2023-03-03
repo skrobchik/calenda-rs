@@ -1,3 +1,4 @@
+use egui::Color32;
 use itertools::Itertools;
 
 use crate::week_calendar::{GetDay, WeekCalendar, Weekday};
@@ -28,6 +29,7 @@ enum ClassroomType {
 
 pub struct ClassMetadata {
   name: String,
+  color: Color32,
 }
 
 pub struct Class {
