@@ -22,11 +22,16 @@ struct SimulationJob {
   acceptance_probability_function: Box<dyn Fn(f32, f32, f32) -> f32 + Send>,
   evaluators: Vec<Evaluator>,
   rng: StdRng,
-  metadata_register: MetadataRegister
+  metadata_register: MetadataRegister,
 }
 
 impl SimulationJob {
-  pub fn new(state: CalendarState, total_job_steps: usize, evaluators: Vec<Evaluator>, metadata_register: MetadataRegister) -> Self {
+  pub fn new(
+    state: CalendarState,
+    total_job_steps: usize,
+    evaluators: Vec<Evaluator>,
+    metadata_register: MetadataRegister,
+  ) -> Self {
     let mut s = SimulationJob {
       current_job_step: 0,
       total_job_steps,
@@ -36,7 +41,7 @@ impl SimulationJob {
       acceptance_probability_function: Box::new(default_acceptance_probability_function),
       evaluators,
       rng: StdRng::from_entropy(),
-      metadata_register
+      metadata_register,
     };
     s.energy = s.calculate_energy(&s.state, &s.metadata_register);
     s
@@ -91,7 +96,7 @@ pub struct ThreadSimulation {
   #[serde(skip)]
   job_step: usize,
   #[serde(skip)]
-  job_steps: usize
+  job_steps: usize,
 }
 
 #[derive(Debug)]
@@ -99,8 +104,8 @@ pub struct SimulationRunningError;
 
 impl ThreadSimulation {
   pub fn receive_latest_progress_report(&mut self) -> Option<()> {
-      (self.state, self.job_step) = self.rx.as_ref()?.try_iter().last()?;
-      Some(())
+    (self.state, self.job_step) = self.rx.as_ref()?.try_iter().last()?;
+    Some(())
   }
 
   pub fn is_job_running(&mut self) -> bool {
@@ -116,7 +121,7 @@ impl ThreadSimulation {
   pub fn run_sim_job(
     &mut self,
     sim_job_steps: usize,
-    metadata_register: MetadataRegister
+    metadata_register: MetadataRegister,
   ) -> Result<(), SimulationRunningError> {
     if self.is_job_running() {
       return Err(SimulationRunningError {});
@@ -124,15 +129,20 @@ impl ThreadSimulation {
     if sim_job_steps == 0 {
       return Ok(());
     }
-    let progress_report_interval = (sim_job_steps/1000).max(1);
+    let progress_report_interval = (sim_job_steps / 1000).max(1);
 
     let (tx, rx) = mpsc::channel();
 
     self.rx = Some(rx);
 
     let evaluators_copy = self.evaluators.clone();
-    let mut sim_job = SimulationJob::new(self.state.clone(), sim_job_steps, evaluators_copy, metadata_register);
-    
+    let mut sim_job = SimulationJob::new(
+      self.state.clone(),
+      sim_job_steps,
+      evaluators_copy,
+      metadata_register,
+    );
+
     self.job_step = 0;
     self.job_steps = sim_job_steps;
 
@@ -141,7 +151,7 @@ impl ThreadSimulation {
     self.job_join_handle = Some(thread::spawn(move || {
       for step in 1..=sim_job_steps {
         if progress_report_interval != 0 && step % progress_report_interval == 0 {
-            tx.send((sim_job.state.clone(), step)).unwrap();
+          tx.send((sim_job.state.clone(), step)).unwrap();
         }
         sim_job.step();
       }

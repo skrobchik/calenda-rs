@@ -3,8 +3,9 @@ use crate::{
   metadata_register::{
     ClassMetadata, ClassRoomType, MetadataRegister, ProfessorMetadata, SemesterNumber,
   },
+  school_schedule::SchoolSchedule,
   simple_calendar_widget::SimpleCalendarWidget,
-  thread_simulation::ThreadSimulation, school_schedule::SchoolSchedule,
+  thread_simulation::ThreadSimulation,
 };
 use eframe::egui;
 use egui::{Context, ProgressBar, TextStyle, Ui};
@@ -49,17 +50,28 @@ impl Default for CalendarView {
 #[serde(default)]
 pub struct MyApp {
   school_schedule: SchoolSchedule,
-  #[deprecated] simulation: ThreadSimulation,
-  #[deprecated] is_simulation_running: bool,
-  #[deprecated] sim_run_steps: usize,
-  #[deprecated] show_professor_editor: bool,
-  #[deprecated] show_class_time_editor: bool,
-  #[deprecated] show_simulation_parameter_editor: bool,
-  #[deprecated] metadata_register: MetadataRegister,
-  #[deprecated] selected_class: Option<usize>,
-  #[deprecated] calendar_view_type: CalendarView,
-  #[deprecated] calendar_view_semester: SemesterNumber,
-  #[deprecated] calendar_view_class: usize,
+  #[deprecated]
+  simulation: ThreadSimulation,
+  #[deprecated]
+  is_simulation_running: bool,
+  #[deprecated]
+  sim_run_steps: usize,
+  #[deprecated]
+  show_professor_editor: bool,
+  #[deprecated]
+  show_class_time_editor: bool,
+  #[deprecated]
+  show_simulation_parameter_editor: bool,
+  #[deprecated]
+  metadata_register: MetadataRegister,
+  #[deprecated]
+  selected_class: Option<usize>,
+  #[deprecated]
+  calendar_view_type: CalendarView,
+  #[deprecated]
+  calendar_view_semester: SemesterNumber,
+  #[deprecated]
+  calendar_view_class: usize,
 }
 
 fn draw_semester_selector(ui: &mut egui::Ui, selected: SemesterNumber, value: &mut SemesterNumber) {

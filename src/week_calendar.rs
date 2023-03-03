@@ -27,7 +27,7 @@ impl<T: Default + Copy> Default for DaySchedule<T> {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct WeekCalendar<T> {
-// Box because doesn't fit in stack
+  // Box because doesn't fit in stack
   data: Box<[DaySchedule<T>; DAY_COUNT]>,
 }
 

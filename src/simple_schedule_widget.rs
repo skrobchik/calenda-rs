@@ -19,16 +19,14 @@ impl Default for Style {
 
 pub struct SimpleScheduleWidget<'a> {
   state: &'a SchoolSchedule,
-  style: Style
+  style: Style,
 }
-  
+
 impl<'a> SimpleScheduleWidget<'a> {
-  pub fn new(
-    calendar_state: &'a SchoolSchedule
-  ) -> SimpleScheduleWidget<'a> {
+  pub fn new(calendar_state: &'a SchoolSchedule) -> SimpleScheduleWidget<'a> {
     SimpleScheduleWidget {
       state: calendar_state,
-      style: Default::default()
+      style: Default::default(),
     }
   }
 }
@@ -54,7 +52,6 @@ impl Widget for SimpleScheduleWidget<'_> {
         let y1 = y0 + h * (timeslot as f32);
         let x2 = x1 + w;
         let y2 = y1 + h;
-
 
         let num_classes = classes.len();
         let mut class_j = 0;

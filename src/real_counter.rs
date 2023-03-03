@@ -3,7 +3,7 @@ use std::{
   hash::Hash,
 };
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct RealCounter<T>

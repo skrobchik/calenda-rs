@@ -1,9 +1,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::{calendars::CalendarState, timeslot::DAY_RANGE, metadata_register::SemesterNumber};
+use crate::metadata_register::MetadataRegister;
+use crate::{calendars::CalendarState, metadata_register::SemesterNumber, timeslot::DAY_RANGE};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use crate::metadata_register::MetadataRegister;
 
 #[derive(Clone, Deserialize, Serialize)]
 pub enum Evaluator {
@@ -27,17 +27,21 @@ pub enum Evaluator {
     max_len: usize,
   },
   ClassSeparation {
-    weight: f32
-  }
+    weight: f32,
+  },
 }
 
-fn eval_class_separation(weight: f32, state: &CalendarState, metadata_register: &MetadataRegister) -> f32 {
+fn eval_class_separation(
+  weight: f32,
+  state: &CalendarState,
+  metadata_register: &MetadataRegister,
+) -> f32 {
   let mut separated_groups = 0;
-  for (_class_id, class_schedule) in state.get_class_schedules(){
+  for (_class_id, class_schedule) in state.get_class_schedules() {
     for day in DAY_RANGE {
       let day_array = class_schedule[day];
       let mut groups = 0;
-      for (key, _group) in &day_array.iter().group_by(|x| **x > 0){
+      for (key, _group) in &day_array.iter().group_by(|x| **x > 0) {
         if key {
           groups += 1;
         }
@@ -73,7 +77,7 @@ fn eval_daylight(
   wake_up_time: usize,
   sleep_time: usize,
   state: &CalendarState,
-  metadata_register: &MetadataRegister
+  metadata_register: &MetadataRegister,
 ) -> f32 {
   state
     .get_session_set()
@@ -95,8 +99,11 @@ fn eval_colliding(weight: f32, state: &CalendarState, metadata_register: &Metada
     .map(|x| {
       let mut collisions = 0;
       let mut seen: BTreeSet<SemesterNumber> = BTreeSet::new();
-      for (class_id, count) in x.iter(){
-        let semester = metadata_register.get_class_metadata(*class_id).unwrap().semester_number;
+      for (class_id, count) in x.iter() {
+        let semester = metadata_register
+          .get_class_metadata(*class_id)
+          .unwrap()
+          .semester_number;
         let key = (semester, *class_id);
         for _ in 0..*count {
           if seen.contains(&semester) {
@@ -114,7 +121,11 @@ fn eval_colliding(weight: f32, state: &CalendarState, metadata_register: &Metada
   e
 }
 
-fn eval_daily_work_difference(weight: f32, state: &CalendarState, metadata_register: &MetadataRegister) -> f32 {
+fn eval_daily_work_difference(
+  weight: f32,
+  state: &CalendarState,
+  metadata_register: &MetadataRegister,
+) -> f32 {
   let mut max_sessions = 0;
   let mut min_sessions = usize::MAX;
   for day in state.get_schedule_matrix() {
@@ -130,7 +141,7 @@ fn eval_session_length_limits(
   min_len: usize,
   max_len: usize,
   state: &CalendarState,
-  metadata_register: &MetadataRegister
+  metadata_register: &MetadataRegister,
 ) -> f32 {
   let mut count = 0;
   for (_class_id, class_schedule) in state.get_class_schedules() {
@@ -154,15 +165,25 @@ impl Evaluator {
         weight,
         wake_up_time,
         sleep_time,
-      } => eval_daylight(*weight, *wake_up_time, *sleep_time, state, metadata_register),
+      } => eval_daylight(
+        *weight,
+        *wake_up_time,
+        *sleep_time,
+        state,
+        metadata_register,
+      ),
       Evaluator::Colliding { weight } => eval_colliding(*weight, state, metadata_register),
-      Evaluator::DailyWorkDifference { weight } => eval_daily_work_difference(*weight, state, metadata_register),
+      Evaluator::DailyWorkDifference { weight } => {
+        eval_daily_work_difference(*weight, state, metadata_register)
+      }
       Evaluator::SessionLengthLimits {
         weight,
         min_len,
         max_len,
       } => eval_session_length_limits(*weight, *min_len, *max_len, state, metadata_register),
-      Evaluator::ClassSeparation { weight } => eval_class_separation(*weight, state, metadata_register),
+      Evaluator::ClassSeparation { weight } => {
+        eval_class_separation(*weight, state, metadata_register)
+      }
     }
   }
   pub fn get_name(&self) -> &str {
@@ -208,9 +229,7 @@ impl Evaluator {
         EvaluatorParameter::from_usize(min_len, "Min Length"),
         EvaluatorParameter::from_usize(max_len, "Max Length"),
       ],
-      Evaluator::ClassSeparation { weight } => vec![
-        EvaluatorParameter::from_f32(weight, "Weight"),
-      ]
+      Evaluator::ClassSeparation { weight } => vec![EvaluatorParameter::from_f32(weight, "Weight")],
     }
   }
 }
