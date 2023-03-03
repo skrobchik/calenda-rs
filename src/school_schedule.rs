@@ -8,7 +8,7 @@ use crate::week_calendar::{GetDay, WeekCalendar, Weekday};
 const MAX_CLASSES: usize = 128;
 const MAX_PROFESSORS: usize = 128;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Copy)]
 enum Availability {
   Prefered,
   Available,
@@ -16,7 +16,7 @@ enum Availability {
   NotAvailable,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Copy)]
 struct Professor {
   availability: WeekCalendar<Availability>,
 }
@@ -26,7 +26,7 @@ struct ProfessorMetadata {
   name: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Copy)]
 enum ClassroomType {
   Single,
   Double,
@@ -39,14 +39,14 @@ pub struct ClassMetadata {
   color: Color32,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Copy)]
 pub struct Class {
   professor: usize,
   classroom_type: ClassroomType,
   class_hours: u8,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Copy)]
 struct SimulationInformation {
   #[serde(with = "BigArray")]
   classes: [Option<Class>; MAX_CLASSES],
@@ -54,10 +54,29 @@ struct SimulationInformation {
   professors: [Option<Professor>; MAX_PROFESSORS],
 }
 
-#[derive(Serialize, Deserialize)]
+impl Default for SimulationInformation {
+  fn default() -> Self {
+    const CLASSES_INIT: Option<Class> = None;
+    const PROFESSORS_INIT: Option<Professor> = None;
+    Self {
+      classes: [CLASSES_INIT; MAX_CLASSES],
+      professors: [PROFESSORS_INIT; MAX_PROFESSORS],
+    }
+  }
+}
+
+#[derive(Serialize, Deserialize, Clone, Copy)]
 struct Classes {
   #[serde(with = "BigArray")]
   data: [u8; MAX_CLASSES],
+}
+
+impl Default for Classes {
+  fn default() -> Self {
+    Self {
+      data: [0; MAX_CLASSES],
+    }
+  }
 }
 
 impl Into<[u8; MAX_CLASSES]> for Classes {
@@ -80,6 +99,19 @@ pub struct SchoolSchedule {
   professor_metadata: [Option<ProfessorMetadata>; MAX_PROFESSORS],
   simulation_information: SimulationInformation,
   schedule: WeekCalendar<Classes>,
+}
+
+impl Default for SchoolSchedule {
+  fn default() -> Self {
+    const CLASS_METADATA_INIT: Option<ClassMetadata> = None;
+    const PROFESSOR_METADATA_INIT: Option<ProfessorMetadata> = None;
+    Self {
+      class_metadata: [CLASS_METADATA_INIT; MAX_CLASSES],
+      professor_metadata: [PROFESSOR_METADATA_INIT; MAX_PROFESSORS],
+      simulation_information: Default::default(),
+      schedule: Default::default(),
+    }
+  }
 }
 
 fn generate_schedule(simulation_information: SimulationInformation) -> WeekCalendar<Classes> {

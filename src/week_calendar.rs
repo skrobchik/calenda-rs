@@ -7,25 +7,37 @@ use crate::timeslots::*;
 
 pub const DAY_COUNT: usize = 7; // 7 days in a week
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Copy)]
 struct DaySchedule<T: Serialize + DeserializeOwned> {
     #[serde(with = "BigArray")]
     data: [T; TIMESLOT_COUNT]
 }
 
-#[derive(Serialize, Deserialize)]
+impl<T: Serialize + DeserializeOwned + Default + Copy> Default for DaySchedule<T> {
+    fn default() -> Self {
+        let init: T = Default::default();
+        Self { data: [init; TIMESLOT_COUNT] }
+    }
+}
+
+#[derive(Serialize, Clone, Copy)]
 pub struct WeekCalendar<T: Serialize + DeserializeOwned> {
     data: [DaySchedule<T>; DAY_COUNT],
 }
 
-impl<T: Serialize + DeserializeOwned> Index<usize> for WeekCalendar<T> {
-    type Output = [T; TIMESLOT_COUNT];
-
-    fn index(&self, index: usize) -> &Self::Output {
-        todo!()
+impl<T: Serialize + DeserializeOwned + Default + Copy> Default for WeekCalendar<T> {
+    fn default() -> Self {
+        Self { data: Default::default() }
     }
 }
 
+impl<'de, T: Serialize + DeserializeOwned> Deserialize<'de> for WeekCalendar<T> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de> {
+        todo!()
+    }
+}
 
 #[derive(Clone, Copy)]
 pub enum Weekday {
