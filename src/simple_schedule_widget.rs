@@ -1,4 +1,5 @@
-use egui::{Color32, Rect, Rounding, Sense, Stroke, Vec2, Widget};
+use egui::{Color32, Rect, Rounding, Sense, Stroke, Vec2, Widget, Layout};
+use egui_extras::{StripBuilder, Size};
 
 use crate::school_schedule::SchoolSchedule;
 use crate::timeslot;
@@ -23,9 +24,9 @@ pub struct SimpleScheduleWidget<'a> {
 }
 
 impl<'a> SimpleScheduleWidget<'a> {
-  pub fn new(calendar_state: &'a SchoolSchedule) -> SimpleScheduleWidget<'a> {
+  pub fn new(state: &'a SchoolSchedule) -> SimpleScheduleWidget<'a> {
     SimpleScheduleWidget {
-      state: calendar_state,
+      state,
       style: Default::default(),
     }
   }
@@ -33,6 +34,10 @@ impl<'a> SimpleScheduleWidget<'a> {
 
 impl Widget for SimpleScheduleWidget<'_> {
   fn ui(self, ui: &mut egui::Ui) -> egui::Response {
+    StripBuilder::new(ui).sizes(Size::exact(50.0), 10).vertical(|mut strip| {
+
+    });
+
     let w = self.style.timeslot_width;
     let h = self.style.timeslot_height;
     let desired_size = Vec2::new(

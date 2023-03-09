@@ -132,6 +132,7 @@ impl SchoolSchedule {
     let class_metadata = &self.class_metadata;
     slot
       .iter()
+      .filter(|count| **count > 0)
       .enumerate()
       .map(|(class_id, count)| ClassData {
         count: *count,
