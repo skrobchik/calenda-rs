@@ -1,7 +1,7 @@
 use crate::{
   metadata_register::SemesterNumber,
   school_schedule::SchoolSchedule,
-  simple_schedule_widget::SimpleScheduleWidget,
+  simple_schedule_widget::SimpleScheduleWidget, class_editor::ClassEditor,
 };
 use eframe::egui;
 use egui::Ui;
@@ -66,6 +66,8 @@ impl eframe::App for MyApp {
       self.draw_menu_bar(ui);
 
       SimpleScheduleWidget::new(&self.school_schedule).show(ctx, &mut self.schedule_widget_open);
+
+      ClassEditor::new(&mut self.school_schedule).show(ctx, &mut self.schedule_widget_open);
 
     });
 

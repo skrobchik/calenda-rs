@@ -1,4 +1,4 @@
-use std::ops::Index;
+use std::ops::{Index, IndexMut};
 
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
@@ -8,7 +8,7 @@ use crate::timeslots::*;
 pub const DAY_COUNT: usize = 7; // 7 days in a week
 
 #[derive(Serialize, Deserialize, Clone, Copy)]
-struct DaySchedule<T> {
+pub struct DaySchedule<T> {
   #[serde(
     bound(serialize = "T: Serialize", deserialize = "T: Deserialize<'de>"),
     with = "BigArray"
@@ -25,10 +25,38 @@ impl<T: Default + Copy> Default for DaySchedule<T> {
   }
 }
 
+impl<T> Index<usize> for DaySchedule<T> {
+  type Output = T;
+
+  fn index(&self, index: usize) -> &Self::Output {
+    &self.data[index]
+  }
+}
+
+impl<T> IndexMut<usize> for DaySchedule<T> {
+  fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+    &mut self.data[index]
+  }
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 pub struct WeekCalendar<T> {
   // Box because doesn't fit in stack
   data: Box<[DaySchedule<T>; DAY_COUNT]>,
+}
+
+impl<T> Index<usize> for WeekCalendar<T> {
+  type Output = DaySchedule<T>;
+
+  fn index(&self, index: usize) -> &Self::Output {
+    &self.data[index]
+  }
+}
+
+impl<T> IndexMut<usize> for WeekCalendar<T> {
+  fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+    &mut self.data[index]
+  }
 }
 
 impl<T: Default + Copy> Default for WeekCalendar<T> {
@@ -51,20 +79,16 @@ pub enum Weekday {
 }
 
 impl Into<usize> for Weekday {
-    fn into(self) -> usize {
-      weekday_index(&self)
+  fn into(self) -> usize {
+    match self {
+      Weekday::Monday => 0,
+      Weekday::Tuesday => 1,
+      Weekday::Wednesday => 2,
+      Weekday::Thursday => 3,
+      Weekday::Friday => 4,
+      Weekday::Saturday => 5,
+      Weekday::Sunday => 6,
     }
-}
-
-pub fn weekday_index(day: &Weekday) -> usize {
-  match day {
-    Weekday::Monday => 0,
-    Weekday::Tuesday => 1,
-    Weekday::Wednesday => 2,
-    Weekday::Thursday => 3,
-    Weekday::Friday => 4,
-    Weekday::Saturday => 5,
-    Weekday::Sunday => 6,
   }
 }
 
@@ -85,12 +109,3 @@ impl TryFrom<usize> for Weekday {
   }
 }
 
-pub trait GetDay<T> {
-  fn get_day(&self, day: &Weekday) -> &[T; TIMESLOT_COUNT];
-}
-
-impl<T> GetDay<T> for WeekCalendar<T> {
-  fn get_day(&self, day: &Weekday) -> &[T; TIMESLOT_COUNT] {
-    &self.data.get(weekday_index(day)).unwrap().data
-  }
-}

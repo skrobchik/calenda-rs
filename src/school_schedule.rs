@@ -1,9 +1,11 @@
+use std::ops::{Index, IndexMut};
+
 use egui::Color32;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 
-use crate::week_calendar::{GetDay, WeekCalendar, Weekday};
+use crate::week_calendar::{WeekCalendar, Weekday};
 
 const MAX_CLASSES: usize = 128;
 const MAX_PROFESSORS: usize = 128;
@@ -35,8 +37,8 @@ enum ClassroomType {
 
 #[derive(Serialize, Deserialize)]
 pub struct ClassMetadata {
-  name: String,
-  color: Color32,
+  pub name: String,
+  pub color: Color32,
 }
 
 impl ClassMetadata {
@@ -89,6 +91,20 @@ impl Default for Classes {
   }
 }
 
+impl Index<usize> for Classes {
+    type Output = u8;
+
+    fn index(&self, index: usize) -> &Self::Output {
+      &self.data[index]
+    }
+}
+
+impl IndexMut<usize> for Classes {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+      &mut self.data[index]
+    }
+}
+
 impl Into<[u8; MAX_CLASSES]> for Classes {
   fn into(self) -> [u8; MAX_CLASSES] {
     self.data
@@ -136,8 +152,8 @@ pub struct ClassData<'a> {
 }
 
 impl SchoolSchedule {
-  pub fn get_classes<'a>(&'a self, day: Weekday, timeslot: usize) -> Vec<ClassData<'a>> {
-    let slot: [u8; MAX_CLASSES] = self.schedule.get_day(&day)[timeslot].into();
+  pub fn get_class_data<'a>(&'a self, day: Weekday, timeslot: usize) -> Vec<ClassData<'a>> {
+    let slot: [u8; MAX_CLASSES] = self.schedule[day.into()][timeslot].into();
     let classes = &self.simulation_information.classes;
     let class_metadata = &self.class_metadata;
     slot
@@ -151,6 +167,50 @@ impl SchoolSchedule {
         class_id,
       })
       .collect_vec()
+  }
+  
+  pub fn get_classes(&self) -> Vec<(&Class, &ClassMetadata)> {
+    self.simulation_information.classes.iter().zip(&self.class_metadata).filter_map(|t| {
+      match t {
+        (Some(class), Some(metadata)) => Some((class, metadata)),
+        _ => None
+      }
+    }).collect()
+  }
+
+  pub fn get_classes_mut(&mut self) -> Vec<(&mut Class, &mut ClassMetadata)> {
+    let classes = &mut self.simulation_information.classes;
+    let class_metadata = &mut self.class_metadata;
+    classes.iter_mut().zip(class_metadata).filter_map(|t| {
+      match t {
+        (Some(class), Some(metadata)) => Some((class, metadata)),
+        _ => None
+      }
+    }).collect()
+  }
+
+  pub fn add_new_class(&mut self) -> Option<(&mut Class, &mut ClassMetadata)> {
+    let class_metadata = &mut self.class_metadata;
+    let classes = &mut self.simulation_information.classes;
+  
+    let (class_id, (metadata, class)) = class_metadata.iter_mut().  zip(classes.iter_mut()).enumerate().find(|(i, (a, b))| {
+      assert!(a.is_none() == b.is_none());
+      a.is_none()
+    })?;
+
+    *metadata = Some(ClassMetadata {
+      name: "New Class".to_string(),
+      color: Color32::LIGHT_YELLOW,
+    });
+    let metadata = metadata.as_mut().unwrap();
+
+    *class = Some(Class { professor: 0, classroom_type: ClassroomType::Single, class_hours: 1 });
+    let class = class.as_mut().unwrap();
+
+    let x = &mut self.schedule[0][0][class_id];
+    *x = class.class_hours;
+  
+    Some((class, metadata))
   }
 }
 

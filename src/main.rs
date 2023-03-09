@@ -7,6 +7,7 @@ pub mod simple_schedule_widget;
 pub mod timeslot;
 pub mod timeslots;
 pub mod week_calendar;
+pub mod class_editor;
 
 use crate::app::MyApp;
 
