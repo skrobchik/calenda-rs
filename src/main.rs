@@ -12,5 +12,5 @@ use crate::app::MyApp;
 
 fn main() {
   let options = eframe::NativeOptions::default();
-  eframe::run_native("my_app", options, Box::new(|cc| Box::new(MyApp::new(cc))));
+  eframe::run_native("my_app", options, Box::new(|cc| Box::new(MyApp::new(cc)))).expect("Something went wrong!");
 }
