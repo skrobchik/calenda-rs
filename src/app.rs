@@ -64,7 +64,7 @@ impl eframe::App for MyApp {
     egui::CentralPanel::default().show(ctx, |ui| {
       self.draw_menu_bar(ui);
 
-      ui.add(SimpleScheduleWidget::new(&self.school_schedule));
+      SimpleScheduleWidget::new(&self.school_schedule).ui(ui);
 
     });
 
