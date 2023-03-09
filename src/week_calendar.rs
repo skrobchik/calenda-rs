@@ -50,6 +50,12 @@ pub enum Weekday {
   Sunday,
 }
 
+impl Into<usize> for Weekday {
+    fn into(self) -> usize {
+      weekday_index(&self)
+    }
+}
+
 pub fn weekday_index(day: &Weekday) -> usize {
   match day {
     Weekday::Monday => 0,

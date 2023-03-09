@@ -39,6 +39,16 @@ pub struct ClassMetadata {
   color: Color32,
 }
 
+impl ClassMetadata {
+  pub fn get_color(&self) -> &Color32 {
+    &&self.color
+  }
+
+  pub fn get_name(&self) -> &str {
+    &self.name
+  }
+}
+
 #[derive(Serialize, Deserialize, Clone, Copy)]
 pub struct Class {
   professor: usize,
