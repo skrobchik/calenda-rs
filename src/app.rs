@@ -27,6 +27,7 @@ impl Default for CalendarView {
 #[serde(default)]
 pub struct MyApp {
   school_schedule: SchoolSchedule,
+  schedule_widget_open: bool,
 }
 
 impl MyApp {
@@ -64,7 +65,7 @@ impl eframe::App for MyApp {
     egui::CentralPanel::default().show(ctx, |ui| {
       self.draw_menu_bar(ui);
 
-      SimpleScheduleWidget::new(&self.school_schedule).ui(ui);
+      SimpleScheduleWidget::new(&self.school_schedule).show(ctx, &mut self.schedule_widget_open);
 
     });
 
@@ -77,6 +78,7 @@ impl Default for MyApp {
   fn default() -> Self {
     Self {
       school_schedule: Default::default(),
+      schedule_widget_open: true,
     }
   }
 }
