@@ -108,4 +108,3 @@ impl TryFrom<usize> for Weekday {
     }
   }
 }
-

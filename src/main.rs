@@ -1,5 +1,6 @@
 pub mod app;
 pub mod calendars;
+pub mod class_editor;
 pub mod metadata_register;
 pub mod real_counter;
 pub mod school_schedule;
@@ -7,11 +8,11 @@ pub mod simple_schedule_widget;
 pub mod timeslot;
 pub mod timeslots;
 pub mod week_calendar;
-pub mod class_editor;
 
 use crate::app::MyApp;
 
 fn main() {
   let options = eframe::NativeOptions::default();
-  eframe::run_native("my_app", options, Box::new(|cc| Box::new(MyApp::new(cc)))).expect("Something went wrong!");
+  eframe::run_native("my_app", options, Box::new(|cc| Box::new(MyApp::new(cc))))
+    .expect("Something went wrong!");
 }

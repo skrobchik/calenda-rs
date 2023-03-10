@@ -11,9 +11,7 @@ pub struct SimpleScheduleWidget<'a> {
 
 impl<'a> SimpleScheduleWidget<'a> {
   pub fn new(state: &'a SchoolSchedule) -> SimpleScheduleWidget<'a> {
-    SimpleScheduleWidget {
-      state,
-    }
+    SimpleScheduleWidget { state }
   }
   pub fn show(&self, ctx: &egui::Context, open: &mut bool) {
     egui::Window::new("Schedule")
@@ -37,7 +35,8 @@ impl<'a> SimpleScheduleWidget<'a> {
         let class_data_list = self.state.get_class_data(day, i);
         let num_classes = class_data_list.len();
         let class_width = w / num_classes as f32;
-        let mut topleft: egui::Pos2 = response.rect.left_top() + (w * j as f32, h * i as f32).into();
+        let mut topleft: egui::Pos2 =
+          response.rect.left_top() + (w * j as f32, h * i as f32).into();
         for class_data in class_data_list {
           let botright: egui::Pos2 = topleft + (class_width, h).into();
           let class_color = class_data.class_metadata.get_color();

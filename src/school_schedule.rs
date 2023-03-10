@@ -92,17 +92,17 @@ impl Default for Classes {
 }
 
 impl Index<usize> for Classes {
-    type Output = u8;
+  type Output = u8;
 
-    fn index(&self, index: usize) -> &Self::Output {
-      &self.data[index]
-    }
+  fn index(&self, index: usize) -> &Self::Output {
+    &self.data[index]
+  }
 }
 
 impl IndexMut<usize> for Classes {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-      &mut self.data[index]
-    }
+  fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+    &mut self.data[index]
+  }
 }
 
 impl Into<[u8; MAX_CLASSES]> for Classes {
@@ -168,35 +168,45 @@ impl SchoolSchedule {
       })
       .collect_vec()
   }
-  
+
   pub fn get_classes(&self) -> Vec<(&Class, &ClassMetadata)> {
-    self.simulation_information.classes.iter().zip(&self.class_metadata).filter_map(|t| {
-      match t {
+    self
+      .simulation_information
+      .classes
+      .iter()
+      .zip(&self.class_metadata)
+      .filter_map(|t| match t {
         (Some(class), Some(metadata)) => Some((class, metadata)),
-        _ => None
-      }
-    }).collect()
+        _ => None,
+      })
+      .collect()
   }
 
   pub fn get_classes_mut(&mut self) -> Vec<(&mut Class, &mut ClassMetadata)> {
     let classes = &mut self.simulation_information.classes;
     let class_metadata = &mut self.class_metadata;
-    classes.iter_mut().zip(class_metadata).filter_map(|t| {
-      match t {
+    classes
+      .iter_mut()
+      .zip(class_metadata)
+      .filter_map(|t| match t {
         (Some(class), Some(metadata)) => Some((class, metadata)),
-        _ => None
-      }
-    }).collect()
+        _ => None,
+      })
+      .collect()
   }
 
   pub fn add_new_class(&mut self) -> Option<(&mut Class, &mut ClassMetadata)> {
     let class_metadata = &mut self.class_metadata;
     let classes = &mut self.simulation_information.classes;
-  
-    let (class_id, (metadata, class)) = class_metadata.iter_mut().  zip(classes.iter_mut()).enumerate().find(|(i, (a, b))| {
-      assert!(a.is_none() == b.is_none());
-      a.is_none()
-    })?;
+
+    let (class_id, (metadata, class)) = class_metadata
+      .iter_mut()
+      .zip(classes.iter_mut())
+      .enumerate()
+      .find(|(i, (a, b))| {
+        assert!(a.is_none() == b.is_none());
+        a.is_none()
+      })?;
 
     *metadata = Some(ClassMetadata {
       name: "New Class".to_string(),
@@ -204,12 +214,16 @@ impl SchoolSchedule {
     });
     let metadata = metadata.as_mut().unwrap();
 
-    *class = Some(Class { professor: 0, classroom_type: ClassroomType::Single, class_hours: 1 });
+    *class = Some(Class {
+      professor: 0,
+      classroom_type: ClassroomType::Single,
+      class_hours: 1,
+    });
     let class = class.as_mut().unwrap();
 
     let x = &mut self.schedule[0][0][class_id];
     *x = class.class_hours;
-  
+
     Some((class, metadata))
   }
 }
