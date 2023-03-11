@@ -196,14 +196,15 @@ impl SchoolSchedule {
       .collect()
   }
 
-  pub fn get_classes_mut(&mut self) -> Vec<(&mut Class, &mut ClassMetadata)> {
+  pub fn get_classes_mut(&mut self) -> Vec<(&mut Class, &mut ClassMetadata, usize)> {
     let classes = &mut self.simulation_information.classes;
     let class_metadata = &mut self.class_metadata;
     classes
       .iter_mut()
       .zip(class_metadata)
+      .enumerate()
       .filter_map(|t| match t {
-        (Some(class), Some(metadata)) => Some((class, metadata)),
+        (i, (Some(class), Some(metadata))) => Some((class, metadata, i)),
         _ => None,
       })
       .collect()
