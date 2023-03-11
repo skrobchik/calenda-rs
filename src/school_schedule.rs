@@ -203,7 +203,7 @@ impl SchoolSchedule {
       .iter_mut()
       .zip(classes.iter_mut())
       .enumerate()
-      .find(|(i, (a, b))| {
+      .find(|(_i, (a, b))| {
         assert!(a.is_none() == b.is_none());
         a.is_none()
       })?;

@@ -1,5 +1,5 @@
-use egui::{Color32, Layout, Rect, Rounding, Sense, Stroke, Vec2, Widget};
-use egui_extras::{Size, StripBuilder};
+use egui::{Color32, Rect, Rounding, Sense, Stroke};
+
 
 use crate::school_schedule::SchoolSchedule;
 use crate::timeslot;

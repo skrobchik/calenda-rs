@@ -32,7 +32,7 @@ impl<'a> ClassEditor<'a> {
       classes.len(),
       |ui, row_range| {
         let class_range = classes.get(row_range).unwrap();
-        for (class, metadata) in class_range {
+        for (_class, metadata) in class_range {
           ui.label(format!("Clase \"{}\"", metadata.name));
         }
       },
