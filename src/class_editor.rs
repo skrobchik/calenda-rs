@@ -1,9 +1,6 @@
+use egui::{color_picker::color_edit_button_rgb, ComboBox, ScrollArea};
 
-
-use egui::{ScrollArea, color_picker::color_edit_button_rgb};
-
-
-use crate::school_schedule::{SchoolSchedule, ClassMetadata};
+use crate::school_schedule::{ClassMetadata, ClassroomType, SchoolSchedule};
 
 pub struct ClassEditor<'a> {
   state: &'a mut SchoolSchedule,
@@ -27,7 +24,6 @@ impl<'a> ClassEditor<'a> {
 
   pub fn ui(&mut self, ui: &mut egui::Ui) {
     let mut classes = self.state.get_classes_mut();
-    ui.label("Classes");
     let text_style = egui::TextStyle::Body;
     ScrollArea::new([false, true]).show_rows(
       ui,
@@ -35,12 +31,23 @@ impl<'a> ClassEditor<'a> {
       classes.len(),
       |ui, row_range| {
         let class_range = classes.get_mut(row_range).unwrap();
-        for (_class, metadata) in class_range.iter_mut() {
+        for (class, metadata) in class_range.iter_mut() {
           ui.horizontal(|ui| {
             ui.color_edit_button_srgba(&mut metadata.color);
             ui.text_edit_singleline(&mut metadata.name);
           });
-          
+          ComboBox::from_label("Aula")
+            .selected_text(class.classroom_type.to_string())
+            .show_ui(ui, |ui| {
+              for classroom_type_variant in enum_iterator::all::<ClassroomType>() {
+                ui.selectable_value(
+                  &mut class.classroom_type,
+                  classroom_type_variant,
+                  classroom_type_variant.to_string(),
+                );
+              }
+            });
+
           ui.separator();
         }
       },

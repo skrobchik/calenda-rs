@@ -1,6 +1,10 @@
-use std::ops::{Index, IndexMut};
+use std::{
+  fmt::Display,
+  ops::{Index, IndexMut},
+};
 
 use egui::Color32;
+use enum_iterator::Sequence;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
@@ -28,11 +32,21 @@ struct ProfessorMetadata {
   name: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
-enum ClassroomType {
+#[derive(Serialize, Deserialize, Clone, Copy, Sequence, PartialEq, Eq)]
+pub enum ClassroomType {
   Single,
   Double,
   Lab,
+}
+
+impl Display for ClassroomType {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      ClassroomType::Single => f.write_str("Simple"),
+      ClassroomType::Double => f.write_str("Doble"),
+      ClassroomType::Lab => f.write_str("Laboratorio"),
+    }
+  }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -53,9 +67,9 @@ impl ClassMetadata {
 
 #[derive(Serialize, Deserialize, Clone, Copy)]
 pub struct Class {
-  professor: usize,
-  classroom_type: ClassroomType,
-  class_hours: u8,
+  pub professor: usize,
+  pub classroom_type: ClassroomType,
+  pub class_hours: u8,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
