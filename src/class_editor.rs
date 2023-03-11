@@ -1,6 +1,6 @@
-use egui::{color_picker::color_edit_button_rgb, ComboBox, ScrollArea};
+use egui::{ComboBox, ScrollArea};
 
-use crate::school_schedule::{ClassMetadata, ClassroomType, SchoolSchedule};
+use crate::school_schedule::{ClassroomType, SchoolSchedule};
 
 pub struct ClassEditor<'a> {
   state: &'a mut SchoolSchedule,
