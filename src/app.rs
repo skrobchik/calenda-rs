@@ -1,26 +1,10 @@
 use crate::{
-  class_editor::ClassEditor, metadata_register::SemesterNumber, school_schedule::SchoolSchedule,
+  class_editor::ClassEditor, school_schedule::SchoolSchedule,
   simple_schedule_widget::SimpleScheduleWidget,
 };
 use eframe::egui;
 use egui::Ui;
 use serde::{Deserialize, Serialize};
-
-#[derive(PartialEq, Eq, Serialize, Deserialize, Debug)]
-enum CalendarView {
-  All,
-  Semester(SemesterNumber),
-  EvenSemesters,
-  OddSemesters,
-  Professor(usize),
-  Class(usize),
-}
-
-impl Default for CalendarView {
-  fn default() -> Self {
-    CalendarView::All
-  }
-}
 
 #[derive(Serialize, Deserialize)]
 #[serde(default)]

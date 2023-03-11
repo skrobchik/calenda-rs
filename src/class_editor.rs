@@ -1,6 +1,9 @@
-use egui::ScrollArea;
 
-use crate::school_schedule::SchoolSchedule;
+
+use egui::{ScrollArea, color_picker::color_edit_button_rgb};
+
+
+use crate::school_schedule::{SchoolSchedule, ClassMetadata};
 
 pub struct ClassEditor<'a> {
   state: &'a mut SchoolSchedule,
@@ -23,7 +26,7 @@ impl<'a> ClassEditor<'a> {
   }
 
   pub fn ui(&mut self, ui: &mut egui::Ui) {
-    let classes = self.state.get_classes_mut();
+    let mut classes = self.state.get_classes_mut();
     ui.label("Classes");
     let text_style = egui::TextStyle::Body;
     ScrollArea::new([false, true]).show_rows(
@@ -31,9 +34,14 @@ impl<'a> ClassEditor<'a> {
       ui.text_style_height(&text_style),
       classes.len(),
       |ui, row_range| {
-        let class_range = classes.get(row_range).unwrap();
-        for (_class, metadata) in class_range {
-          ui.label(format!("Clase \"{}\"", metadata.name));
+        let class_range = classes.get_mut(row_range).unwrap();
+        for (_class, metadata) in class_range.iter_mut() {
+          ui.horizontal(|ui| {
+            ui.color_edit_button_srgba(&mut metadata.color);
+            ui.text_edit_singleline(&mut metadata.name);
+          });
+          
+          ui.separator();
         }
       },
     );

@@ -1,7 +1,6 @@
 pub mod app;
 pub mod calendars;
 pub mod class_editor;
-pub mod metadata_register;
 pub mod real_counter;
 pub mod school_schedule;
 pub mod simple_schedule_widget;
