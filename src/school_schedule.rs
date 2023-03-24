@@ -3,6 +3,8 @@ use std::{
   ops::{Index, IndexMut},
 };
 
+use rand::prelude::*;
+
 use egui::Color32;
 use enum_iterator::Sequence;
 use itertools::Itertools;
@@ -14,7 +16,7 @@ use crate::week_calendar::{WeekCalendar, Weekday};
 const MAX_CLASSES: usize = 128;
 const MAX_PROFESSORS: usize = 128;
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 enum Availability {
   Prefered,
   Available,
@@ -22,17 +24,17 @@ enum Availability {
   NotAvailable,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 struct Professor {
   availability: WeekCalendar<Availability>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 struct ProfessorMetadata {
   name: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, Sequence, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Copy, Sequence, PartialEq, Eq, Debug)]
 pub enum ClassroomType {
   Single,
   Double,
@@ -49,7 +51,7 @@ impl Display for ClassroomType {
   }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ClassMetadata {
   pub name: String,
   pub color: Color32,
@@ -65,14 +67,14 @@ impl ClassMetadata {
   }
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub struct Class {
   pub professor: usize,
   pub classroom_type: ClassroomType,
   pub class_hours: u8,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 struct SimulationInformation {
   #[serde(with = "BigArray")]
   classes: [Option<Class>; MAX_CLASSES],
@@ -91,7 +93,7 @@ impl Default for SimulationInformation {
   }
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 struct Classes {
   #[serde(with = "BigArray")]
   data: [u8; MAX_CLASSES],
@@ -131,7 +133,7 @@ impl From<[u8; MAX_CLASSES]> for Classes {
   }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SchoolSchedule {
   #[serde(with = "BigArray")]
   class_metadata: [Option<ClassMetadata>; MAX_CLASSES],
@@ -172,8 +174,8 @@ impl SchoolSchedule {
     let class_metadata = &self.class_metadata;
     slot
       .iter()
-      .filter(|count| **count > 0)
       .enumerate()
+      .filter(|(_class_id, count)| **count > 0)
       .map(|(class_id, count)| ClassData {
         count: *count,
         class: classes[class_id].as_ref().unwrap(),
@@ -236,9 +238,16 @@ impl SchoolSchedule {
     });
     let class = class.as_mut().unwrap();
 
-    let x = &mut self.schedule[0][0][class_id];
+    let mut rng = rand::thread_rng();
+    let day = crate::timeslot::DAY_RANGE.choose(&mut rng)?;
+    let timeslot = crate::timeslot::DAY_RANGE.choose(&mut rng)?;
+    let x = &mut self.schedule[day][timeslot][class_id];
     *x = class.class_hours;
 
+    println!("{:?}", class);
+    println!("{:?}", metadata); 
+    println!("class_id = {}", class_id);
+    println!("{:?}", self.schedule[day][timeslot]);
     Some((class, metadata))
   }
 }

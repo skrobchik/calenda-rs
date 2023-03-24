@@ -3,11 +3,11 @@ use std::ops::{Index, IndexMut};
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 
-use crate::timeslots::*;
+use crate::timeslot::*;
 
 pub const DAY_COUNT: usize = 7; // 7 days in a week
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub struct DaySchedule<T> {
   #[serde(
     bound(serialize = "T: Serialize", deserialize = "T: Deserialize<'de>"),
@@ -39,7 +39,7 @@ impl<T> IndexMut<usize> for DaySchedule<T> {
   }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct WeekCalendar<T> {
   // Box because doesn't fit in stack
   data: Box<[DaySchedule<T>; DAY_COUNT]>,

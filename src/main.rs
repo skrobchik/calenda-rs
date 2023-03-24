@@ -3,7 +3,6 @@ pub mod class_editor;
 pub mod school_schedule;
 pub mod simple_schedule_widget;
 pub mod timeslot;
-pub mod timeslots;
 pub mod week_calendar;
 
 use crate::app::MyApp;
