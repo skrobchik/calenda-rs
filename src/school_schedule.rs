@@ -27,7 +27,7 @@ struct Professor {
   availability: WeekCalendar<Availability>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 struct ProfessorMetadata {
   name: String,
 }
@@ -49,7 +49,7 @@ impl Display for ClassroomType {
   }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct ClassMetadata {
   pub name: String,
   pub color: Color32,
@@ -131,7 +131,7 @@ impl From<[u8; MAX_CLASSES]> for Classes {
   }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct SchoolSchedule {
   #[serde(with = "BigArray")]
   class_metadata: [Option<ClassMetadata>; MAX_CLASSES],
