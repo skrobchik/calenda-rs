@@ -1,6 +1,6 @@
 use crate::{
-  class_editor::ClassEditor, school_schedule::SchoolSchedule,
-  simple_schedule_widget::SimpleScheduleWidget,
+  class_editor::ClassEditor, school_schedule::{SchoolSchedule, Professor},
+  simple_schedule_widget::SimpleScheduleWidget, professor_schedule_widget::ProfessorScheduleWidget,
 };
 use eframe::egui;
 use egui::Ui;
@@ -48,6 +48,13 @@ impl eframe::App for MyApp {
       SimpleScheduleWidget::new(&self.school_schedule).show(ctx, &mut self.schedule_widget_open);
 
       ClassEditor::new(&mut self.school_schedule).show(ctx, &mut self.schedule_widget_open);
+
+      if let Some(professor) = &mut self.school_schedule.simulation_information.professors[0] {
+        ProfessorScheduleWidget::new(professor).show(ctx, &mut self.schedule_widget_open);
+      } else {
+        let professor: Professor = Default::default();
+        self.school_schedule.simulation_information.professors[0] = Some(professor);
+      }
     });
 
     // Resize the native window to be just the size we need it to be:

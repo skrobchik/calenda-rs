@@ -1,9 +1,7 @@
 use std::{
   fmt::Display,
-  ops::{Index, IndexMut}, iter,
+  ops::{Index, IndexMut},
 };
-
-use rand::prelude::*;
 
 use egui::Color32;
 use enum_iterator::Sequence;
@@ -11,22 +9,22 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 
-use crate::{week_calendar::{WeekCalendar, Weekday}, timeslot::{TIMESLOT_RANGE, DAY_RANGE, self}};
+use crate::{week_calendar::{WeekCalendar, Weekday}, timeslot::{TIMESLOT_RANGE, DAY_RANGE}};
 
 const MAX_CLASSES: usize = 128;
 const MAX_PROFESSORS: usize = 128;
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
-enum Availability {
-  Prefered,
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default)]
+pub enum Availability {
   Available,
   AvailableIfNeeded,
+  #[default]
   NotAvailable,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-struct Professor {
-  availability: WeekCalendar<Availability>,
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct Professor {
+  pub availability: WeekCalendar<Availability>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -75,11 +73,11 @@ pub struct Class {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-struct SimulationInformation {
+pub struct SimulationInformation {
   #[serde(with = "BigArray")]
   classes: [Option<Class>; MAX_CLASSES],
   #[serde(with = "BigArray")]
-  professors: [Option<Professor>; MAX_PROFESSORS],
+  pub professors: [Option<Professor>; MAX_PROFESSORS],
 }
 
 impl Default for SimulationInformation {
@@ -139,7 +137,7 @@ pub struct SchoolSchedule {
   class_metadata: [Option<ClassMetadata>; MAX_CLASSES],
   #[serde(with = "BigArray")]
   professor_metadata: [Option<ProfessorMetadata>; MAX_PROFESSORS],
-  simulation_information: SimulationInformation,
+  pub simulation_information: SimulationInformation,
   schedule: WeekCalendar<Classes>,
 }
 
@@ -183,6 +181,10 @@ impl SchoolSchedule {
         class_id,
       })
       .collect_vec()
+  }
+
+  pub fn get_professors_mut(&mut self) -> &mut [Option<Professor>; MAX_PROFESSORS] {
+    &mut self.simulation_information.professors
   }
 
   pub fn get_classes(&self) -> Vec<(&Class, &ClassMetadata)> {
