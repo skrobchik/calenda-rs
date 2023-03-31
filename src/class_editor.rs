@@ -23,6 +23,7 @@ impl<'a> ClassEditor<'a> {
   }
 
   pub fn ui(&mut self, ui: &mut egui::Ui) {
+    ui.separator();
     let mut classes = self.state.get_classes_mut();
     let text_style = egui::TextStyle::Body;
     ScrollArea::new([false, true]).show_rows(
@@ -57,5 +58,6 @@ impl<'a> ClassEditor<'a> {
     if ui.button("+").clicked() {
       self.state.add_new_class();
     }
+    self.state.fill_classes();
   }
 }

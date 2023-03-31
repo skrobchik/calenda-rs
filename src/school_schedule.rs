@@ -1,6 +1,6 @@
 use std::{
   fmt::Display,
-  ops::{Index, IndexMut},
+  ops::{Index, IndexMut}, iter,
 };
 
 use rand::prelude::*;
@@ -11,7 +11,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 
-use crate::week_calendar::{WeekCalendar, Weekday};
+use crate::{week_calendar::{WeekCalendar, Weekday}, timeslot::{TIMESLOT_RANGE, DAY_RANGE, self}};
 
 const MAX_CLASSES: usize = 128;
 const MAX_PROFESSORS: usize = 128;
@@ -212,6 +212,63 @@ impl SchoolSchedule {
       .collect()
   }
 
+  fn add_hours_to_schedule(&mut self, class_id: usize, count: u8) {
+    self.schedule[0][0][class_id] = self.schedule[0][0][class_id].checked_add(count).unwrap();
+  }
+
+  /// Attempts to remove `count` instances of class with `class_id` from schedule.
+  /// Returns the amount that was left to remove.
+  /// If `count` instances were removed succesfully, return value is 0.
+  /// If there are not enough classes to remove, return the amount that was left to remove.
+  fn remove_hours_from_schedule(&mut self, class_id: usize, count: u8) -> u8 {
+    let mut count = count;
+    for day in DAY_RANGE {
+      for timeslot in TIMESLOT_RANGE {
+        let dc = count.min(self.schedule[day][timeslot][class_id]);
+        count -= dc;
+        self.schedule[day][timeslot][class_id] -= dc;
+        if count == 0 {
+          return count;
+        }
+      }
+    }
+    count
+  }
+
+  pub(crate) fn fill_classes(&mut self) {
+    let mut schedule_hour_count: [u8; MAX_CLASSES] = [0; MAX_CLASSES];
+    for day in DAY_RANGE {
+      for timeslot in TIMESLOT_RANGE {
+        for class_id in 0..MAX_CLASSES {
+          schedule_hour_count[class_id] += self.schedule[day][timeslot][class_id];
+        }
+      }
+    }
+    let mut classes_hour_count: [u8; MAX_CLASSES] = [0; MAX_CLASSES];
+    for class_id in 0..MAX_CLASSES {
+      if let Some(class) = self.simulation_information.classes[class_id] {
+        classes_hour_count[class_id] = class.class_hours;
+      }
+    }
+    for class_id in 0..MAX_CLASSES {
+      let schedule_hours = schedule_hour_count[class_id];
+      let class_hours = classes_hour_count[class_id];
+      match Ord::cmp(&schedule_hours, &class_hours) {
+        std::cmp::Ordering::Less => {
+          println!("Deficit of {} classes with id {} in schedule", class_hours-schedule_hours, class_id);
+          self.add_hours_to_schedule(class_id, class_hours-schedule_hours);
+        },
+        std::cmp::Ordering::Equal => {
+          ()
+        },
+        std::cmp::Ordering::Greater => {
+          println!("Excess of {} classes with id {} in schedule", schedule_hours-class_hours, class_id);
+          self.remove_hours_from_schedule(class_id, schedule_hours-class_hours);
+        },
+      }
+    }
+  }
+
   pub fn add_new_class(&mut self) -> Option<(&mut Class, &mut ClassMetadata)> {
     let class_metadata = &mut self.class_metadata;
     let classes = &mut self.simulation_information.classes;
@@ -237,17 +294,6 @@ impl SchoolSchedule {
       class_hours: 1,
     });
     let class = class.as_mut().unwrap();
-
-    let mut rng = rand::thread_rng();
-    let day = crate::timeslot::DAY_RANGE.choose(&mut rng)?;
-    let timeslot = crate::timeslot::DAY_RANGE.choose(&mut rng)?;
-    let x = &mut self.schedule[day][timeslot][class_id];
-    *x = class.class_hours;
-
-    println!("{:?}", class);
-    println!("{:?}", metadata); 
-    println!("class_id = {}", class_id);
-    println!("{:?}", self.schedule[day][timeslot]);
     Some((class, metadata))
   }
 }
