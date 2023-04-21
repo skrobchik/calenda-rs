@@ -1,6 +1,6 @@
 use egui::Color32;
 
-use crate::school_schedule::{Professor, Availability};
+use crate::school_schedule::{Availability, Professor};
 use crate::timeslot;
 
 pub struct ProfessorScheduleWidget<'a> {
@@ -29,18 +29,18 @@ impl<'a> ProfessorScheduleWidget<'a> {
           let text = match av {
             Availability::Available => "1",
             Availability::AvailableIfNeeded => "2",
-            Availability::NotAvailable => "3"
+            Availability::NotAvailable => "3",
           };
           let color = match av {
-              Availability::Available => Color32::GREEN,
-              Availability::AvailableIfNeeded => Color32::YELLOW,
-              Availability::NotAvailable => Color32::LIGHT_RED,
+            Availability::Available => Color32::GREEN,
+            Availability::AvailableIfNeeded => Color32::YELLOW,
+            Availability::NotAvailable => Color32::LIGHT_RED,
           };
           if ui.add(egui::Button::new(text).fill(color)).clicked() {
             *av = match av {
-                Availability::Available => Availability::NotAvailable,
-                Availability::AvailableIfNeeded => Availability::Available,
-                Availability::NotAvailable => Availability::AvailableIfNeeded,
+              Availability::Available => Availability::NotAvailable,
+              Availability::AvailableIfNeeded => Availability::Available,
+              Availability::NotAvailable => Availability::AvailableIfNeeded,
             };
           }
         }

@@ -1,6 +1,5 @@
 use egui::{Color32, Rect, Rounding, Sense, Stroke};
 
-
 use crate::school_schedule::SchoolSchedule;
 use crate::timeslot;
 use crate::week_calendar::Weekday;

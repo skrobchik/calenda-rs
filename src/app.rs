@@ -1,6 +1,8 @@
 use crate::{
-  class_editor::ClassEditor, school_schedule::{SchoolSchedule, Professor},
-  simple_schedule_widget::SimpleScheduleWidget, professor_schedule_widget::ProfessorScheduleWidget,
+  class_editor::ClassEditor,
+  professor_schedule_widget::ProfessorScheduleWidget,
+  school_schedule::{Professor, SchoolSchedule},
+  simple_schedule_widget::SimpleScheduleWidget,
 };
 use eframe::egui;
 use egui::Ui;

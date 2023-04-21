@@ -9,7 +9,10 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 
-use crate::{week_calendar::{WeekCalendar, Weekday}, timeslot::{TIMESLOT_RANGE, DAY_RANGE}};
+use crate::{
+  timeslot::{DAY_RANGE, TIMESLOT_RANGE},
+  week_calendar::{WeekCalendar, Weekday},
+};
 
 const MAX_CLASSES: usize = 128;
 const MAX_PROFESSORS: usize = 128;
@@ -213,10 +216,15 @@ impl SchoolSchedule {
   pub fn get_professors_mut(&mut self) -> Vec<(&mut Professor, &mut ProfessorMetadata, usize)> {
     let professors = &mut self.simulation_information.professors;
     let professor_metadata = &mut self.professor_metadata;
-    professors.iter_mut().zip(professor_metadata).enumerate().filter_map(|t| match t {
-      (i, (Some(professor), Some(metadata))) => Some((professor, metadata, i)),
-      _ => None
-    }).collect()
+    professors
+      .iter_mut()
+      .zip(professor_metadata)
+      .enumerate()
+      .filter_map(|t| match t {
+        (i, (Some(professor), Some(metadata))) => Some((professor, metadata, i)),
+        _ => None,
+      })
+      .collect()
   }
 
   fn add_hours_to_schedule(&mut self, class_id: usize, count: u8) {
@@ -262,16 +270,22 @@ impl SchoolSchedule {
       let class_hours = classes_hour_count[class_id];
       match Ord::cmp(&schedule_hours, &class_hours) {
         std::cmp::Ordering::Less => {
-          println!("Deficit of {} classes with id {} in schedule", class_hours-schedule_hours, class_id);
-          self.add_hours_to_schedule(class_id, class_hours-schedule_hours);
-        },
-        std::cmp::Ordering::Equal => {
-          ()
-        },
+          println!(
+            "Deficit of {} classes with id {} in schedule",
+            class_hours - schedule_hours,
+            class_id
+          );
+          self.add_hours_to_schedule(class_id, class_hours - schedule_hours);
+        }
+        std::cmp::Ordering::Equal => (),
         std::cmp::Ordering::Greater => {
-          println!("Excess of {} classes with id {} in schedule", schedule_hours-class_hours, class_id);
-          self.remove_hours_from_schedule(class_id, schedule_hours-class_hours);
-        },
+          println!(
+            "Excess of {} classes with id {} in schedule",
+            schedule_hours - class_hours,
+            class_id
+          );
+          self.remove_hours_from_schedule(class_id, schedule_hours - class_hours);
+        }
       }
     }
   }
