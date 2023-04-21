@@ -26,7 +26,6 @@ impl<'a> ProfessorScheduleWidget<'a> {
       for j in timeslot::TIMESLOT_RANGE {
         for i in timeslot::DAY_RANGE {
           let av = &mut self.state.availability[i][j];
-          //let av = Availability::NotAvailable;
           let text = match av {
             Availability::Available => "1",
             Availability::AvailableIfNeeded => "2",
