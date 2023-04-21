@@ -2,17 +2,19 @@ use crate::{
   class_editor::ClassEditor,
   professor_schedule_widget::ProfessorScheduleWidget,
   school_schedule::{Professor, SchoolSchedule},
-  simple_schedule_widget::SimpleScheduleWidget,
+  simple_schedule_widget::SimpleScheduleWidget, professor_editor::ProfessorEditor,
 };
 use eframe::egui;
 use egui::Ui;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
-#[serde(default)]
+#[serde(default)] 
 pub struct MyApp {
   school_schedule: SchoolSchedule,
   schedule_widget_open: bool,
+  professor_editor_widget_open: bool,
+  class_editor_widget_open: bool,
 }
 
 impl MyApp {
@@ -30,9 +32,12 @@ impl MyApp {
         }
       });
       ui.menu_button("Vista", |ui| {
-        if ui.button("Editor de Profesores").clicked() {}
-        if ui.button("Editor de Parametros de Simulacion").clicked() {}
-        if ui.button("Editor de Clases").clicked() {}
+        if ui.button("Editor de Profesores").clicked() {
+          self.professor_editor_widget_open = !self.professor_editor_widget_open;
+        }
+        if ui.button("Editor de Clases").clicked() {
+          self.class_editor_widget_open = !self.class_editor_widget_open;
+        }
       });
     });
   }
@@ -49,14 +54,9 @@ impl eframe::App for MyApp {
 
       SimpleScheduleWidget::new(&self.school_schedule).show(ctx, &mut self.schedule_widget_open);
 
-      ClassEditor::new(&mut self.school_schedule).show(ctx, &mut self.schedule_widget_open);
+      ClassEditor::new(&mut self.school_schedule).show(ctx, &mut self.class_editor_widget_open);
 
-      if let Some(professor) = &mut self.school_schedule.simulation_information.professors[0] {
-        ProfessorScheduleWidget::new(professor).show(ctx, &mut self.schedule_widget_open);
-      } else {
-        let professor: Professor = Default::default();
-        self.school_schedule.simulation_information.professors[0] = Some(professor);
-      }
+      ProfessorEditor::new(&mut self.school_schedule).show(ctx, &mut self.professor_editor_widget_open);
     });
 
     // Resize the native window to be just the size we need it to be:
@@ -67,8 +67,10 @@ impl eframe::App for MyApp {
 impl Default for MyApp {
   fn default() -> Self {
     Self {
-      school_schedule: Default::default(),
       schedule_widget_open: true,
+      class_editor_widget_open: Default::default(),
+      professor_editor_widget_open: Default::default(),
+      school_schedule: Default::default()
     }
   }
 }

@@ -24,7 +24,7 @@ impl<'a> ClassEditor<'a> {
 
   pub fn ui(&mut self, ui: &mut egui::Ui) {
     ui.separator();
-    let mut classes = self.state.get_classes_mut();
+    let (mut classes, professors) = self.state.get_classes_and_professors_mut();
     let text_style = egui::TextStyle::Body;
     ScrollArea::new([false, true]).show_rows(
       ui,
@@ -39,7 +39,7 @@ impl<'a> ClassEditor<'a> {
           });
           ui.horizontal(|ui| {
             ui.label("Aula");
-            ComboBox::from_id_source(class_id)
+            ComboBox::from_id_source(class_id.clone())
               .selected_text(class.classroom_type.to_string())
               .show_ui(ui, |ui| {
                 for classroom_type_variant in enum_iterator::all::<ClassroomType>() {
@@ -50,7 +50,16 @@ impl<'a> ClassEditor<'a> {
                   );
                 }
               });
-          });
+            });
+            ui.horizontal(|ui| {
+              ui.label("Profesor");
+              ui.label(format!("{}", class.professor));
+              ComboBox::from_id_source(format!("professor_selector_{}", class_id.clone())).selected_text(professors.iter().find(|(_,_,professor_id)| *professor_id==class.professor).map_or("Undefined Professor", |(_,metadata,_)| &metadata.name)).show_ui(ui, |ui| {
+                for (professor, metadata, professor_id) in professors.iter() {
+                  ui.selectable_value(&mut class.professor, *professor_id, &metadata.name);
+                }
+              })
+            });
           ui.separator();
         }
       },

@@ -32,7 +32,7 @@ pub struct Professor {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ProfessorMetadata {
-  name: String,
+  pub name: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy, Sequence, PartialEq, Eq, Debug)]
@@ -95,7 +95,7 @@ impl Default for SimulationInformation {
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
-struct Classes {
+pub struct Classes {
   #[serde(with = "BigArray")]
   data: [u8; MAX_CLASSES],
 }
@@ -137,11 +137,11 @@ impl From<[u8; MAX_CLASSES]> for Classes {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SchoolSchedule {
   #[serde(with = "BigArray")]
-  class_metadata: [Option<ClassMetadata>; MAX_CLASSES],
+  pub class_metadata: [Option<ClassMetadata>; MAX_CLASSES],
   #[serde(with = "BigArray")]
-  professor_metadata: [Option<ProfessorMetadata>; MAX_PROFESSORS],
+  pub professor_metadata: [Option<ProfessorMetadata>; MAX_PROFESSORS],
   pub simulation_information: SimulationInformation,
-  schedule: WeekCalendar<Classes>,
+  pub schedule: WeekCalendar<Classes>,
 }
 
 impl Default for SchoolSchedule {
@@ -199,10 +199,17 @@ impl SchoolSchedule {
       .collect()
   }
 
-  pub fn get_classes_mut(&mut self) -> Vec<(&mut Class, &mut ClassMetadata, usize)> {
+  pub fn get_classes_and_professors_mut(
+    &mut self,
+  ) -> (
+    Vec<(&mut Class, &mut ClassMetadata, usize)>,
+    Vec<(&mut Professor, &mut ProfessorMetadata, usize)>,
+  ) {
     let classes = &mut self.simulation_information.classes;
     let class_metadata = &mut self.class_metadata;
-    classes
+    let professors = &mut self.simulation_information.professors;
+    let professor_metadata = &mut self.professor_metadata;
+    let classes = classes
       .iter_mut()
       .zip(class_metadata)
       .enumerate()
@@ -210,13 +217,8 @@ impl SchoolSchedule {
         (i, (Some(class), Some(metadata))) => Some((class, metadata, i)),
         _ => None,
       })
-      .collect()
-  }
-
-  pub fn get_professors_mut(&mut self) -> Vec<(&mut Professor, &mut ProfessorMetadata, usize)> {
-    let professors = &mut self.simulation_information.professors;
-    let professor_metadata = &mut self.professor_metadata;
-    professors
+      .collect();
+    let professors = professors
       .iter_mut()
       .zip(professor_metadata)
       .enumerate()
@@ -224,7 +226,16 @@ impl SchoolSchedule {
         (i, (Some(professor), Some(metadata))) => Some((professor, metadata, i)),
         _ => None,
       })
-      .collect()
+      .collect();
+    (classes, professors)
+  }
+
+  pub fn get_classes_mut(&mut self) -> Vec<(&mut Class, &mut ClassMetadata, usize)> {
+    self.get_classes_and_professors_mut().0
+  }
+
+  pub fn get_professors_mut(&mut self) -> Vec<(&mut Professor, &mut ProfessorMetadata, usize)> {
+    self.get_classes_and_professors_mut().1
   }
 
   fn add_hours_to_schedule(&mut self, class_id: usize, count: u8) {
@@ -288,6 +299,32 @@ impl SchoolSchedule {
         }
       }
     }
+  }
+
+  pub fn add_new_professor(&mut self) -> Option<(&mut Professor, &mut ProfessorMetadata, usize)> {
+    let professor_metadata = &mut self.professor_metadata;
+    let professors = &mut self.simulation_information.professors;
+
+    let (professor_id, (metadata, professor)) = professor_metadata
+      .iter_mut()
+      .zip(professors.iter_mut())
+      .enumerate()
+      .find(|(_i, (a, b))| {
+        assert!(a.is_none() == b.is_none());
+        a.is_none()
+      })?;
+
+    *metadata = Some(ProfessorMetadata {
+      name: "New Professor".to_string(),
+    });
+    let metadata = metadata.as_mut().unwrap();
+
+    *professor = Some(Professor {
+      availability: WeekCalendar::default(),
+    });
+    let professor = professor.as_mut().unwrap();
+
+    Some((professor, metadata, professor_id))
   }
 
   pub fn add_new_class(&mut self) -> Option<(&mut Class, &mut ClassMetadata)> {
