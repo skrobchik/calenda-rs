@@ -28,7 +28,7 @@ pub struct Professor {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-struct ProfessorMetadata {
+pub struct ProfessorMetadata {
   name: String,
 }
 
@@ -183,10 +183,6 @@ impl SchoolSchedule {
       .collect_vec()
   }
 
-  pub fn get_professors_mut(&mut self) -> &mut [Option<Professor>; MAX_PROFESSORS] {
-    &mut self.simulation_information.professors
-  }
-
   pub fn get_classes(&self) -> Vec<(&Class, &ClassMetadata)> {
     self
       .simulation_information
@@ -212,6 +208,15 @@ impl SchoolSchedule {
         _ => None,
       })
       .collect()
+  }
+
+  pub fn get_professors_mut(&mut self) -> Vec<(&mut Professor, &mut ProfessorMetadata, usize)> {
+    let professors = &mut self.simulation_information.professors;
+    let professor_metadata = &mut self.professor_metadata;
+    professors.iter_mut().zip(professor_metadata).enumerate().filter_map(|t| match t {
+      (i, (Some(professor), Some(metadata))) => Some((professor, metadata, i)),
+      _ => None
+    }).collect()
   }
 
   fn add_hours_to_schedule(&mut self, class_id: usize, count: u8) {
@@ -275,7 +280,7 @@ impl SchoolSchedule {
     let class_metadata = &mut self.class_metadata;
     let classes = &mut self.simulation_information.classes;
 
-    let (class_id, (metadata, class)) = class_metadata
+    let (_class_id, (metadata, class)) = class_metadata
       .iter_mut()
       .zip(classes.iter_mut())
       .enumerate()
