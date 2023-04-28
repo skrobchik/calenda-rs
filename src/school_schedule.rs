@@ -1,6 +1,6 @@
 use std::{
   fmt::Display,
-  ops::{Index, IndexMut},
+  ops::{Index, IndexMut}, thread::{self, JoinHandle},
 };
 
 use egui::Color32;
@@ -155,10 +155,6 @@ impl Default for SchoolSchedule {
       schedule: Default::default(),
     }
   }
-}
-
-fn generate_schedule(simulation_information: SimulationInformation) -> WeekCalendar<Classes> {
-  todo!()
 }
 
 pub struct ClassData<'a> {
