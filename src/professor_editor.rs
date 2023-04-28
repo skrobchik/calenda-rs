@@ -4,11 +4,13 @@ use crate::school_schedule::{ClassroomType, SchoolSchedule};
 
 pub struct ProfessorEditor<'a> {
   state: &'a mut SchoolSchedule,
+  availability_editor_professor_id: &'a mut Option<usize>,
+  availability_editor_widget_open: &'a mut bool
 }
 
 impl<'a> ProfessorEditor<'a> {
-  pub fn new(state: &'a mut SchoolSchedule) -> Self {
-    ProfessorEditor { state }
+  pub fn new(state: &'a mut SchoolSchedule, availability_editor_professor_id: &'a mut Option<usize>, availability_editor_widget_open: &'a mut bool) -> Self {
+    ProfessorEditor { state, availability_editor_professor_id, availability_editor_widget_open }
   }
 
   pub fn show(&mut self, ctx: &egui::Context, open: &mut bool) {
@@ -37,6 +39,10 @@ impl<'a> ProfessorEditor<'a> {
             ui.label("Nombre");
             ui.text_edit_singleline(&mut metadata.name);
           });
+          if ui.button("Editar disponibilidad").clicked() {
+            *self.availability_editor_professor_id = Some(*professor_id);
+            *self.availability_editor_widget_open = true;
+          }
           ui.separator();
         }
       },

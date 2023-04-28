@@ -1,3 +1,5 @@
+use std::borrow::BorrowMut;
+
 use crate::{
   class_editor::ClassEditor,
   professor_schedule_widget::ProfessorScheduleWidget,
@@ -15,6 +17,8 @@ pub struct MyApp {
   schedule_widget_open: bool,
   professor_editor_widget_open: bool,
   class_editor_widget_open: bool,
+  availability_editor_professor_id: Option<usize>,
+  availability_editor_widget_open: bool,
 }
 
 impl MyApp {
@@ -56,7 +60,13 @@ impl eframe::App for MyApp {
 
       ClassEditor::new(&mut self.school_schedule).show(ctx, &mut self.class_editor_widget_open);
 
-      ProfessorEditor::new(&mut self.school_schedule).show(ctx, &mut self.professor_editor_widget_open);
+      ProfessorEditor::new(&mut self.school_schedule, &mut self.availability_editor_professor_id, &mut self.availability_editor_widget_open).show(ctx, &mut self.professor_editor_widget_open);
+    
+      if let Some(professor_id) = self.availability_editor_professor_id {
+        if let Some(professor) = self.school_schedule.simulation_information.professors[professor_id].borrow_mut() {
+          ProfessorScheduleWidget::new(professor).show(ctx, &mut self.availability_editor_widget_open);
+        }
+      }
     });
 
     // Resize the native window to be just the size we need it to be:
@@ -68,9 +78,11 @@ impl Default for MyApp {
   fn default() -> Self {
     Self {
       schedule_widget_open: true,
-      class_editor_widget_open: Default::default(),
-      professor_editor_widget_open: Default::default(),
-      school_schedule: Default::default()
+      class_editor_widget_open: true,
+      professor_editor_widget_open: true,
+      school_schedule: Default::default(),
+      availability_editor_professor_id: None,
+      availability_editor_widget_open: true,
     }
   }
 }
