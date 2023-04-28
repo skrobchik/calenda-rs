@@ -67,6 +67,9 @@ impl<'a> ClassEditor<'a> {
                 }
               })
           });
+          ui.horizontal(|ui| {
+            ui.add(egui::Slider::new(&mut class.class_hours, 0..=30).text("Tiempo (x30 min)"));
+          });
           ui.separator();
         }
       },
