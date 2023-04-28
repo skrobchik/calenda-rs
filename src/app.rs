@@ -2,16 +2,17 @@ use std::borrow::BorrowMut;
 
 use crate::{
   class_editor::ClassEditor,
+  professor_editor::ProfessorEditor,
   professor_schedule_widget::ProfessorScheduleWidget,
   school_schedule::{Professor, SchoolSchedule},
-  simple_schedule_widget::SimpleScheduleWidget, professor_editor::ProfessorEditor,
+  simple_schedule_widget::SimpleScheduleWidget,
 };
 use eframe::egui;
 use egui::Ui;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
-#[serde(default)] 
+#[serde(default)]
 pub struct MyApp {
   school_schedule: SchoolSchedule,
   schedule_widget_open: bool,
@@ -60,11 +61,19 @@ impl eframe::App for MyApp {
 
       ClassEditor::new(&mut self.school_schedule).show(ctx, &mut self.class_editor_widget_open);
 
-      ProfessorEditor::new(&mut self.school_schedule, &mut self.availability_editor_professor_id, &mut self.availability_editor_widget_open).show(ctx, &mut self.professor_editor_widget_open);
-    
+      ProfessorEditor::new(
+        &mut self.school_schedule,
+        &mut self.availability_editor_professor_id,
+        &mut self.availability_editor_widget_open,
+      )
+      .show(ctx, &mut self.professor_editor_widget_open);
+
       if let Some(professor_id) = self.availability_editor_professor_id {
-        if let Some(professor) = self.school_schedule.simulation_information.professors[professor_id].borrow_mut() {
-          ProfessorScheduleWidget::new(professor).show(ctx, &mut self.availability_editor_widget_open);
+        if let Some(professor) =
+          self.school_schedule.simulation_information.professors[professor_id].borrow_mut()
+        {
+          ProfessorScheduleWidget::new(professor)
+            .show(ctx, &mut self.availability_editor_widget_open);
         }
       }
     });

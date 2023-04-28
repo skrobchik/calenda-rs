@@ -50,16 +50,23 @@ impl<'a> ClassEditor<'a> {
                   );
                 }
               });
-            });
-            ui.horizontal(|ui| {
-              ui.label("Profesor");
-              ui.label(format!("{}", class.professor));
-              ComboBox::from_id_source(format!("professor_selector_{}", class_id.clone())).selected_text(professors.iter().find(|(_,_,professor_id)| *professor_id==class.professor).map_or("Undefined Professor", |(_,metadata,_)| &metadata.name)).show_ui(ui, |ui| {
+          });
+          ui.horizontal(|ui| {
+            ui.label("Profesor");
+            ui.label(format!("{}", class.professor));
+            ComboBox::from_id_source(format!("professor_selector_{}", class_id.clone()))
+              .selected_text(
+                professors
+                  .iter()
+                  .find(|(_, _, professor_id)| *professor_id == class.professor)
+                  .map_or("Undefined Professor", |(_, metadata, _)| &metadata.name),
+              )
+              .show_ui(ui, |ui| {
                 for (professor, metadata, professor_id) in professors.iter() {
                   ui.selectable_value(&mut class.professor, *professor_id, &metadata.name);
                 }
               })
-            });
+          });
           ui.separator();
         }
       },
