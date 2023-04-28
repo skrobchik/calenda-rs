@@ -1,6 +1,7 @@
 use std::{
   fmt::Display,
-  ops::{Index, IndexMut}, thread::{self, JoinHandle},
+  ops::{Index, IndexMut},
+  thread::{self, JoinHandle},
 };
 
 use egui::Color32;
