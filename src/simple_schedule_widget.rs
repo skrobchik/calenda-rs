@@ -32,20 +32,22 @@ impl<'a> SimpleScheduleWidget<'a> {
       for j in timeslot::DAY_RANGE {
         let day: Weekday = j.try_into().unwrap();
         let class_data_list = self.state.get_class_data(day, i);
-        let num_classes = class_data_list.len();
-        let class_width = w / num_classes as f32;
+        let num_sessions: u32 = class_data_list.iter().map(|data| { data.count as u32 }).sum();
+        let class_width = w / num_sessions as f32;
         let mut topleft: egui::Pos2 =
           response.rect.left_top() + (w * j as f32, h * i as f32).into();
         for class_data in class_data_list {
-          let botright: egui::Pos2 = topleft + (class_width, h).into();
-          let class_color = class_data.class_metadata.get_color();
-          painter.rect(
-            Rect::from_two_pos(topleft, botright),
-            Rounding::same(0.02 * w.min(h)),
-            *class_color,
-            Stroke::new(1.0, Color32::from_gray(100)),
-          );
-          topleft += (class_width, 0.0).into();
+          for _ in 0..class_data.count {
+            let botright: egui::Pos2 = topleft + (class_width, h).into();
+            let class_color = class_data.class_metadata.get_color();
+            painter.rect(
+              Rect::from_two_pos(topleft, botright),
+              Rounding::same(0.02 * w.min(h)),
+              *class_color,
+              Stroke::new(1.0, Color32::from_gray(100)),
+            );
+            topleft += (class_width, 0.0).into();
+          }
         }
       }
     }
