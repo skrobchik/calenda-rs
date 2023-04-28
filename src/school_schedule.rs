@@ -76,14 +76,14 @@ pub struct Class {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct SimulationInformation {
+pub struct SimulationConstraints {
   #[serde(with = "BigArray")]
   classes: [Option<Class>; MAX_CLASSES],
   #[serde(with = "BigArray")]
   pub professors: [Option<Professor>; MAX_PROFESSORS],
 }
 
-impl Default for SimulationInformation {
+impl Default for SimulationConstraints {
   fn default() -> Self {
     const CLASSES_INIT: Option<Class> = None;
     const PROFESSORS_INIT: Option<Professor> = None;
@@ -140,7 +140,7 @@ pub struct SchoolSchedule {
   pub class_metadata: [Option<ClassMetadata>; MAX_CLASSES],
   #[serde(with = "BigArray")]
   pub professor_metadata: [Option<ProfessorMetadata>; MAX_PROFESSORS],
-  pub simulation_information: SimulationInformation,
+  pub simulation_information: SimulationConstraints,
   pub schedule: WeekCalendar<Classes>,
 }
 
@@ -352,6 +352,6 @@ impl SchoolSchedule {
   }
 }
 
-fn calculate_energy(simulation_information: SimulationInformation) -> f32 {
+fn calculate_energy(simulation_information: SimulationConstraints) -> f32 {
   todo!()
 }
