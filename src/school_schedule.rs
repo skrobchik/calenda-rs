@@ -78,7 +78,7 @@ pub struct Class {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SimulationConstraints {
   #[serde(with = "BigArray")]
-  classes: [Option<Class>; MAX_CLASSES],
+  pub classes: [Option<Class>; MAX_CLASSES],
   #[serde(with = "BigArray")]
   pub professors: [Option<Professor>; MAX_PROFESSORS],
 }
