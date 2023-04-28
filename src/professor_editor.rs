@@ -1,6 +1,6 @@
-use egui::{ScrollArea};
+use egui::ScrollArea;
 
-use crate::school_schedule::{SchoolSchedule};
+use crate::school_schedule::SchoolSchedule;
 
 pub struct ProfessorEditor<'a> {
   state: &'a mut SchoolSchedule,

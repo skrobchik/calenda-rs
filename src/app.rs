@@ -1,10 +1,8 @@
 use std::borrow::BorrowMut;
 
 use crate::{
-  class_editor::ClassEditor,
-  professor_editor::ProfessorEditor,
-  professor_schedule_widget::ProfessorScheduleWidget,
-  school_schedule::{SchoolSchedule},
+  class_editor::ClassEditor, professor_editor::ProfessorEditor,
+  professor_schedule_widget::ProfessorScheduleWidget, school_schedule::SchoolSchedule,
   simple_schedule_widget::SimpleScheduleWidget,
 };
 use eframe::egui;
