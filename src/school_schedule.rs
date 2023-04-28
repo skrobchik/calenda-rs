@@ -1,7 +1,6 @@
 use std::{
   fmt::Display,
   ops::{Index, IndexMut},
-  thread::{self, JoinHandle},
 };
 
 use egui::Color32;
@@ -61,7 +60,7 @@ pub struct ClassMetadata {
 
 impl ClassMetadata {
   pub fn get_color(&self) -> &Color32 {
-    &&self.color
+    &self.color
   }
 
   pub fn get_name(&self) -> &str {
@@ -123,9 +122,9 @@ impl IndexMut<usize> for Classes {
   }
 }
 
-impl Into<[u8; MAX_CLASSES]> for Classes {
-  fn into(self) -> [u8; MAX_CLASSES] {
-    self.data
+impl From<Classes> for [u8; MAX_CLASSES] {
+  fn from(val: Classes) -> Self {
+    val.data
   }
 }
 
@@ -166,7 +165,7 @@ pub struct ClassData<'a> {
 }
 
 impl SchoolSchedule {
-  pub fn get_class_data<'a>(&'a self, day: Weekday, timeslot: usize) -> Vec<ClassData<'a>> {
+  pub fn get_class_data(&self, day: Weekday, timeslot: usize) -> Vec<ClassData<'_>> {
     let slot: [u8; MAX_CLASSES] = self.schedule[day.into()][timeslot].into();
     let classes = &self.simulation_information.classes;
     let class_metadata = &self.class_metadata;
@@ -353,6 +352,6 @@ impl SchoolSchedule {
   }
 }
 
-fn calculate_energy(simulation_information: SimulationConstraints) -> f32 {
+fn calculate_energy(_simulation_information: SimulationConstraints) -> f32 {
   todo!()
 }

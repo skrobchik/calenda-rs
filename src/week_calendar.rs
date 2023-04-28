@@ -78,9 +78,9 @@ pub enum Weekday {
   Sunday,
 }
 
-impl Into<usize> for Weekday {
-  fn into(self) -> usize {
-    match self {
+impl From<Weekday> for usize {
+  fn from(val: Weekday) -> Self {
+    match val {
       Weekday::Monday => 0,
       Weekday::Tuesday => 1,
       Weekday::Wednesday => 2,

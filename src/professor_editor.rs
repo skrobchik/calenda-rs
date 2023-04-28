@@ -1,6 +1,6 @@
-use egui::{ComboBox, ScrollArea};
+use egui::{ScrollArea};
 
-use crate::school_schedule::{ClassroomType, SchoolSchedule};
+use crate::school_schedule::{SchoolSchedule};
 
 pub struct ProfessorEditor<'a> {
   state: &'a mut SchoolSchedule,
@@ -42,7 +42,7 @@ impl<'a> ProfessorEditor<'a> {
       professors.len(),
       |ui, row_range| {
         let class_range = professors.get_mut(row_range).unwrap();
-        for (professor, metadata, professor_id) in class_range.iter_mut() {
+        for (_professor, metadata, professor_id) in class_range.iter_mut() {
           ui.horizontal(|ui| {
             ui.label("Nombre");
             ui.text_edit_singleline(&mut metadata.name);

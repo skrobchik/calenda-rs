@@ -39,7 +39,7 @@ impl<'a> ClassEditor<'a> {
           });
           ui.horizontal(|ui| {
             ui.label("Aula");
-            ComboBox::from_id_source(class_id.clone())
+            ComboBox::from_id_source(*class_id)
               .selected_text(class.classroom_type.to_string())
               .show_ui(ui, |ui| {
                 for classroom_type_variant in enum_iterator::all::<ClassroomType>() {
@@ -62,7 +62,7 @@ impl<'a> ClassEditor<'a> {
                   .map_or("Undefined Professor", |(_, metadata, _)| &metadata.name),
               )
               .show_ui(ui, |ui| {
-                for (professor, metadata, professor_id) in professors.iter() {
+                for (_professor, metadata, professor_id) in professors.iter() {
                   ui.selectable_value(&mut class.professor, *professor_id, &metadata.name);
                 }
               })

@@ -4,7 +4,7 @@ use crate::{
   class_editor::ClassEditor,
   professor_editor::ProfessorEditor,
   professor_schedule_widget::ProfessorScheduleWidget,
-  school_schedule::{Professor, SchoolSchedule},
+  school_schedule::{SchoolSchedule},
   simple_schedule_widget::SimpleScheduleWidget,
 };
 use eframe::egui;
