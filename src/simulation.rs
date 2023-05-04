@@ -4,7 +4,8 @@ use rand::{rngs::ThreadRng, Rng};
 
 use crate::{
   school_schedule::{Classes, SimulationConstraints},
-  week_calendar::WeekCalendar, timeslot,
+  timeslot,
+  week_calendar::WeekCalendar,
 };
 
 pub fn generate_schedule(constraints: SimulationConstraints) -> JoinHandle<WeekCalendar<Classes>> {
@@ -39,14 +40,14 @@ fn temperature(x: f32) -> f32 {
 
 fn random_init(constraints: &SimulationConstraints, rng: &mut ThreadRng) -> WeekCalendar<Classes> {
   let mut state: WeekCalendar<Classes> = Default::default();
-  
+
   for (class_id, class) in constraints.classes.iter().enumerate() {
     if let Some(class) = class {
       let rand_timeslot = rng.gen_range(timeslot::TIMESLOT_RANGE);
       let rand_day = rng.gen_range(timeslot::DAY_RANGE);
       state[rand_day][rand_timeslot][class_id] = class.class_hours;
-    } 
-  };
+    }
+  }
 
   state
 }

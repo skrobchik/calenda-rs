@@ -32,7 +32,7 @@ impl<'a> SimpleScheduleWidget<'a> {
       for j in timeslot::DAY_RANGE {
         let day: Weekday = j.try_into().unwrap();
         let class_data_list = self.state.get_class_data(day, i);
-        let num_sessions: u32 = class_data_list.iter().map(|data| { data.count as u32 }).sum();
+        let num_sessions: u32 = class_data_list.iter().map(|data| data.count as u32).sum();
         let class_width = w / num_sessions as f32;
         let mut topleft: egui::Pos2 =
           response.rect.left_top() + (w * j as f32, h * i as f32).into();
