@@ -11,8 +11,18 @@ pub mod database_importer;
 
 use crate::app::MyApp;
 
+use tracing_subscriber::FmtSubscriber;
+use tracing::Level;
+
 fn main() {
-  let schedule = database_importer::import_database().expect("Failed to import");
+  let subscriber = FmtSubscriber::builder()
+    .with_max_level(Level::TRACE)
+    .finish();
+  tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
+  
+
+  database_importer::import_temporary_database().expect("Error");
+  let schedule = database_importer::parse_database_data().expect("Failed to import");
   let options = eframe::NativeOptions::default();
   eframe::run_native("my_app", options, Box::new(|cc| Box::new({
     let mut app = MyApp::new(cc);
