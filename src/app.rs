@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
 pub struct MyApp {
-  school_schedule: SchoolSchedule,
+  pub school_schedule: SchoolSchedule,
   schedule_widget_open: bool,
   professor_editor_widget_open: bool,
   class_editor_widget_open: bool,

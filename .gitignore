@@ -1,3 +1,4 @@
 /target
 .DS_Store
 /Archivos\ SQL
+temp_db.sqlite
