@@ -86,8 +86,8 @@ impl Default for SimulationConstraints {
     const CLASSES_INIT: Option<Class> = None;
     const PROFESSORS_INIT: Option<Professor> = None;
     Self {
-      classes: vec![CLASSES_INIT; MAX_CLASSES],
-      professors: vec![PROFESSORS_INIT; MAX_PROFESSORS],
+      classes: std::iter::repeat(CLASSES_INIT).take(MAX_CLASSES).collect(),
+      professors: std::iter::repeat(PROFESSORS_INIT).take(MAX_PROFESSORS).collect(),
     }
   }
 }
@@ -127,10 +127,8 @@ impl Into<Vec<u8>> for Classes {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SchoolSchedule {
-  #[serde(with = "BigArray")]
-  pub class_metadata: [Option<ClassMetadata>; MAX_CLASSES],
-  #[serde(with = "BigArray")]
-  pub professor_metadata: [Option<ProfessorMetadata>; MAX_PROFESSORS],
+  pub class_metadata: Vec<Option<ClassMetadata>>,
+  pub professor_metadata: Vec<Option<ProfessorMetadata>>,
   pub simulation_information: SimulationConstraints,
   pub schedule: WeekCalendar<Classes>,
 }
@@ -140,8 +138,8 @@ impl Default for SchoolSchedule {
     const CLASS_METADATA_INIT: Option<ClassMetadata> = None;
     const PROFESSOR_METADATA_INIT: Option<ProfessorMetadata> = None;
     Self {
-      class_metadata: [CLASS_METADATA_INIT; MAX_CLASSES],
-      professor_metadata: [PROFESSOR_METADATA_INIT; MAX_PROFESSORS],
+      class_metadata: std::iter::repeat(CLASS_METADATA_INIT).take(MAX_CLASSES).collect(),
+      professor_metadata: std::iter::repeat(PROFESSOR_METADATA_INIT).take(MAX_PROFESSORS).collect(),
       simulation_information: Default::default(),
       schedule: Default::default(),
     }
