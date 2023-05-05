@@ -343,7 +343,3 @@ impl SchoolSchedule {
     Some((class, metadata))
   }
 }
-
-fn calculate_energy(_simulation_information: SimulationConstraints) -> f32 {
-  todo!()
-}
