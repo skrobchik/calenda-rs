@@ -14,9 +14,7 @@ impl<'a> ClassEditor<'a> {
   pub fn show(&mut self, ctx: &egui::Context, open: &mut bool) {
     egui::Window::new("Class Editor")
       .open(open)
-      .vscroll(false)
-      .resizable(true)
-      .default_height(500.0)
+      .resizable(false)
       .show(ctx, |ui| {
         self.ui(ui);
       });
@@ -26,10 +24,12 @@ impl<'a> ClassEditor<'a> {
     ui.separator();
     let (mut classes, professors) = self.state.get_classes_and_professors_mut();
     let text_style = egui::TextStyle::Body;
-    ScrollArea::new([false, true]).show_rows(
+    let num_rows = classes.len();
+    let row_height = 4.0 * ui.spacing().interact_size.y + ui.text_style_height(&text_style);
+    ScrollArea::vertical().auto_shrink([false; 2]).max_height(500.0).show_rows(
       ui,
-      ui.text_style_height(&text_style),
-      classes.len(),
+      row_height,
+      num_rows,
       |ui, row_range| {
         let class_range = classes.get_mut(row_range).unwrap();
         for (class, metadata, class_id) in class_range.iter_mut() {

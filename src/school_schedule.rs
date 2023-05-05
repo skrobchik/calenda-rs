@@ -7,7 +7,6 @@ use egui::Color32;
 use enum_iterator::Sequence;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use serde_big_array::BigArray;
 
 use crate::{
   timeslot::{DAY_RANGE, TIMESLOT_RANGE},
@@ -77,10 +76,8 @@ pub struct Class {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SimulationConstraints {
-  #[serde(with = "BigArray")]
-  pub classes: [Option<Class>; MAX_CLASSES],
-  #[serde(with = "BigArray")]
-  pub professors: [Option<Professor>; MAX_PROFESSORS],
+  pub classes: Vec<Option<Class>>,
+  pub professors: Vec<Option<Professor>>,
 }
 
 impl Default for SimulationConstraints {
@@ -88,22 +85,23 @@ impl Default for SimulationConstraints {
     const CLASSES_INIT: Option<Class> = None;
     const PROFESSORS_INIT: Option<Professor> = None;
     Self {
-      classes: [CLASSES_INIT; MAX_CLASSES],
-      professors: [PROFESSORS_INIT; MAX_PROFESSORS],
+      classes: std::iter::repeat(CLASSES_INIT).take(MAX_CLASSES).collect(),
+      professors: std::iter::repeat(PROFESSORS_INIT)
+        .take(MAX_PROFESSORS)
+        .collect(),
     }
   }
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Classes {
-  #[serde(with = "BigArray")]
-  data: [u8; MAX_CLASSES],
+  data: Vec<u8>,
 }
 
 impl Default for Classes {
   fn default() -> Self {
     Self {
-      data: [0; MAX_CLASSES],
+      data: std::iter::repeat(0).take(MAX_CLASSES).collect(),
     }
   }
 }
@@ -122,24 +120,16 @@ impl IndexMut<usize> for Classes {
   }
 }
 
-impl From<Classes> for [u8; MAX_CLASSES] {
-  fn from(val: Classes) -> Self {
-    val.data
-  }
-}
-
-impl From<[u8; MAX_CLASSES]> for Classes {
-  fn from(data: [u8; MAX_CLASSES]) -> Self {
-    Classes { data }
+impl Into<Vec<u8>> for Classes {
+  fn into(self) -> Vec<u8> {
+    self.data
   }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SchoolSchedule {
-  #[serde(with = "BigArray")]
-  pub class_metadata: [Option<ClassMetadata>; MAX_CLASSES],
-  #[serde(with = "BigArray")]
-  pub professor_metadata: [Option<ProfessorMetadata>; MAX_PROFESSORS],
+  pub class_metadata: Vec<Option<ClassMetadata>>,
+  pub professor_metadata: Vec<Option<ProfessorMetadata>>,
   pub simulation_information: SimulationConstraints,
   pub schedule: WeekCalendar<Classes>,
 }
@@ -149,8 +139,12 @@ impl Default for SchoolSchedule {
     const CLASS_METADATA_INIT: Option<ClassMetadata> = None;
     const PROFESSOR_METADATA_INIT: Option<ProfessorMetadata> = None;
     Self {
-      class_metadata: [CLASS_METADATA_INIT; MAX_CLASSES],
-      professor_metadata: [PROFESSOR_METADATA_INIT; MAX_PROFESSORS],
+      class_metadata: std::iter::repeat(CLASS_METADATA_INIT)
+        .take(MAX_CLASSES)
+        .collect(),
+      professor_metadata: std::iter::repeat(PROFESSOR_METADATA_INIT)
+        .take(MAX_PROFESSORS)
+        .collect(),
       simulation_information: Default::default(),
       schedule: Default::default(),
     }
@@ -166,7 +160,7 @@ pub struct ClassData<'a> {
 
 impl SchoolSchedule {
   pub fn get_class_data(&self, day: Weekday, timeslot: usize) -> Vec<ClassData<'_>> {
-    let slot: [u8; MAX_CLASSES] = self.schedule[day.into()][timeslot].into();
+    let slot: Vec<u8> = self.schedule.get(day, timeslot).unwrap().clone().into();
     let classes = &self.simulation_information.classes;
     let class_metadata = &self.class_metadata;
     slot
@@ -235,7 +229,10 @@ impl SchoolSchedule {
   }
 
   fn add_hours_to_schedule(&mut self, class_id: usize, count: u8) {
-    self.schedule[0][0][class_id] = self.schedule[0][0][class_id].checked_add(count).unwrap();
+    self.schedule.get_mut(0_usize, 0_usize).unwrap()[class_id] =
+      self.schedule.get(0_usize, 0_usize).unwrap()[class_id]
+        .checked_add(count)
+        .unwrap();
   }
 
   /// Attempts to remove `count` instances of class with `class_id` from schedule.
@@ -246,9 +243,9 @@ impl SchoolSchedule {
     let mut count = count;
     for day in DAY_RANGE {
       for timeslot in TIMESLOT_RANGE {
-        let dc = count.min(self.schedule[day][timeslot][class_id]);
+        let dc = count.min(self.schedule.get(day, timeslot).unwrap()[class_id]);
         count -= dc;
-        self.schedule[day][timeslot][class_id] -= dc;
+        self.schedule.get_mut(day, timeslot).unwrap()[class_id] -= dc;
         if count == 0 {
           return count;
         }
@@ -262,7 +259,7 @@ impl SchoolSchedule {
     for day in DAY_RANGE {
       for timeslot in TIMESLOT_RANGE {
         for class_id in 0..MAX_CLASSES {
-          schedule_hour_count[class_id] += self.schedule[day][timeslot][class_id];
+          schedule_hour_count[class_id] += self.schedule.get(day, timeslot).unwrap()[class_id];
         }
       }
     }
@@ -350,8 +347,4 @@ impl SchoolSchedule {
     let class = class.as_mut().unwrap();
     Some((class, metadata))
   }
-}
-
-fn calculate_energy(_simulation_information: SimulationConstraints) -> f32 {
-  todo!()
 }

@@ -45,7 +45,7 @@ fn random_init(constraints: &SimulationConstraints, rng: &mut ThreadRng) -> Week
     if let Some(class) = class {
       let rand_timeslot = rng.gen_range(timeslot::TIMESLOT_RANGE);
       let rand_day = rng.gen_range(timeslot::DAY_RANGE);
-      state[rand_day][rand_timeslot][class_id] = class.class_hours;
+      state.get_mut(rand_day, rand_timeslot).unwrap()[class_id] = class.class_hours;
     }
   }
 

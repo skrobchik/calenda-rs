@@ -2,6 +2,7 @@ use crate::school_schedule::SchoolSchedule;
 use anyhow::Context;
 use itertools::Itertools;
 use std::{fs, path::Path};
+use tracing::trace;
 
 const TEMP_DB_PATH: &str = "temp_db.sqlite";
 
@@ -40,22 +41,31 @@ pub fn import_temporary_database() -> anyhow::Result<()> {
   Ok(())
 }
 
+#[derive(PartialEq, Eq, Hash)]
+struct Class {
+  name: String
+}
+
 pub fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
   let connection = sqlite::open(TEMP_DB_PATH)?;
   let mut schedule: SchoolSchedule = Default::default();
   let query = "SELECT * FROM Materias";
-  let mut counter = 0;
-
+  
+  let mut classes: Vec<Class> = Vec::new();
   connection.iterate(query, |rows| {
     for (_, _, _, (_, descripcion), _, _, _, _) in rows.iter().tuple_windows() {
-      println!("{}", descripcion.unwrap());
-      let (_class, mut class_metadata) =
-        schedule.add_new_class().context("no more space").unwrap();
-      class_metadata.name = String::from(descripcion.unwrap());
-      println!("{}", counter);
-      counter += 1;
+      trace!("{}", descripcion.unwrap());
+      classes.push(Class {
+        name: String::from(descripcion.unwrap()), 
+      });
     }
     true
   })?;
+
+  for my_class in classes.iter().unique() {
+    let (_class, mut class_metadata) = schedule.add_new_class().context("no more space").unwrap();
+    class_metadata.name = my_class.name.clone();
+  }
+
   Ok(schedule)
 }

@@ -1,69 +1,55 @@
-use std::ops::{Index, IndexMut};
-
 use serde::{Deserialize, Serialize};
-use serde_big_array::BigArray;
 
 use crate::timeslot::*;
 
 pub const DAY_COUNT: usize = 7; // 7 days in a week
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
-pub struct DaySchedule<T> {
-  #[serde(
-    bound(serialize = "T: Serialize", deserialize = "T: Deserialize<'de>"),
-    with = "BigArray"
-  )]
-  data: [T; TIMESLOT_COUNT],
-}
-
-impl<T: Default + Copy> Default for DaySchedule<T> {
-  fn default() -> Self {
-    let init: T = Default::default();
-    Self {
-      data: [init; TIMESLOT_COUNT],
-    }
-  }
-}
-
-impl<T> Index<usize> for DaySchedule<T> {
-  type Output = T;
-
-  fn index(&self, index: usize) -> &Self::Output {
-    &self.data[index]
-  }
-}
-
-impl<T> IndexMut<usize> for DaySchedule<T> {
-  fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-    &mut self.data[index]
-  }
-}
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct WeekCalendar<T> {
-  // Box because doesn't fit in stack
-  data: Box<[DaySchedule<T>; DAY_COUNT]>,
+  data: Vec<T>,
 }
 
-impl<T> Index<usize> for WeekCalendar<T> {
-  type Output = DaySchedule<T>;
-
-  fn index(&self, index: usize) -> &Self::Output {
-    &self.data[index]
-  }
-}
-
-impl<T> IndexMut<usize> for WeekCalendar<T> {
-  fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-    &mut self.data[index]
-  }
-}
-
-impl<T: Default + Copy> Default for WeekCalendar<T> {
+impl<T: Default + Clone> Default for WeekCalendar<T> {
   fn default() -> Self {
     Self {
-      data: Default::default(),
+      data: std::iter::repeat(Default::default())
+        .take(TIMESLOT_COUNT * DAY_COUNT)
+        .collect(),
     }
+  }
+}
+
+impl<T> WeekCalendar<T> {
+  pub fn get<'a, I1: Into<usize>, I2: Into<usize>>(
+    &'a self,
+    day: I1,
+    timeslot: I2,
+  ) -> Option<&'a T> {
+    let day: usize = day.into();
+    let timeslot: usize = timeslot.into();
+    if !(0..DAY_COUNT).contains(&day) {
+      return None;
+    }
+    if !(0..TIMESLOT_COUNT).contains(&timeslot) {
+      return None;
+    }
+    Some(&self.data[day * TIMESLOT_COUNT + timeslot])
+  }
+
+  pub fn get_mut<'a, I1: Into<usize>, I2: Into<usize>>(
+    &'a mut self,
+    day: I1,
+    timeslot: I2,
+  ) -> Option<&'a mut T> {
+    let day: usize = day.into();
+    let timeslot: usize = timeslot.into();
+    if !(0..DAY_COUNT).contains(&day) {
+      return None;
+    }
+    if !(0..TIMESLOT_COUNT).contains(&timeslot) {
+      return None;
+    }
+    Some(&mut self.data[day * TIMESLOT_COUNT + timeslot])
   }
 }
 
