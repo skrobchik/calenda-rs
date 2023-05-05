@@ -7,7 +7,6 @@ use egui::Color32;
 use enum_iterator::Sequence;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use serde_big_array::BigArray;
 
 use crate::{
   timeslot::{DAY_RANGE, TIMESLOT_RANGE},
@@ -87,7 +86,9 @@ impl Default for SimulationConstraints {
     const PROFESSORS_INIT: Option<Professor> = None;
     Self {
       classes: std::iter::repeat(CLASSES_INIT).take(MAX_CLASSES).collect(),
-      professors: std::iter::repeat(PROFESSORS_INIT).take(MAX_PROFESSORS).collect(),
+      professors: std::iter::repeat(PROFESSORS_INIT)
+        .take(MAX_PROFESSORS)
+        .collect(),
     }
   }
 }
@@ -138,8 +139,12 @@ impl Default for SchoolSchedule {
     const CLASS_METADATA_INIT: Option<ClassMetadata> = None;
     const PROFESSOR_METADATA_INIT: Option<ProfessorMetadata> = None;
     Self {
-      class_metadata: std::iter::repeat(CLASS_METADATA_INIT).take(MAX_CLASSES).collect(),
-      professor_metadata: std::iter::repeat(PROFESSOR_METADATA_INIT).take(MAX_PROFESSORS).collect(),
+      class_metadata: std::iter::repeat(CLASS_METADATA_INIT)
+        .take(MAX_CLASSES)
+        .collect(),
+      professor_metadata: std::iter::repeat(PROFESSOR_METADATA_INIT)
+        .take(MAX_PROFESSORS)
+        .collect(),
       simulation_information: Default::default(),
       schedule: Default::default(),
     }
