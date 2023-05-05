@@ -7,39 +7,6 @@ use crate::timeslot::*;
 
 pub const DAY_COUNT: usize = 7; // 7 days in a week
 
-#[deprecated]
-#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
-pub struct DaySchedule<T> {
-  #[serde(
-    bound(serialize = "T: Serialize", deserialize = "T: Deserialize<'de>"),
-    with = "BigArray"
-  )]
-  data: [T; TIMESLOT_COUNT],
-}
-
-impl<T: Default + Copy> Default for DaySchedule<T> {
-  fn default() -> Self {
-    let init: T = Default::default();
-    Self {
-      data: [init; TIMESLOT_COUNT],
-    }
-  }
-}
-
-impl<T> Index<usize> for DaySchedule<T> {
-  type Output = T;
-
-  fn index(&self, index: usize) -> &Self::Output {
-    &self.data[index]
-  }
-}
-
-impl<T> IndexMut<usize> for DaySchedule<T> {
-  fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-    &mut self.data[index]
-  }
-}
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct WeekCalendar<T> {
   data: Vec<T>,
