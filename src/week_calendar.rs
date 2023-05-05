@@ -12,13 +12,19 @@ pub struct WeekCalendar<T> {
 impl<T: Default + Clone> Default for WeekCalendar<T> {
   fn default() -> Self {
     Self {
-      data: std::iter::repeat(Default::default()).take(TIMESLOT_COUNT*DAY_COUNT).collect(),
+      data: std::iter::repeat(Default::default())
+        .take(TIMESLOT_COUNT * DAY_COUNT)
+        .collect(),
     }
   }
 }
 
 impl<T> WeekCalendar<T> {
-  pub fn get<'a, I1: Into<usize>, I2: Into<usize>>(&'a self, day: I1, timeslot: I2) -> Option<&'a T> {
+  pub fn get<'a, I1: Into<usize>, I2: Into<usize>>(
+    &'a self,
+    day: I1,
+    timeslot: I2,
+  ) -> Option<&'a T> {
     let day: usize = day.into();
     let timeslot: usize = timeslot.into();
     if !(0..DAY_COUNT).contains(&day) {
@@ -27,10 +33,14 @@ impl<T> WeekCalendar<T> {
     if !(0..TIMESLOT_COUNT).contains(&timeslot) {
       return None;
     }
-    Some(&self.data[day*TIMESLOT_COUNT+timeslot])
+    Some(&self.data[day * TIMESLOT_COUNT + timeslot])
   }
 
-  pub fn get_mut<'a, I1: Into<usize>, I2: Into<usize>>(&'a mut self, day: I1, timeslot: I2) -> Option<&'a mut T> {
+  pub fn get_mut<'a, I1: Into<usize>, I2: Into<usize>>(
+    &'a mut self,
+    day: I1,
+    timeslot: I2,
+  ) -> Option<&'a mut T> {
     let day: usize = day.into();
     let timeslot: usize = timeslot.into();
     if !(0..DAY_COUNT).contains(&day) {
@@ -39,7 +49,7 @@ impl<T> WeekCalendar<T> {
     if !(0..TIMESLOT_COUNT).contains(&timeslot) {
       return None;
     }
-    Some(&mut self.data[day*TIMESLOT_COUNT+timeslot])
+    Some(&mut self.data[day * TIMESLOT_COUNT + timeslot])
   }
 }
 

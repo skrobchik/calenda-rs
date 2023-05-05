@@ -52,8 +52,7 @@ pub fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
         continue;
       }
       println!("{}", descripcion.unwrap());
-      let (_class, mut class_metadata) =
-        schedule.add_new_class().context("no more space").unwrap();
+      let (_class, mut class_metadata) = schedule.add_new_class().context("no more space").unwrap();
       class_metadata.name = String::from(descripcion.unwrap());
       println!("{}", counter);
       counter += 1;

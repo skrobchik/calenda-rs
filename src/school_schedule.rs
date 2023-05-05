@@ -105,7 +105,6 @@ impl Default for Classes {
   }
 }
 
-
 impl Index<usize> for Classes {
   type Output = u8;
 
@@ -121,9 +120,9 @@ impl IndexMut<usize> for Classes {
 }
 
 impl Into<Vec<u8>> for Classes {
-    fn into(self) -> Vec<u8> {
-        self.data
-    }
+  fn into(self) -> Vec<u8> {
+    self.data
+  }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -227,7 +226,10 @@ impl SchoolSchedule {
   }
 
   fn add_hours_to_schedule(&mut self, class_id: usize, count: u8) {
-  self.schedule.get_mut(0_usize, 0_usize).unwrap()[class_id] = self.schedule.get(0_usize, 0_usize).unwrap()[class_id].checked_add(count).unwrap();
+    self.schedule.get_mut(0_usize, 0_usize).unwrap()[class_id] =
+      self.schedule.get(0_usize, 0_usize).unwrap()[class_id]
+        .checked_add(count)
+        .unwrap();
   }
 
   /// Attempts to remove `count` instances of class with `class_id` from schedule.
