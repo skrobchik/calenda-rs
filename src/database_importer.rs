@@ -46,6 +46,11 @@ struct Class {
   name: String
 }
 
+#[derive(PartialEq, Eq, Hash)]
+struct Professor {
+  name: String
+}
+
 pub fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
   let connection = sqlite::open(TEMP_DB_PATH)?;
   let mut schedule: SchoolSchedule = Default::default();
@@ -53,10 +58,11 @@ pub fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
   
   let mut classes: Vec<Class> = Vec::new();
   connection.iterate(query, |rows| {
-    for (_, _, _, (_, descripcion), _, _, _, _) in rows.iter().tuple_windows() {
+    for (a, b, c, (_, descripcion), d, e, f, g) in rows.iter().tuple_windows() {
+      trace!("{:?} {:?} {:?} {:?} {:?} {:?} {:?}", a, b, c, d, e, f, g);
       trace!("{}", descripcion.unwrap());
       classes.push(Class {
-        name: String::from(descripcion.unwrap()), 
+        name: descripcion.unwrap().to_string(), 
       });
     }
     true
@@ -66,6 +72,23 @@ pub fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
     let (_class, mut class_metadata) = schedule.add_new_class().context("no more space").unwrap();
     class_metadata.name = my_class.name.clone();
   }
+
+  let mut professors: Vec<Professor> = Vec::new();
+
+  let query = "SELECT * FROM Profesores";
+  connection.iterate(query, |rows| {
+    for ((_, nombre), _, _) in rows.iter().tuple_windows() {
+      trace!("{}", nombre.unwrap());
+      professors.push(Professor { name: nombre.unwrap().to_string() });
+    }
+    true
+  })?;
+
+  for my_professor in professors.iter().unique() {
+    let (_professor, mut professor_metadata, _professor_id) = schedule.add_new_professor().context("no more space").unwrap();
+    professor_metadata.name = my_professor.name.clone();
+  }
+  
 
   Ok(schedule)
 }

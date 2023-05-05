@@ -13,8 +13,8 @@ use crate::{
   week_calendar::{WeekCalendar, Weekday},
 };
 
-const MAX_CLASSES: usize = 1046;
-const MAX_PROFESSORS: usize = 128;
+const MAX_CLASSES: usize = 256;
+const MAX_PROFESSORS: usize = 256;
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, Default)]
 pub enum Availability {

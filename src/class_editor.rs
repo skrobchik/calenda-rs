@@ -14,7 +14,7 @@ impl<'a> ClassEditor<'a> {
   pub fn show(&mut self, ctx: &egui::Context, open: &mut bool) {
     egui::Window::new("Class Editor")
       .open(open)
-      .resizable(false)
+      .resizable(true)
       .show(ctx, |ui| {
         self.ui(ui);
       });
