@@ -48,9 +48,6 @@ pub fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
 
   connection.iterate(query, |rows| {
     for (_, _, _, (_, descripcion), _, _, _, _) in rows.iter().tuple_windows() {
-      if counter >= 10 {
-        continue;
-      }
       println!("{}", descripcion.unwrap());
       let (_class, mut class_metadata) = schedule.add_new_class().context("no more space").unwrap();
       class_metadata.name = String::from(descripcion.unwrap());
