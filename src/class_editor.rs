@@ -1,6 +1,6 @@
 use egui::{ComboBox, ScrollArea};
 
-use crate::school_schedule::{ClassroomType, SchoolSchedule};
+use crate::school_schedule::{ClassroomType, SchoolSchedule, Semester, Group};
 
 pub struct ClassEditor<'a> {
   state: &'a mut SchoolSchedule,
@@ -25,7 +25,7 @@ impl<'a> ClassEditor<'a> {
     let (mut classes, professors) = self.state.get_classes_and_professors_mut();
     let text_style = egui::TextStyle::Body;
     let num_rows = classes.len();
-    let row_height = 4.0 * ui.spacing().interact_size.y + ui.text_style_height(&text_style);
+    let row_height = 6.0 * ui.spacing().interact_size.y + ui.text_style_height(&text_style);
     ScrollArea::vertical()
       .auto_shrink([false; 2])
       .max_height(500.0)
@@ -38,7 +38,7 @@ impl<'a> ClassEditor<'a> {
           });
           ui.horizontal(|ui| {
             ui.label("Aula");
-            ComboBox::from_id_source(*class_id)
+            ComboBox::from_id_source(format!("classroom_type_selector_{}", class_id))
               .selected_text(class.classroom_type.to_string())
               .show_ui(ui, |ui| {
                 for classroom_type_variant in enum_iterator::all::<ClassroomType>() {
@@ -46,6 +46,34 @@ impl<'a> ClassEditor<'a> {
                     &mut class.classroom_type,
                     classroom_type_variant,
                     classroom_type_variant.to_string(),
+                  );
+                }
+              });
+          });
+          ui.horizontal(|ui| {
+            ui.label("Semestre");
+            ComboBox::from_id_source(format!("semester_selector_{}", class_id))
+              .selected_text(class.semester.to_string())
+              .show_ui(ui, |ui| {
+                for semester_variant in enum_iterator::all::<Semester>() {
+                  ui.selectable_value(
+                    &mut class.semester,
+                    semester_variant,
+                    semester_variant.to_string(),
+                  );
+                }
+              });
+          });
+          ui.horizontal(|ui| {
+            ui.label("Groupo");
+            ComboBox::from_id_source(format!("group_selector_{}", class_id))
+              .selected_text(class.group.to_string())
+              .show_ui(ui, |ui| {
+                for group_variant in enum_iterator::all::<Group>() {
+                  ui.selectable_value(
+                    &mut class.group,
+                    group_variant,
+                    group_variant.to_string(),
                   );
                 }
               });
@@ -67,7 +95,7 @@ impl<'a> ClassEditor<'a> {
               })
           });
           ui.horizontal(|ui| {
-            ui.add(egui::Slider::new(&mut class.class_hours, 0..=30).text("Tiempo (x30 min)"));
+            ui.add(egui::Slider::new(&mut class.class_hours, 0..=20).text("Tiempo (x30 min)"));
           });
           ui.separator();
         }

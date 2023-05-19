@@ -1,4 +1,4 @@
-use crate::school_schedule::SchoolSchedule;
+use crate::school_schedule::{SchoolSchedule, parse_semester_group};
 use anyhow::Context;
 use itertools::Itertools;
 use std::{collections::BTreeMap, fs, path::Path};
@@ -47,6 +47,8 @@ struct Class {
   rfc1: String,
   rfc2: String,
   ciclo: String,
+  grupo: String,
+  asignatura: String,
 }
 
 #[derive(PartialEq, Eq, Hash)]
@@ -66,8 +68,8 @@ pub fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
       trace!("{:?}", row);
       let (
         (_, _id),
-        (_, _grupo),
-        (_, _asignatura),
+        (_, grupo),
+        (_, asignatura),
         (_, descripcion),
         (_, rfc1),
         (_, rfc2),
@@ -79,6 +81,8 @@ pub fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
         rfc1: rfc1.unwrap().to_string(),
         rfc2: rfc2.unwrap().to_string(),
         ciclo: ciclo.unwrap().to_string(),
+        grupo: grupo.unwrap().to_string(),
+        asignatura: asignatura.unwrap().to_string(),
       });
     }
     true
@@ -111,9 +115,24 @@ pub fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
 
   for my_class in classes.iter().filter(|c| c.ciclo == "2023-2") {
     let (class, mut class_metadata) = schedule.add_new_class().context("no more space").unwrap();
-    class_metadata.name = my_class.name.clone();
+    class_metadata.name = format!("{} {}", my_class.asignatura, my_class.name);
     let professor_id = professor_ids.get(&my_class.rfc1).unwrap_or(&0);
     class.professor = *professor_id;
+    if let Some((semester, group)) = parse_semester_group(&my_class.grupo) {
+      class.group = group;
+      class.semester = semester;
+    }
+
+    if my_class.rfc2.trim().is_empty() { continue; }
+
+    let (class, mut class_metadata) = schedule.add_new_class().context("no more space").unwrap();
+    class_metadata.name = format!("{} {} (Lab)", my_class.asignatura, my_class.name);
+    let professor_id = professor_ids.get(&my_class.rfc2).unwrap_or(&0);
+    class.professor = *professor_id;
+    if let Some((semester, group)) = parse_semester_group(&my_class.grupo) {
+      class.group = group;
+      class.semester = semester;
+    }
   }
 
   Ok(schedule)

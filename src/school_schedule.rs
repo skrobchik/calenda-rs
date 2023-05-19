@@ -52,6 +52,7 @@ pub fn parse_semester_group(s: &str) -> Option<(Semester, Group)> {
   }
 }
 
+#[derive(Serialize, Deserialize, Clone, Copy, Sequence, PartialEq, Eq, Debug)]
 pub enum Group {
   G1,
   G2,
@@ -73,6 +74,18 @@ impl TryFrom<u32> for Group {
     }
 }
 
+impl Display for Group {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Group::G1 => f.write_str("01"),
+            Group::G2 => f.write_str("02"),
+            Group::G3 => f.write_str("03"),
+            Group::G4 => f.write_str("04"),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Copy, Sequence, PartialEq, Eq, Debug)]
 pub enum Semester {
   S1,
   S2,
@@ -82,6 +95,21 @@ pub enum Semester {
   S6,
   S7,
   S8  
+}
+
+impl Display for Semester {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Semester::S1 => f.write_str("01"),
+            Semester::S2 => f.write_str("02"),
+            Semester::S3 => f.write_str("03"),
+            Semester::S4 => f.write_str("04"),
+            Semester::S5 => f.write_str("05"),
+            Semester::S6 => f.write_str("06"),
+            Semester::S7 => f.write_str("07"),
+            Semester::S8 => f.write_str("08"),
+        }
+    }
 }
 
 impl TryFrom<u32> for Semester {
@@ -133,6 +161,8 @@ pub struct Class {
   pub professor: usize,
   pub classroom_type: ClassroomType,
   pub class_hours: u8,
+  pub semester: Semester,
+  pub group: Group,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -404,6 +434,8 @@ impl SchoolSchedule {
       professor: 0,
       classroom_type: ClassroomType::Single,
       class_hours: 1,
+      semester: Semester::S1,
+      group: Group::G1,
     });
     let class = class.as_mut().unwrap();
     Some((class, metadata))
