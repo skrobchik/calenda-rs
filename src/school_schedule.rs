@@ -3,10 +3,11 @@ use std::{
   ops::{Index, IndexMut},
 };
 
-use egui::Color32;
+use egui::{Color32, TextBuffer};
 use enum_iterator::Sequence;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+use anyhow::anyhow;
 
 use crate::{
   timeslot::{DAY_RANGE, TIMESLOT_RANGE},
@@ -39,6 +40,66 @@ pub enum ClassroomType {
   Single,
   Double,
   Lab,
+}
+
+pub fn parse_semester_group(s: &str) -> Option<(Semester, Group)> {
+  match s.get(0..4).and_then(|s| s.chars().collect_tuple()) {
+    Some(('0', c1, '0', c2)) => match (c1.to_digit(10).and_then(|d1| d1.try_into().ok()), c2.to_digit(10).and_then(|d2| d2.try_into().ok())) {
+      (Some(semester), Some(group)) => Some((semester, group)),
+      _ => None,
+    },
+    _ => None
+  }
+}
+
+pub enum Group {
+  G1,
+  G2,
+  G3,
+  G4
+}
+
+impl TryFrom<u32> for Group {
+    type Error = anyhow::Error;
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+      match value {
+        1 => Ok(Group::G1),
+        2 => Ok(Group::G2),
+        3 => Ok(Group::G3),
+        4 => Ok(Group::G4),
+        _ => Err(anyhow!("Invalid group"))
+      }
+    }
+}
+
+pub enum Semester {
+  S1,
+  S2,
+  S3,
+  S4,
+  S5,
+  S6,
+  S7,
+  S8  
+}
+
+impl TryFrom<u32> for Semester {
+  type Error = anyhow::Error;
+
+  fn try_from(value: u32) -> Result<Self, Self::Error> {
+    match value {
+      1 => Ok(Semester::S1),
+      2 => Ok(Semester::S2),
+      3 => Ok(Semester::S3),
+      4 => Ok(Semester::S4),
+      5 => Ok(Semester::S5),
+      6 => Ok(Semester::S6),
+      7 => Ok(Semester::S7),
+      8 => Ok(Semester::S8),
+      _ => Err(anyhow!("Invalid semester"))
+    }
+  }
 }
 
 impl Display for ClassroomType {
