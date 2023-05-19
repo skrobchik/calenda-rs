@@ -6,7 +6,7 @@ pub const DAY_COUNT: usize = 7; // 7 days in a week
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct WeekCalendar<T> {
-  data: Vec<T>,
+  pub data: Vec<T>,
 }
 
 impl<T: Default + Clone> Default for WeekCalendar<T> {

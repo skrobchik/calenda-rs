@@ -14,8 +14,8 @@ use crate::{
   week_calendar::{WeekCalendar, Weekday},
 };
 
-const MAX_CLASSES: usize = 256;
-const MAX_PROFESSORS: usize = 256;
+pub const MAX_CLASSES: usize = 256;
+pub const MAX_PROFESSORS: usize = 256;
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, Default)]
 pub enum Availability {
@@ -186,7 +186,7 @@ impl Default for SimulationConstraints {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Classes {
-  data: Vec<u8>,
+  pub data: Vec<u8>,
 }
 
 impl Default for Classes {
