@@ -95,7 +95,8 @@ impl<'a> ClassEditor<'a> {
               })
           });
           ui.horizontal(|ui| {
-            ui.add(egui::Slider::new(&mut class.class_hours, 0..=20).text("Tiempo (x30 min)"));
+            let curr_class_hours = class.class_hours;
+            ui.add(egui::Slider::new(&mut class.class_hours, 0..=20).text(to_human_time(curr_class_hours)));
           });
           ui.separator();
         }
@@ -104,5 +105,17 @@ impl<'a> ClassEditor<'a> {
       self.state.add_new_class();
     }
     self.state.fill_classes();
+  }
+}
+
+fn to_human_time(class_hours: u8) -> String{
+  // each unit is worth 30 minutes
+  let hours = class_hours / 2;
+  let half_hours = class_hours % 2;
+  match (hours > 0, half_hours > 0) {
+    (true, true) => format!("{} hr. 30 min.", hours),
+    (true, false) => format!("{} hr.", hours),
+    (false, true) => format!("30 min."),
+    (false, false) => format!("0 min."),
   }
 }
