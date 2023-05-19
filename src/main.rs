@@ -15,8 +15,6 @@ use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
 
 fn main() {
-  
-
   let subscriber = FmtSubscriber::builder()
     .with_max_level(Level::TRACE)
     .finish();

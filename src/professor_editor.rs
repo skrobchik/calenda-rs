@@ -36,11 +36,10 @@ impl<'a> ProfessorEditor<'a> {
     let text_style = egui::TextStyle::Body;
     let row_height = 2.0 * ui.spacing().interact_size.y + ui.text_style_height(&text_style);
     let num_rows = professors.len();
-    ScrollArea::vertical().auto_shrink([false; 2]).max_height(500.0).show_rows(
-      ui,
-      row_height,
-      num_rows,
-      |ui, row_range| {
+    ScrollArea::vertical()
+      .auto_shrink([false; 2])
+      .max_height(500.0)
+      .show_rows(ui, row_height, num_rows, |ui, row_range| {
         let class_range = professors.get_mut(row_range).unwrap();
         for (_professor, metadata, professor_id) in class_range.iter_mut() {
           ui.horizontal(|ui| {
@@ -53,8 +52,7 @@ impl<'a> ProfessorEditor<'a> {
           }
           ui.separator();
         }
-      },
-    );
+      });
     if ui.button("+").clicked() {
       self.state.add_new_professor();
     }

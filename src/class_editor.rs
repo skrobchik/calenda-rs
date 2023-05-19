@@ -26,11 +26,10 @@ impl<'a> ClassEditor<'a> {
     let text_style = egui::TextStyle::Body;
     let num_rows = classes.len();
     let row_height = 4.0 * ui.spacing().interact_size.y + ui.text_style_height(&text_style);
-    ScrollArea::vertical().auto_shrink([false; 2]).max_height(500.0).show_rows(
-      ui,
-      row_height,
-      num_rows,
-      |ui, row_range| {
+    ScrollArea::vertical()
+      .auto_shrink([false; 2])
+      .max_height(500.0)
+      .show_rows(ui, row_height, num_rows, |ui, row_range| {
         let class_range = classes.get_mut(row_range).unwrap();
         for (class, metadata, class_id) in class_range.iter_mut() {
           ui.horizontal(|ui| {
@@ -72,8 +71,7 @@ impl<'a> ClassEditor<'a> {
           });
           ui.separator();
         }
-      },
-    );
+      });
     if ui.button("+").clicked() {
       self.state.add_new_class();
     }
