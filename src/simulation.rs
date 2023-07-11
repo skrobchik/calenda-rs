@@ -62,9 +62,11 @@ fn random_init(constraints: &SimulationConstraints, rng: &mut ThreadRng) -> Week
 
   for (class_id, class) in constraints.classes.iter().enumerate() {
     if let Some(class) = class {
-      let rand_timeslot = rng.gen_range(timeslot::TIMESLOT_RANGE);
-      let rand_day = rng.gen_range(timeslot::DAY_RANGE);
-      state.get_mut(rand_day, rand_timeslot).unwrap()[class_id] = class.class_hours;
+      for _ in 0..class.class_hours {
+        let rand_timeslot = rng.gen_range(timeslot::TIMESLOT_RANGE);
+        let rand_day = rng.gen_range(timeslot::DAY_RANGE);
+        state.get_mut(rand_day, rand_timeslot).unwrap()[class_id] += 1;
+      }
     }
   }
 
@@ -74,30 +76,30 @@ fn random_init(constraints: &SimulationConstraints, rng: &mut ThreadRng) -> Week
 struct Delta {
   i1: usize,
   i2: usize,
-  j1: usize,
-  j2: usize,
+  class_id: usize
 }
 
 fn random_change(state: &mut WeekCalendar<Classes>, rnd: &mut ThreadRng) -> Option<Delta> {
   let n = state.data.len();
   let i1 = rnd.gen_range(0..n);
   let i2 = rnd.gen_range(0..n);
-  let j1 = rnd.gen_range(0..MAX_CLASSES);
-  let j2 = rnd.gen_range(0..MAX_CLASSES);
+  let class_id = rnd.gen_range(0..MAX_CLASSES);
 
-  if state.data[i1].data[j1] > 0 {
-    state.data[i1].data[j1] -= 1;
-    state.data[i2].data[j2] += 1;
+  if state.data[i1].data[class_id] > 0 {
+    state.data[i1].data[class_id] -= 1;
+    state.data[i2].data[class_id] += 1;
+    debug!("Class Id: {}, {} -> {}", class_id, i1, i2);
     Some(Delta {
-      i1, i2, j1, j2
+      i1, i2, class_id
     })
   } else { None }
 }
 
 fn revert_change(state: &mut WeekCalendar<Classes>, delta: &Delta) {
-  let i1 = delta.i1; let i2 = delta.i2; let j1 = delta.j1; let j2 = delta.j2;
-  state.data[i1].data[j1] += 1;
-  state.data[i2].data[j2] -= 1;
+  let i1 = delta.i1; let i2: usize = delta.i2; let class_id = delta.class_id;
+  state.data[i1].data[class_id] += 1;
+  state.data[i2].data[class_id] -= 1;
+  debug!("Class Id: {}, {} <- {}", class_id, i1, i2);
 }
 
 fn cost(state: &WeekCalendar<Classes>, constraints: &SimulationConstraints) -> f32 {
