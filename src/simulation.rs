@@ -7,7 +7,7 @@ use rand::{rngs::ThreadRng, Rng};
 use crate::{
   school_schedule::{Classes, SimulationConstraints, MAX_CLASSES},
   timeslot,
-  week_calendar::WeekCalendar,
+  week_calendar::WeekCalendar, heuristics,
 };
 
 pub fn generate_schedule(constraints: SimulationConstraints) -> JoinHandle<WeekCalendar<Classes>> {
@@ -103,18 +103,6 @@ fn revert_change(state: &mut WeekCalendar<Classes>, delta: &Delta) {
 }
 
 fn cost(state: &WeekCalendar<Classes>, constraints: &SimulationConstraints) -> f32 {
-  let mut cost: f32 = 0.0;
-
-  let mut same_timeslot_classes_count: f32 = 0.0;
-  for classes in state.data.iter() {
-    let same_timeslot: bool = classes.data.iter().filter(|x| **x > 1).nth(1).is_some();
-    if same_timeslot {
-      same_timeslot_classes_count += 1.0;
-    }
-  }
-
-  cost += 1.0 * same_timeslot_classes_count;
-
-
-  cost
+  1.0 * heuristics::same_timeslot_classes_count(state, constraints)
+  + 0.0
 }

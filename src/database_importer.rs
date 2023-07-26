@@ -1,4 +1,4 @@
-use crate::school_schedule::{SchoolSchedule, parse_semester_group};
+use crate::{school_schedule::{SchoolSchedule, parse_semester_group, Availability}, timeslot};
 use anyhow::Context;
 use itertools::Itertools;
 use std::{collections::BTreeMap, fs, path::Path};
@@ -105,15 +105,20 @@ pub fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
   let mut professor_ids: BTreeMap<String, usize> = BTreeMap::new();
 
   for my_professor in professors.iter().unique() {
-    let (_professor, mut professor_metadata, professor_id) = schedule
+    let (professor, mut professor_metadata, professor_id) = schedule
       .add_new_professor()
       .context("no more space")
       .unwrap();
     professor_metadata.name = my_professor.name.clone();
     professor_ids.insert(my_professor.rfc.clone(), professor_id);
+    for day in timeslot::DAY_RANGE {
+      for timeslot in timeslot::TIMESLOT_09_00..timeslot::TIMESLOT_17_00 {
+        *professor.availability.get_mut(day, timeslot).unwrap() = Availability::AvailableIfNeeded;
+      }
+    }
   }
 
-  for my_class in classes.iter().filter(|c| c.ciclo == "2023-2") {
+  for my_class in classes.iter().filter(|c| c.ciclo == "2023-2").take(3) {
     let (class, mut class_metadata) = schedule.add_new_class().context("no more space").unwrap();
     class_metadata.name = format!("{} {}", my_class.asignatura, my_class.name);
     let professor_id = professor_ids.get(&my_class.rfc1).unwrap_or(&0);

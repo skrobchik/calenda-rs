@@ -8,6 +8,7 @@ pub mod simple_schedule_widget;
 pub mod simulation;
 pub mod timeslot;
 pub mod week_calendar;
+pub mod heuristics;
 
 use crate::app::MyApp;
 
@@ -29,7 +30,7 @@ fn main() {
     Box::new(|cc| {
       Box::new({
         let mut app = MyApp::new(cc);
-        app.school_schedule = schedule;
+        app.school_schedule = schedule; // Overwrite saved SchoolSchedule
         app
       })
     }),
