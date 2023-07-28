@@ -104,5 +104,6 @@ fn revert_change(state: &mut WeekCalendar<Classes>, delta: &Delta) {
 
 fn cost(state: &WeekCalendar<Classes>, constraints: &SimulationConstraints) -> f32 {
   1.0 * heuristics::same_timeslot_classes_count(state, constraints)
-  + 0.0
+  + 7.0 * heuristics::count_not_available(state, constraints)
+  + 2.0 * heuristics::count_available_if_needed(state, constraints)
 }

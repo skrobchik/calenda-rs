@@ -118,7 +118,7 @@ pub fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
     }
   }
 
-  for my_class in classes.iter().filter(|c| c.ciclo == "2023-2").take(3) {
+  for my_class in classes.iter().filter(|c| c.ciclo == "2023-2").take(10) {
     let (class, mut class_metadata) = schedule.add_new_class().context("no more space").unwrap();
     class_metadata.name = format!("{} {}", my_class.asignatura, my_class.name);
     let professor_id = professor_ids.get(&my_class.rfc1).unwrap_or(&0);

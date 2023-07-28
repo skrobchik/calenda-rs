@@ -17,7 +17,7 @@ use crate::{
 pub const MAX_CLASSES: usize = 256;
 pub const MAX_PROFESSORS: usize = 256;
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Availability {
   Available,
   AvailableIfNeeded,
@@ -320,8 +320,8 @@ impl SchoolSchedule {
   }
 
   fn add_hours_to_schedule(&mut self, class_id: usize, count: u8) {
-    self.schedule.get_mut(0_usize, 0_usize).unwrap()[class_id] =
-      self.schedule.get(0_usize, 0_usize).unwrap()[class_id]
+    self.schedule.get_mut(1_usize, 1_usize).unwrap()[class_id] =
+      self.schedule.get(1_usize, 1_usize).unwrap()[class_id]
         .checked_add(count)
         .unwrap();
   }
