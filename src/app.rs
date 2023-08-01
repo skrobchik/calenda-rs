@@ -1,4 +1,4 @@
-use std::{borrow::BorrowMut, mem, thread::JoinHandle};
+use std::{mem, thread::JoinHandle};
 
 use crate::{
   class_editor::ClassEditor,
@@ -101,12 +101,10 @@ impl eframe::App for MyApp {
           self.school_schedule.schedule = new_schedule;
           self.school_schedule.fill_classes();
         }
-      } else {
-        if ui.button("Optimize").clicked() {
-          self.new_schedule_join_handle = Some(simulation::generate_schedule(
-            self.school_schedule.simulation_information.clone(),
-          ));
-        }
+      } else if ui.button("Optimize").clicked() {
+        self.new_schedule_join_handle = Some(simulation::generate_schedule(
+          self.school_schedule.simulation_information.clone(),
+        ));
       }
     });
 

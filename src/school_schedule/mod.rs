@@ -30,6 +30,7 @@ pub fn parse_semester_group(s: &str) -> Option<(Semester, Group)> {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Default)]
 pub struct TimeslotClassHours {
   data: Vec<u8>,
 }
@@ -48,11 +49,7 @@ impl TimeslotClassHours {
   }
 }
 
-impl Default for TimeslotClassHours {
-  fn default() -> Self {
-    Self { data: Vec::new() }
-  }
-}
+
 
 impl Index<usize> for TimeslotClassHours {
   type Output = u8;

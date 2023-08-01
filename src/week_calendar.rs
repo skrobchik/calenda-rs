@@ -20,11 +20,11 @@ impl<T: Default + Clone> Default for WeekCalendar<T> {
 }
 
 impl<T> WeekCalendar<T> {
-  pub fn get<'a, I1: Into<usize>, I2: Into<usize>>(
-    &'a self,
+  pub fn get<I1: Into<usize>, I2: Into<usize>>(
+    &self,
     day: I1,
     timeslot: I2,
-  ) -> Option<&'a T> {
+  ) -> Option<&T> {
     let day: usize = day.into();
     let timeslot: usize = timeslot.into();
     if !(0..DAY_COUNT).contains(&day) {
@@ -36,11 +36,11 @@ impl<T> WeekCalendar<T> {
     Some(&self.data[day * TIMESLOT_COUNT + timeslot])
   }
 
-  pub fn get_mut<'a, I1: Into<usize>, I2: Into<usize>>(
-    &'a mut self,
+  pub fn get_mut<I1: Into<usize>, I2: Into<usize>>(
+    &mut self,
     day: I1,
     timeslot: I2,
-  ) -> Option<&'a mut T> {
+  ) -> Option<&mut T> {
     let day: usize = day.into();
     let timeslot: usize = timeslot.into();
     if !(0..DAY_COUNT).contains(&day) {

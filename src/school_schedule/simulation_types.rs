@@ -8,19 +8,13 @@ use crate::week_calendar::WeekCalendar;
 use anyhow::anyhow;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Default)]
 pub struct SimulationConstraints {
   pub classes: Vec<Class>,
   pub professors: Vec<Professor>,
 }
 
-impl Default for SimulationConstraints {
-  fn default() -> Self {
-    Self {
-      classes: Vec::new(),
-      professors: Vec::new(),
-    }
-  }
-}
+
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub struct Class {

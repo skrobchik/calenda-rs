@@ -114,7 +114,7 @@ fn to_human_time(class_hours: u8) -> String {
   match (hours > 0, half_hours > 0) {
     (true, true) => format!("{} hr. 30 min.", hours),
     (true, false) => format!("{} hr.", hours),
-    (false, true) => format!("30 min."),
-    (false, false) => format!("0 min."),
+    (false, true) => "30 min.".to_string(),
+    (false, false) => "0 min.".to_string(),
   }
 }
