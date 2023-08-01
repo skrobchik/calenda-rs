@@ -1,9 +1,13 @@
-use std::{borrow::BorrowMut, thread::JoinHandle, mem};
+use std::{borrow::BorrowMut, mem, thread::JoinHandle};
 
 use crate::{
-  class_editor::ClassEditor, professor_editor::ProfessorEditor,
-  professor_schedule_widget::ProfessorScheduleWidget, school_schedule::{SchoolSchedule, Classes},
-  simple_schedule_widget::SimpleScheduleWidget, simulation, week_calendar::WeekCalendar,
+  class_editor::ClassEditor,
+  professor_editor::ProfessorEditor,
+  professor_schedule_widget::ProfessorScheduleWidget,
+  school_schedule::{SchoolSchedule, TimeslotClassHours},
+  simple_schedule_widget::SimpleScheduleWidget,
+  simulation,
+  week_calendar::WeekCalendar,
 };
 use eframe::egui;
 use egui::Ui;
@@ -20,7 +24,7 @@ pub struct MyApp {
   availability_editor_professor_id: Option<usize>,
   availability_editor_widget_open: bool,
   #[serde(skip)]
-  new_schedule_join_handle: Option<JoinHandle<WeekCalendar<Classes>>>,
+  new_schedule_join_handle: Option<JoinHandle<WeekCalendar<TimeslotClassHours>>>,
 }
 
 impl MyApp {
@@ -70,8 +74,11 @@ impl eframe::App for MyApp {
       .show(ctx, &mut self.professor_editor_widget_open);
 
       if let Some(professor_id) = self.availability_editor_professor_id {
-        if let Some(professor) =
-          self.school_schedule.simulation_information.professors[professor_id].borrow_mut()
+        if let Some(professor) = self
+          .school_schedule
+          .simulation_information
+          .professors
+          .get_mut(professor_id)
         {
           ProfessorScheduleWidget::new(professor)
             .show(ctx, &mut self.availability_editor_widget_open);
@@ -80,17 +87,26 @@ impl eframe::App for MyApp {
 
       if self.new_schedule_join_handle.is_some() {
         ui.label("Optimizing...");
-        let is_finished = self.new_schedule_join_handle.as_ref().unwrap().is_finished();
+        let is_finished = self
+          .new_schedule_join_handle
+          .as_ref()
+          .unwrap()
+          .is_finished();
         if is_finished {
-          let new_schedule = mem::take(&mut self.new_schedule_join_handle).unwrap().join().unwrap();
+          let new_schedule = mem::take(&mut self.new_schedule_join_handle)
+            .unwrap()
+            .join()
+            .unwrap();
           info!("Applied new schedule");
           self.school_schedule.schedule = new_schedule;
           self.school_schedule.fill_classes();
         }
       } else {
         if ui.button("Optimize").clicked() {
-          self.new_schedule_join_handle = Some(simulation::generate_schedule  (self.school_schedule.simulation_information.clone()));
-        } 
+          self.new_schedule_join_handle = Some(simulation::generate_schedule(
+            self.school_schedule.simulation_information.clone(),
+          ));
+        }
       }
     });
 

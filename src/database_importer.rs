@@ -1,4 +1,7 @@
-use crate::{school_schedule::{SchoolSchedule, parse_semester_group, Availability}, timeslot};
+use crate::{
+  school_schedule::{parse_semester_group, Availability, SchoolSchedule},
+  timeslot,
+};
 use anyhow::Context;
 use itertools::Itertools;
 use std::{collections::BTreeMap, fs, path::Path};
@@ -105,10 +108,7 @@ pub fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
   let mut professor_ids: BTreeMap<String, usize> = BTreeMap::new();
 
   for my_professor in professors.iter().unique() {
-    let (professor, mut professor_metadata, professor_id) = schedule
-      .add_new_professor()
-      .context("no more space")
-      .unwrap();
+    let (professor, mut professor_metadata, professor_id) = schedule.add_new_professor();
     professor_metadata.name = my_professor.name.clone();
     professor_ids.insert(my_professor.rfc.clone(), professor_id);
     for day in timeslot::DAY_RANGE {
@@ -119,7 +119,7 @@ pub fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
   }
 
   for my_class in classes.iter().filter(|c| c.ciclo == "2023-2").take(10) {
-    let (class, mut class_metadata) = schedule.add_new_class().context("no more space").unwrap();
+    let (class, mut class_metadata) = schedule.add_new_class();
     class_metadata.name = format!("{} {}", my_class.asignatura, my_class.name);
     let professor_id = professor_ids.get(&my_class.rfc1).unwrap_or(&0);
     class.professor = *professor_id;
@@ -128,9 +128,11 @@ pub fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
       class.semester = semester;
     }
 
-    if my_class.rfc2.trim().is_empty() { continue; }
+    if my_class.rfc2.trim().is_empty() {
+      continue;
+    }
 
-    let (class, mut class_metadata) = schedule.add_new_class().context("no more space").unwrap();
+    let (class, mut class_metadata) = schedule.add_new_class();
     class_metadata.name = format!("{} {} (Lab)", my_class.asignatura, my_class.name);
     let professor_id = professor_ids.get(&my_class.rfc2).unwrap_or(&0);
     class.professor = *professor_id;

@@ -1,6 +1,6 @@
 use egui::{ComboBox, ScrollArea};
 
-use crate::school_schedule::{ClassroomType, SchoolSchedule, Semester, Group};
+use crate::school_schedule::{ClassroomType, Group, SchoolSchedule, Semester};
 
 pub struct ClassEditor<'a> {
   state: &'a mut SchoolSchedule,
@@ -70,11 +70,7 @@ impl<'a> ClassEditor<'a> {
               .selected_text(class.group.to_string())
               .show_ui(ui, |ui| {
                 for group_variant in enum_iterator::all::<Group>() {
-                  ui.selectable_value(
-                    &mut class.group,
-                    group_variant,
-                    group_variant.to_string(),
-                  );
+                  ui.selectable_value(&mut class.group, group_variant, group_variant.to_string());
                 }
               });
           });
@@ -96,7 +92,10 @@ impl<'a> ClassEditor<'a> {
           });
           ui.horizontal(|ui| {
             let curr_class_hours = class.class_hours;
-            ui.add(egui::Slider::new(&mut class.class_hours, 0..=20).text(to_human_time(curr_class_hours)));
+            ui.add(
+              egui::Slider::new(&mut class.class_hours, 0..=20)
+                .text(to_human_time(curr_class_hours)),
+            );
           });
           ui.separator();
         }
@@ -108,7 +107,7 @@ impl<'a> ClassEditor<'a> {
   }
 }
 
-fn to_human_time(class_hours: u8) -> String{
+fn to_human_time(class_hours: u8) -> String {
   // each unit is worth 30 minutes
   let hours = class_hours / 2;
   let half_hours = class_hours % 2;
