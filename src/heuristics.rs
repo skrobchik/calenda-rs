@@ -27,7 +27,7 @@ pub fn count_not_available(
     for timeslot in timeslot::TIMESLOT_RANGE {
       let classes = state.get(day, timeslot).unwrap();
       for (class_id, _count) in classes.iter().enumerate().filter(|(_, c)| **c > 0) {
-        let professor_id = constraints.classes[class_id].professor;
+        let professor_id = constraints.classes[class_id].professor_id;
         let professor = &constraints.professors[professor_id];
         let availability = professor.availability.get(day, timeslot).unwrap();
         if *availability == Availability::NotAvailable {
@@ -49,7 +49,7 @@ pub fn count_available_if_needed(
     for timeslot in timeslot::TIMESLOT_RANGE {
       let classes = state.get(day, timeslot).unwrap();
       for (class_id, _count) in classes.iter().enumerate().filter(|(_, c)| **c > 0) {
-        let professor_id = constraints.classes[class_id].professor;
+        let professor_id = constraints.classes[class_id].professor_id;
         let professor = &constraints.professors[professor_id];
         let availability = professor.availability.get(day, timeslot).unwrap();
         if *availability == Availability::AvailableIfNeeded {

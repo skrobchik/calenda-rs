@@ -32,23 +32,20 @@ impl<'a> ProfessorEditor<'a> {
 
   pub fn ui(&mut self, ui: &mut egui::Ui) {
     ui.separator();
-    let mut professors = self.state.get_professors_mut();
     let text_style = egui::TextStyle::Body;
     let row_height = 2.0 * ui.spacing().interact_size.y + ui.text_style_height(&text_style);
-    let num_rows = professors.len();
+    let num_professors = self.state.get_num_professors();
     ScrollArea::vertical()
       .auto_shrink([false; 2])
       .max_height(500.0)
-      .show_rows(ui, row_height, num_rows, |ui, row_range| {
-        let class_range = professors.get_mut(row_range).unwrap();
-        for (_professor, metadata, professor_id) in class_range.iter_mut() {
+      .show(ui, |ui| {
+        for professor_id in 0..num_professors {
           ui.horizontal(|ui| {
             ui.label("Nombre");
-            ui.text_edit_singleline(&mut metadata.name);
+            ui.text_edit_singleline(&mut self.state.get_professor_metadata_mut(professor_id).unwrap().name);
           });
           if ui.button("Editar disponibilidad").clicked() {
-            *self.availability_editor_professor_id = Some(*professor_id);
-            *self.availability_editor_widget_open = true;
+
           }
           ui.separator();
         }

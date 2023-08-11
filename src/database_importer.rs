@@ -122,7 +122,7 @@ pub fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
     let (class, class_metadata) = schedule.add_new_class();
     class_metadata.name = format!("{} {}", my_class.asignatura, my_class.name);
     let professor_id = professor_ids.get(&my_class.rfc1).unwrap_or(&0);
-    class.professor = *professor_id;
+    class.professor_id = *professor_id;
     if let Some((semester, group)) = parse_semester_group(&my_class.grupo) {
       class.group = group;
       class.semester = semester;
@@ -135,7 +135,7 @@ pub fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
     let (class, class_metadata) = schedule.add_new_class();
     class_metadata.name = format!("{} {} (Lab)", my_class.asignatura, my_class.name);
     let professor_id = professor_ids.get(&my_class.rfc2).unwrap_or(&0);
-    class.professor = *professor_id;
+    class.professor_id = *professor_id;
     if let Some((semester, group)) = parse_semester_group(&my_class.grupo) {
       class.group = group;
       class.semester = semester;

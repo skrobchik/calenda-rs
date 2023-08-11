@@ -14,11 +14,9 @@ pub struct SimulationConstraints {
   pub professors: Vec<Professor>,
 }
 
-
-
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub struct Class {
-  pub professor: usize,
+  pub professor_id: usize,
   pub classroom_type: ClassroomType,
   pub class_hours: u8,
   pub semester: Semester,

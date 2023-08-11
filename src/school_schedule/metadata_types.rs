@@ -2,7 +2,7 @@ use egui::Color32;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct ScheduleMetadata {
+pub(super) struct ScheduleMetadata {
   pub(super) professors: Vec<ProfessorMetadata>,
   pub(super) classes: Vec<ClassMetadata>,
 }

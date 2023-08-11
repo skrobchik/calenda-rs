@@ -73,7 +73,7 @@ impl IndexMut<usize> for TimeslotClassHours {
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct SchoolSchedule {
-  pub metadata: ScheduleMetadata,
+  metadata: ScheduleMetadata,
   pub simulation_information: SimulationConstraints,
   pub schedule: WeekCalendar<TimeslotClassHours>,
 }
@@ -112,37 +112,42 @@ impl SchoolSchedule {
       .collect()
   }
 
-  pub fn get_classes_and_professors_mut(
-    &mut self,
-  ) -> (
-    Vec<(&mut Class, &mut ClassMetadata, usize)>,
-    Vec<(&mut Professor, &mut ProfessorMetadata, usize)>,
-  ) {
-    let classes = &mut self.simulation_information.classes;
-    let class_metadata = &mut self.metadata.classes;
-    let professors = &mut self.simulation_information.professors;
-    let professor_metadata = &mut self.metadata.professors;
-    let classes = classes
-      .iter_mut()
-      .zip(class_metadata)
-      .enumerate()
-      .map(|(class_id, (class, metadata))| (class, metadata, class_id))
-      .collect();
-    let professors = professors
-      .iter_mut()
-      .zip(professor_metadata)
-      .enumerate()
-      .map(|(professor_id, (professor, metadata))| (professor, metadata, professor_id))
-      .collect();
-    (classes, professors)
+  pub fn get_class(&self, class_id: usize) -> Option<&Class> {
+    self.simulation_information.classes.get(class_id)
   }
 
-  pub fn get_classes_mut(&mut self) -> Vec<(&mut Class, &mut ClassMetadata, usize)> {
-    self.get_classes_and_professors_mut().0
+  pub fn get_class_metadata(&self, class_id: usize) -> Option<&ClassMetadata> {
+    self.metadata.classes.get(class_id)
   }
 
-  pub fn get_professors_mut(&mut self) -> Vec<(&mut Professor, &mut ProfessorMetadata, usize)> {
-    self.get_classes_and_professors_mut().1
+  pub fn get_class_metadata_mut(&mut self, class_id: usize) -> Option<&mut ClassMetadata> {
+    self.metadata.classes.get_mut(class_id)
+  }
+
+  pub fn get_class_classroom_type_mut(&mut self, class_id: usize) -> Option<&mut ClassroomType> {
+    self.simulation_information.classes.get_mut(class_id).map(|class| &mut class.classroom_type)
+  }
+
+  pub fn get_class_class_hours(&self, class_id: usize) -> Option<u8> {
+    self.simulation_information.classes.get(class_id).map(|class| class.class_hours)
+  }
+
+  pub fn set_class_class_hours(&mut self, class_id: usize, class_hours: u8) -> Option<()> {
+    self.simulation_information.classes.get_mut(class_id).map(|class| {
+      class.class_hours = class_hours;
+
+      // TODO: Update Calendar (might be desynced)
+    })
+  }
+
+  pub fn get_num_classes(&self) -> usize {
+    assert_eq!(self.simulation_information.classes.len(), self.metadata.classes.len());
+    self.simulation_information.classes.len()
+  }
+
+  pub fn get_num_professors(&self) -> usize {
+    assert_eq!(self.simulation_information.professors.len(), self.metadata.professors.len());
+    self.simulation_information.professors.len()
   }
 
   fn add_hours_to_schedule(&mut self, class_id: usize, count: u8) {
@@ -257,7 +262,7 @@ impl SchoolSchedule {
     });
 
     classes.push(Class {
-      professor: 0,
+      professor_id: 0,
       classroom_type: ClassroomType::Single,
       class_hours: 1,
       semester: Semester::S1,
@@ -271,5 +276,13 @@ impl SchoolSchedule {
       classes.get_mut(class_id).unwrap(),
       class_metadata.get_mut(class_id).unwrap(),
     )
+  }
+
+  pub(crate) fn get_professor_metadata_mut(&mut self, professor_id: usize) -> Option<&mut ProfessorMetadata> {
+    self.metadata.professors.get_mut(professor_id)
+  }
+
+  pub(crate) fn get_professor_metadata(&mut self, professor_id: usize) -> Option<&ProfessorMetadata> {
+    self.metadata.professors.get(professor_id)
   }
 }

@@ -22,80 +22,90 @@ impl<'a> ClassEditor<'a> {
 
   pub fn ui(&mut self, ui: &mut egui::Ui) {
     ui.separator();
-    let (mut classes, professors) = self.state.get_classes_and_professors_mut();
     let text_style = egui::TextStyle::Body;
-    let num_rows = classes.len();
+    let num_classes = self.state.get_num_classes();
     let row_height = 6.0 * ui.spacing().interact_size.y + ui.text_style_height(&text_style);
     ScrollArea::vertical()
       .auto_shrink([false; 2])
       .max_height(500.0)
-      .show_rows(ui, row_height, num_rows, |ui, row_range| {
-        let class_range = classes.get_mut(row_range).unwrap();
-        for (class, metadata, class_id) in class_range.iter_mut() {
+      .show(ui, |ui| {
+        for class_id in 0..num_classes {
           ui.horizontal(|ui| {
-            ui.color_edit_button_srgba(&mut metadata.color);
-            ui.text_edit_singleline(&mut metadata.name);
+            ui.color_edit_button_srgba(&mut self.state.get_class_metadata_mut(class_id).unwrap().color);
+            ui.text_edit_singleline(&mut self.state.get_class_metadata_mut(class_id).unwrap().name);
           });
-          ui.horizontal(|ui| {
-            ui.label("Aula");
-            ComboBox::from_id_source(format!("classroom_type_selector_{}", class_id))
-              .selected_text(class.classroom_type.to_string())
-              .show_ui(ui, |ui| {
-                for classroom_type_variant in enum_iterator::all::<ClassroomType>() {
-                  ui.selectable_value(
-                    &mut class.classroom_type,
-                    classroom_type_variant,
-                    classroom_type_variant.to_string(),
-                  );
-                }
-              });
-          });
-          ui.horizontal(|ui| {
-            ui.label("Semestre");
-            ComboBox::from_id_source(format!("semester_selector_{}", class_id))
-              .selected_text(class.semester.to_string())
-              .show_ui(ui, |ui| {
-                for semester_variant in enum_iterator::all::<Semester>() {
-                  ui.selectable_value(
-                    &mut class.semester,
-                    semester_variant,
-                    semester_variant.to_string(),
-                  );
-                }
-              });
-          });
-          ui.horizontal(|ui| {
-            ui.label("Groupo");
-            ComboBox::from_id_source(format!("group_selector_{}", class_id))
-              .selected_text(class.group.to_string())
-              .show_ui(ui, |ui| {
-                for group_variant in enum_iterator::all::<Group>() {
-                  ui.selectable_value(&mut class.group, group_variant, group_variant.to_string());
-                }
-              });
-          });
+
+
+          // TODO: Fix
+          // ui.horizontal(|ui| {
+          //   ui.label("Aula");
+          //   ComboBox::from_id_source(format!("classroom_type_selector_{}", class_id))
+          //     .selected_text(self.state.get_class(class_id).unwrap().classroom_type.to_string())
+          //     .show_ui(ui, |ui| {
+          //       for classroom_type_variant in enum_iterator::all::<ClassroomType>() {
+          //         ui.selectable_value(
+          //           &mut class.classroom_type,
+          //           classroom_type_variant,
+          //           classroom_type_variant.to_string(),
+          //         );
+          //       }
+          //     });
+          // });
+
+          // TODO: Fix
+          // ui.horizontal(|ui| {
+          //   ui.label("Semestre");
+          //   ComboBox::from_id_source(format!("semester_selector_{}", class_id))
+          //     .selected_text(class.semester.to_string())
+          //     .show_ui(ui, |ui| {
+          //       for semester_variant in enum_iterator::all::<Semester>() {
+          //         ui.selectable_value(
+          //           &mut class.semester,
+          //           semester_variant,
+          //           semester_variant.to_string(),
+          //         );
+          //       }
+          //     });
+          // });
+
+
+          // TODO: Fix
+          // ui.horizontal(|ui| {
+          //   ui.label("Groupo");
+          //   ComboBox::from_id_source(format!("group_selector_{}", class_id))
+          //     .selected_text(class.group.to_string())
+          //     .show_ui(ui, |ui| {
+          //       for group_variant in enum_iterator::all::<Group>() {
+          //         ui.selectable_value(&mut class.group, group_variant, group_variant.to_string());
+          //       }
+          //     });
+          // });
+
+          
           ui.horizontal(|ui| {
             ui.label("Profesor");
-            ui.label(format!("{}", class.professor));
+            ui.label(format!("{}", self.state.get_class(class_id).unwrap().professor_id));
             ComboBox::from_id_source(format!("professor_selector_{}", class_id.clone()))
               .selected_text(
-                professors
-                  .iter()
-                  .find(|(_, _, professor_id)| *professor_id == class.professor)
-                  .map_or("Undefined Professor", |(_, metadata, _)| &metadata.name),
+                self.state.get_professor_metadata(self.state.get_class(class_id).unwrap().professor_id).map(|professor_metadata| professor_metadata.name.as_str()). unwrap_or("Undefined Professor")
               )
               .show_ui(ui, |ui| {
-                for (_professor, metadata, professor_id) in professors.iter() {
-                  ui.selectable_value(&mut class.professor, *professor_id, &metadata.name);
+                let num_professors = self.state.get_num_professors();
+                let selected_professor_id = self.state.get_class(class_id).unwrap().professor_id;
+                for professor_id in 0..num_professors {
+                  ui.selectable_label(professor_id==selected_professor_id, self.state.get_professor_metadata(professor_id).unwrap().name.as_str());
                 }
+                // TODO: Set selected professor.
               })
           });
           ui.horizontal(|ui| {
-            let curr_class_hours = class.class_hours;
+            let original_class_hours = self.state.get_class_class_hours(class_id).unwrap();
+            let mut class_hours = original_class_hours;
             ui.add(
-              egui::Slider::new(&mut class.class_hours, 0..=20)
-                .text(to_human_time(curr_class_hours)),
+              egui::Slider::new(&mut class_hours, 0..=20)
+                .text(to_human_time(original_class_hours)),
             );
+            self.state.set_class_class_hours(class_id, class_hours);
           });
           ui.separator();
         }
