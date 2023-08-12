@@ -4,15 +4,15 @@ use crate::school_schedule::SchoolSchedule;
 use crate::timeslot;
 use crate::week_calendar::Weekday;
 
-pub struct SimpleScheduleWidget<'a> {
+pub(crate) struct SimpleScheduleWidget<'a> {
   state: &'a SchoolSchedule,
 }
 
 impl<'a> SimpleScheduleWidget<'a> {
-  pub fn new(state: &'a SchoolSchedule) -> SimpleScheduleWidget<'a> {
+  pub(crate) fn new(state: &'a SchoolSchedule) -> SimpleScheduleWidget<'a> {
     SimpleScheduleWidget { state }
   }
-  pub fn show(&self, ctx: &egui::Context, open: &mut bool) {
+  pub(crate) fn show(&self, ctx: &egui::Context, open: &mut bool) {
     egui::Window::new("Schedule")
       .open(open)
       .vscroll(false)

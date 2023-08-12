@@ -4,7 +4,7 @@ use crate::{
   week_calendar::WeekCalendar,
 };
 
-pub fn same_timeslot_classes_count(
+pub(crate) fn same_timeslot_classes_count(
   state: &WeekCalendar<TimeslotClassHours>,
   _constraints: &SimulationConstraints,
 ) -> f32 {
@@ -18,7 +18,7 @@ pub fn same_timeslot_classes_count(
   same_timeslot_classes_count
 }
 
-pub fn count_not_available(
+pub(crate) fn count_not_available(
   state: &WeekCalendar<TimeslotClassHours>,
   constraints: &SimulationConstraints,
 ) -> f32 {
@@ -40,7 +40,7 @@ pub fn count_not_available(
   not_available_count
 }
 
-pub fn count_available_if_needed(
+pub(crate) fn count_available_if_needed(
   state: &WeekCalendar<TimeslotClassHours>,
   constraints: &SimulationConstraints,
 ) -> f32 {

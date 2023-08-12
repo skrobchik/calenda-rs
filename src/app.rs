@@ -16,8 +16,8 @@ use tracing::info;
 
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
-pub struct MyApp {
-  pub school_schedule: SchoolSchedule,
+pub(crate) struct MyApp {
+  pub(crate) school_schedule: SchoolSchedule,
   schedule_widget_open: bool,
   professor_editor_widget_open: bool,
   class_editor_widget_open: bool,
@@ -28,7 +28,7 @@ pub struct MyApp {
 }
 
 impl MyApp {
-  pub fn new(cc: &eframe::CreationContext<'_>) -> MyApp {
+  pub(crate) fn new(cc: &eframe::CreationContext<'_>) -> MyApp {
     if let Some(storage) = cc.storage {
       return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
     }

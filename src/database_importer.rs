@@ -30,7 +30,7 @@ fn preprocess_sql_file(contents: String) -> String {
     .collect()
 }
 
-pub fn import_temporary_database() -> anyhow::Result<()> {
+pub(crate) fn import_temporary_database() -> anyhow::Result<()> {
   let materias_sql_export_path = "Archivos SQL/Materias.sql";
   let profesores_sql_export_path = "Archivos SQL/Profesores.sql";
   if Path::new(TEMP_DB_PATH).exists() {
@@ -60,7 +60,7 @@ struct Professor {
   rfc: String,
 }
 
-pub fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
+pub(crate) fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
   let connection = sqlite::open(TEMP_DB_PATH)?;
   let mut schedule: SchoolSchedule = Default::default();
   let query = "SELECT * FROM Materias";

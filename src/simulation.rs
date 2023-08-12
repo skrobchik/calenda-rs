@@ -11,7 +11,7 @@ use crate::{
   week_calendar::WeekCalendar,
 };
 
-pub fn generate_schedule(
+pub(crate) fn generate_schedule(
   constraints: SimulationConstraints,
 ) -> JoinHandle<WeekCalendar<TimeslotClassHours>> {
   thread::spawn(move || simulated_annealing(constraints, 100_000))

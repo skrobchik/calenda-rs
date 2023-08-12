@@ -1,17 +1,17 @@
 use egui::{ComboBox, ScrollArea};
 
-use crate::school_schedule::{ClassroomType, Group, SchoolSchedule, Semester};
+use crate::school_schedule::SchoolSchedule;
 
-pub struct ClassEditor<'a> {
+pub(crate) struct ClassEditor<'a> {
   state: &'a mut SchoolSchedule,
 }
 
 impl<'a> ClassEditor<'a> {
-  pub fn new(state: &'a mut SchoolSchedule) -> Self {
+  pub(crate) fn new(state: &'a mut SchoolSchedule) -> Self {
     ClassEditor { state }
   }
 
-  pub fn show(&mut self, ctx: &egui::Context, open: &mut bool) {
+  pub(crate) fn show(&mut self, ctx: &egui::Context, open: &mut bool) {
     egui::Window::new("Class Editor")
       .open(open)
       .resizable(true)
@@ -20,11 +20,9 @@ impl<'a> ClassEditor<'a> {
       });
   }
 
-  pub fn ui(&mut self, ui: &mut egui::Ui) {
+  pub(crate) fn ui(&mut self, ui: &mut egui::Ui) {
     ui.separator();
-    let text_style = egui::TextStyle::Body;
     let num_classes = self.state.get_num_classes();
-    let row_height = 6.0 * ui.spacing().interact_size.y + ui.text_style_height(&text_style);
     ScrollArea::vertical()
       .auto_shrink([false; 2])
       .max_height(500.0)
@@ -93,9 +91,10 @@ impl<'a> ClassEditor<'a> {
                 let num_professors = self.state.get_num_professors();
                 let selected_professor_id = self.state.get_class(class_id).unwrap().professor_id;
                 for professor_id in 0..num_professors {
-                  ui.selectable_label(professor_id==selected_professor_id, self.state.get_professor_metadata(professor_id).unwrap().name.as_str());
+                  if ui.selectable_label(professor_id==selected_professor_id, self.state.get_professor_metadata(professor_id).unwrap().name.as_str()).changed() {
+                    // TODO Set selected professor.
+                  }
                 }
-                // TODO: Set selected professor.
               })
           });
           ui.horizontal(|ui| {

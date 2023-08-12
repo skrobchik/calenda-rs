@@ -9,27 +9,27 @@ use anyhow::anyhow;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[derive(Default)]
-pub struct SimulationConstraints {
-  pub classes: Vec<Class>,
-  pub professors: Vec<Professor>,
+pub(crate) struct SimulationConstraints {
+  pub(crate) classes: Vec<Class>,
+  pub(crate) professors: Vec<Professor>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
-pub struct Class {
-  pub professor_id: usize,
-  pub classroom_type: ClassroomType,
-  pub class_hours: u8,
-  pub semester: Semester,
-  pub group: Group,
+pub(crate) struct Class {
+  pub(crate) professor_id: usize,
+  pub(crate) classroom_type: ClassroomType,
+  pub(crate) class_hours: u8,
+  pub(crate) semester: Semester,
+  pub(crate) group: Group,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct Professor {
+pub(crate) struct Professor {
   pub availability: WeekCalendar<Availability>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy, Sequence, PartialEq, Eq, Debug)]
-pub enum ClassroomType {
+pub(crate) enum ClassroomType {
   Single,
   Double,
   Lab,

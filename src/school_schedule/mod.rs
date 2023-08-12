@@ -5,18 +5,18 @@ use egui::Color32;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-pub mod simulation_types;
-pub use simulation_types::*;
+pub(crate) mod simulation_types;
+pub(crate) use simulation_types::*;
 
-pub mod metadata_types;
-pub use metadata_types::*;
+pub(crate) mod metadata_types;
+pub(crate) use metadata_types::*;
 
 use crate::{
   timeslot::{DAY_RANGE, TIMESLOT_RANGE},
   week_calendar::{WeekCalendar, Weekday},
 };
 
-pub fn parse_semester_group(s: &str) -> Option<(Semester, Group)> {
+pub(crate) fn parse_semester_group(s: &str) -> Option<(Semester, Group)> {
   match s.get(0..4).and_then(|s| s.chars().collect_tuple()) {
     Some(('0', c1, '0', c2)) => match (
       c1.to_digit(10).and_then(|d1| d1.try_into().ok()),
@@ -31,20 +31,20 @@ pub fn parse_semester_group(s: &str) -> Option<(Semester, Group)> {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[derive(Default)]
-pub struct TimeslotClassHours {
+pub(crate) struct TimeslotClassHours {
   data: Vec<u8>,
 }
 
 impl TimeslotClassHours {
-  pub fn iter(&self) -> std::slice::Iter<'_, u8> {
+  pub(crate) fn iter(&self) -> std::slice::Iter<'_, u8> {
     self.data.iter()
   }
 
-  pub fn iter_mut(&mut self) -> std::slice::IterMut<'_, u8> {
+  pub(crate) fn iter_mut(&mut self) -> std::slice::IterMut<'_, u8> {
     self.data.iter_mut()
   }
 
-  pub fn len(&self) -> usize {
+  pub(crate) fn len(&self) -> usize {
     self.data.len()
   }
 }
@@ -72,21 +72,21 @@ impl IndexMut<usize> for TimeslotClassHours {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct SchoolSchedule {
+pub(crate) struct SchoolSchedule {
   metadata: ScheduleMetadata,
-  pub simulation_information: SimulationConstraints,
-  pub schedule: WeekCalendar<TimeslotClassHours>,
+  pub(crate) simulation_information: SimulationConstraints,
+  pub(crate) schedule: WeekCalendar<TimeslotClassHours>,
 }
 
-pub struct ClassData<'a> {
-  pub count: u8,
-  pub class_id: usize,
-  pub class: &'a Class,
-  pub class_metadata: &'a ClassMetadata,
+pub(crate) struct ClassData<'a> {
+  pub(crate) count: u8,
+  pub(crate) class_id: usize,
+  pub(crate) class: &'a Class,
+  pub(crate) class_metadata: &'a ClassMetadata,
 }
 
 impl SchoolSchedule {
-  pub fn get_class_data(&self, day: Weekday, timeslot: usize) -> Vec<ClassData<'_>> {
+  pub(crate) fn get_class_data(&self, day: Weekday, timeslot: usize) -> Vec<ClassData<'_>> {
     let slot = self.schedule.get(day, timeslot).unwrap();
     let classes = &self.simulation_information.classes;
     let class_metadata = &self.metadata.classes;
@@ -103,7 +103,7 @@ impl SchoolSchedule {
       .collect_vec()
   }
 
-  pub fn get_classes(&self) -> Vec<(&Class, &ClassMetadata)> {
+  pub(crate) fn get_classes(&self) -> Vec<(&Class, &ClassMetadata)> {
     self
       .simulation_information
       .classes
@@ -112,27 +112,27 @@ impl SchoolSchedule {
       .collect()
   }
 
-  pub fn get_class(&self, class_id: usize) -> Option<&Class> {
+  pub(crate) fn get_class(&self, class_id: usize) -> Option<&Class> {
     self.simulation_information.classes.get(class_id)
   }
 
-  pub fn get_class_metadata(&self, class_id: usize) -> Option<&ClassMetadata> {
+  pub(crate) fn get_class_metadata(&self, class_id: usize) -> Option<&ClassMetadata> {
     self.metadata.classes.get(class_id)
   }
 
-  pub fn get_class_metadata_mut(&mut self, class_id: usize) -> Option<&mut ClassMetadata> {
+  pub(crate) fn get_class_metadata_mut(&mut self, class_id: usize) -> Option<&mut ClassMetadata> {
     self.metadata.classes.get_mut(class_id)
   }
 
-  pub fn get_class_classroom_type_mut(&mut self, class_id: usize) -> Option<&mut ClassroomType> {
+  pub(crate) fn get_class_classroom_type_mut(&mut self, class_id: usize) -> Option<&mut ClassroomType> {
     self.simulation_information.classes.get_mut(class_id).map(|class| &mut class.classroom_type)
   }
 
-  pub fn get_class_class_hours(&self, class_id: usize) -> Option<u8> {
+  pub(crate) fn get_class_class_hours(&self, class_id: usize) -> Option<u8> {
     self.simulation_information.classes.get(class_id).map(|class| class.class_hours)
   }
 
-  pub fn set_class_class_hours(&mut self, class_id: usize, class_hours: u8) -> Option<()> {
+  pub(crate) fn set_class_class_hours(&mut self, class_id: usize, class_hours: u8) -> Option<()> {
     self.simulation_information.classes.get_mut(class_id).map(|class| {
       class.class_hours = class_hours;
 
@@ -140,12 +140,12 @@ impl SchoolSchedule {
     })
   }
 
-  pub fn get_num_classes(&self) -> usize {
+  pub(crate) fn get_num_classes(&self) -> usize {
     assert_eq!(self.simulation_information.classes.len(), self.metadata.classes.len());
     self.simulation_information.classes.len()
   }
 
-  pub fn get_num_professors(&self) -> usize {
+  pub(crate) fn get_num_professors(&self) -> usize {
     assert_eq!(self.simulation_information.professors.len(), self.metadata.professors.len());
     self.simulation_information.professors.len()
   }
@@ -176,7 +176,7 @@ impl SchoolSchedule {
     count
   }
 
-  pub fn next_class_id(&self) -> usize {
+  pub(crate) fn next_class_id(&self) -> usize {
     self
       .schedule
       .data
@@ -229,7 +229,7 @@ impl SchoolSchedule {
     }
   }
 
-  pub fn add_new_professor(&mut self) -> (&mut Professor, &mut ProfessorMetadata, usize) {
+  pub(crate) fn add_new_professor(&mut self) -> (&mut Professor, &mut ProfessorMetadata, usize) {
     let professor_metadata = &mut self.metadata.professors;
     let professors = &mut self.simulation_information.professors;
 
@@ -252,7 +252,7 @@ impl SchoolSchedule {
     )
   }
 
-  pub fn add_new_class(&mut self) -> (&mut Class, &mut ClassMetadata) {
+  pub(crate) fn add_new_class(&mut self) -> (&mut Class, &mut ClassMetadata) {
     let class_metadata: &mut Vec<ClassMetadata> = &mut self.metadata.classes;
     let classes = &mut self.simulation_information.classes;
 

@@ -3,15 +3,15 @@ use egui::Color32;
 use crate::school_schedule::{Availability, Professor};
 use crate::timeslot;
 
-pub struct ProfessorScheduleWidget<'a> {
+pub(crate) struct ProfessorScheduleWidget<'a> {
   state: &'a mut Professor,
 }
 
 impl<'a> ProfessorScheduleWidget<'a> {
-  pub fn new(state: &'a mut Professor) -> ProfessorScheduleWidget<'a> {
+  pub(crate) fn new(state: &'a mut Professor) -> ProfessorScheduleWidget<'a> {
     ProfessorScheduleWidget { state }
   }
-  pub fn show(&mut self, ctx: &egui::Context, open: &mut bool) {
+  pub(crate) fn show(&mut self, ctx: &egui::Context, open: &mut bool) {
     egui::Window::new("Professor")
       .open(open)
       .vscroll(false)
