@@ -39,11 +39,11 @@ impl<'a> SimpleScheduleWidget<'a> {
         for class_data in class_data_list {
           for _ in 0..class_data.count {
             let botright: egui::Pos2 = topleft + (class_width, h).into();
-            let class_color = class_data.class_metadata.get_color();
+            let class_color = class_data.class_metadata.color;
             painter.rect(
               Rect::from_two_pos(topleft, botright),
               Rounding::same(0.02 * w.min(h)),
-              *class_color,
+              class_color,
               Stroke::new(1.0, Color32::from_gray(100)),
             );
             topleft += (class_width, 0.0).into();

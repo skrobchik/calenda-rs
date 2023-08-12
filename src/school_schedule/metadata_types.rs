@@ -17,13 +17,3 @@ pub struct ClassMetadata {
   pub name: String,
   pub color: Color32,
 }
-
-impl ClassMetadata {
-  pub fn get_color(&self) -> &Color32 {
-    &self.color
-  }
-
-  pub fn get_name(&self) -> &str {
-    &self.name
-  }
-}
