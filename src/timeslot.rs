@@ -14,8 +14,8 @@ pub(crate) type Day = usize;
 
 #[derive(Ord, PartialOrd, PartialEq, Eq, Hash, Clone, Deserialize, Serialize)]
 pub(crate) struct DayTimeSlot {
-  pub day: Day,
-  pub timeslot: Timeslot,
+  pub(crate) day: Day,
+  pub(crate) timeslot: Timeslot,
 }
 
 impl DayTimeSlot {

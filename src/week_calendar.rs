@@ -2,11 +2,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::timeslot::*;
 
-pub const DAY_COUNT: usize = 7; // 7 days in a week
+pub(crate) const DAY_COUNT: usize = 7; // 7 days in a week
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct WeekCalendar<T> {
-  pub data: Vec<T>,
+pub(crate) struct WeekCalendar<T> {
+  pub(crate) data: Vec<T>,
 }
 
 impl<T: Default + Clone> Default for WeekCalendar<T> {
@@ -20,7 +20,7 @@ impl<T: Default + Clone> Default for WeekCalendar<T> {
 }
 
 impl<T> WeekCalendar<T> {
-  pub fn get<I1: Into<usize>, I2: Into<usize>>(
+  pub(crate) fn get<I1: Into<usize>, I2: Into<usize>>(
     &self,
     day: I1,
     timeslot: I2,
@@ -36,7 +36,7 @@ impl<T> WeekCalendar<T> {
     Some(&self.data[day * TIMESLOT_COUNT + timeslot])
   }
 
-  pub fn get_mut<I1: Into<usize>, I2: Into<usize>>(
+  pub(crate) fn get_mut<I1: Into<usize>, I2: Into<usize>>(
     &mut self,
     day: I1,
     timeslot: I2,
@@ -54,7 +54,7 @@ impl<T> WeekCalendar<T> {
 }
 
 #[derive(Clone, Copy)]
-pub enum Weekday {
+pub(crate) enum Weekday {
   Monday,
   Tuesday,
   Wednesday,

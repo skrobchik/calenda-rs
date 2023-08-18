@@ -2,7 +2,7 @@ use std::thread::{self, JoinHandle};
 
 use tracing::debug;
 
-use rand::{rngs::ThreadRng, Rng};
+use rand::prelude::*;
 
 use crate::{
   heuristics,
@@ -14,21 +14,42 @@ use crate::{
 pub(crate) fn generate_schedule(
   constraints: SimulationConstraints,
 ) -> JoinHandle<WeekCalendar<TimeslotClassHours>> {
-  thread::spawn(move || simulated_annealing(constraints, 100_000))
+  thread::spawn(move || simulated_annealing(constraints, 1_000_000))
+}
+
+fn count_total_classes(state: &WeekCalendar<TimeslotClassHours>) -> u32 {
+  let mut total_count: u32 = 0;
+  for day in timeslot::DAY_RANGE {
+    for timeslot in timeslot::TIMESLOT_RANGE {
+      total_count += state.get(day, timeslot).unwrap().iter().map(|x| *x as u32).sum::<u32>();
+    }
+  }
+  total_count
 }
 
 fn simulated_annealing(
   constraints: SimulationConstraints,
   steps: u32,
 ) -> WeekCalendar<TimeslotClassHours> {
-  let mut rng: ThreadRng = Default::default();
+  let seed: [u8; 32] = "Aritz123Aritz123Aritz123Aritz123".as_bytes().try_into().unwrap();
+  let mut rng = rand::rngs::StdRng::from_seed(seed);
+
 
   let mut state = random_init(&constraints, &mut rng);
   let mut state_cost = cost(&state, &constraints);
 
   let mut no_change_count = 0;
 
+  let original_total_count = count_total_classes(&state);
+  let mut violations_count = 0;
+
   for step in 0..steps {
+
+    let current_total_count = count_total_classes(&state);
+    if current_total_count != original_total_count {
+      violations_count += 1;
+    }
+
     let t = temperature(1.0 - ((step + 1) as f32) / 100.0);
     let old_cost = state_cost;
     let delta = random_change(&mut state, &mut rng);
@@ -44,9 +65,14 @@ fn simulated_annealing(
     } else {
       no_change_count += 1;
     }
+    if step % 10_000 == 0 {
+      println!("Step: {}/{}", step, steps);
+    }
   }
 
   debug!("No Changes: {}", no_change_count);
+
+  println!("Num Violations: {}", violations_count);
 
   state
 }
@@ -65,7 +91,7 @@ fn temperature(x: f32) -> f32 {
 
 fn random_init(
   constraints: &SimulationConstraints,
-  rng: &mut ThreadRng,
+  rng: &mut StdRng,
 ) -> WeekCalendar<TimeslotClassHours> {
   let mut state: WeekCalendar<TimeslotClassHours> = Default::default();
 
@@ -88,7 +114,7 @@ struct Delta {
 
 fn random_change(
   state: &mut WeekCalendar<TimeslotClassHours>,
-  rnd: &mut ThreadRng,
+  rnd: &mut StdRng,
 ) -> Option<Delta> {
   let n = state.data.len();
   let i1 = rnd.gen_range(0..n);

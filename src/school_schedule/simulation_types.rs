@@ -25,7 +25,7 @@ pub(crate) struct Class {
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub(crate) struct Professor {
-  pub availability: WeekCalendar<Availability>,
+  pub(crate) availability: WeekCalendar<Availability>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy, Sequence, PartialEq, Eq, Debug)]
@@ -46,7 +46,7 @@ impl Display for ClassroomType {
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy, Sequence, PartialEq, Eq, Debug)]
-pub enum Semester {
+pub(crate) enum Semester {
   S1,
   S2,
   S3,
@@ -91,7 +91,7 @@ impl TryFrom<u32> for Semester {
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy, Sequence, PartialEq, Eq, Debug)]
-pub enum Group {
+pub(crate) enum Group {
   G1,
   G2,
   G3,
@@ -124,7 +124,7 @@ impl Display for Group {
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum Availability {
+pub(crate) enum Availability {
   Available,
   AvailableIfNeeded,
   #[default]

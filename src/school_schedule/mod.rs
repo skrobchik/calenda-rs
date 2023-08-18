@@ -1,5 +1,4 @@
 use std::ops::{Index, IndexMut};
-
 use egui::Color32;
 
 use itertools::Itertools;
@@ -8,6 +7,7 @@ use serde::{Deserialize, Serialize};
 pub(crate) mod simulation_types;
 pub(crate) use simulation_types::*;
 
+pub(crate) mod class_calendar;
 pub(crate) mod metadata_types;
 pub(crate) use metadata_types::*;
 
@@ -48,8 +48,6 @@ impl TimeslotClassHours {
     self.data.len()
   }
 }
-
-
 
 impl Index<usize> for TimeslotClassHours {
   type Output = u8;
