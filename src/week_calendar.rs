@@ -2,8 +2,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::timeslot::*;
 
-pub(crate) const DAY_COUNT: usize = 7; // 7 days in a week
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub(crate) struct WeekCalendar<T> {
   pub(crate) data: Vec<T>,
