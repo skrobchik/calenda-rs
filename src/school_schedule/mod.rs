@@ -16,6 +16,8 @@ use crate::{
   week_calendar::{WeekCalendar, Weekday},
 };
 
+use self::class_calendar::ClassCalendar;
+
 pub(crate) fn parse_semester_group(s: &str) -> Option<(Semester, Group)> {
   match s.get(0..4).and_then(|s| s.chars().collect_tuple()) {
     Some(('0', c1, '0', c2)) => match (
@@ -73,7 +75,7 @@ impl IndexMut<usize> for TimeslotClassHours {
 pub(crate) struct SchoolSchedule {
   metadata: ScheduleMetadata,
   pub(crate) simulation_information: SimulationConstraints,
-  pub(crate) schedule: WeekCalendar<TimeslotClassHours>,
+  pub(crate) class_calendar: ClassCalendar,
 }
 
 pub(crate) struct ClassData<'a> {

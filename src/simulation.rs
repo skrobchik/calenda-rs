@@ -1,4 +1,4 @@
-use std::thread::{self, JoinHandle};
+use std::{thread::{self, JoinHandle}, mem::swap};
 
 use tracing::debug;
 
@@ -6,31 +6,21 @@ use rand::prelude::*;
 
 use crate::{
   heuristics,
-  school_schedule::{SimulationConstraints, TimeslotClassHours},
+  school_schedule::{SimulationConstraints, TimeslotClassHours, class_calendar::{ClassCalendar, ClassEntryDelta}},
   timeslot,
   week_calendar::WeekCalendar,
 };
 
 pub(crate) fn generate_schedule(
   constraints: SimulationConstraints,
-) -> JoinHandle<WeekCalendar<TimeslotClassHours>> {
+) -> JoinHandle<ClassCalendar> {
   thread::spawn(move || simulated_annealing(constraints, 1_000_000))
-}
-
-fn count_total_classes(state: &WeekCalendar<TimeslotClassHours>) -> u32 {
-  let mut total_count: u32 = 0;
-  for day in timeslot::DAY_RANGE {
-    for timeslot in timeslot::TIMESLOT_RANGE {
-      total_count += state.get(day, timeslot).unwrap().iter().map(|x| *x as u32).sum::<u32>();
-    }
-  }
-  total_count
 }
 
 fn simulated_annealing(
   constraints: SimulationConstraints,
   steps: u32,
-) -> WeekCalendar<TimeslotClassHours> {
+) -> ClassCalendar {
   let seed: [u8; 32] = "Aritz123Aritz123Aritz123Aritz123".as_bytes().try_into().unwrap();
   let mut rng = rand::rngs::StdRng::from_seed(seed);
 
@@ -38,18 +28,7 @@ fn simulated_annealing(
   let mut state = random_init(&constraints, &mut rng);
   let mut state_cost = cost(&state, &constraints);
 
-  let mut no_change_count = 0;
-
-  let original_total_count = count_total_classes(&state);
-  let mut violations_count = 0;
-
   for step in 0..steps {
-
-    let current_total_count = count_total_classes(&state);
-    if current_total_count != original_total_count {
-      violations_count += 1;
-    }
-
     let t = temperature(1.0 - ((step + 1) as f32) / 100.0);
     let old_cost = state_cost;
     let delta = random_change(&mut state, &mut rng);
@@ -63,16 +42,11 @@ fn simulated_annealing(
         state_cost = old_cost;
       }
     } else {
-      no_change_count += 1;
     }
     if step % 10_000 == 0 {
       println!("Step: {}/{}", step, steps);
     }
   }
-
-  debug!("No Changes: {}", no_change_count);
-
-  println!("Num Violations: {}", violations_count);
 
   state
 }
@@ -92,14 +66,14 @@ fn temperature(x: f32) -> f32 {
 fn random_init(
   constraints: &SimulationConstraints,
   rng: &mut StdRng,
-) -> WeekCalendar<TimeslotClassHours> {
-  let mut state: WeekCalendar<TimeslotClassHours> = Default::default();
+) -> ClassCalendar {
+  let mut state: ClassCalendar = Default::default();
 
   for (class_id, class) in constraints.classes.iter().enumerate() {
     for _ in 0..class.class_hours {
-      let rand_timeslot = rng.gen_range(timeslot::TIMESLOT_RANGE);
-      let rand_day = rng.gen_range(timeslot::DAY_RANGE);
-      state.get_mut(rand_day, rand_timeslot).unwrap()[class_id] += 1;
+      let timeslot_idx = rng.gen_range(timeslot::TIMESLOT_RANGE);
+      let day_idx = rng.gen_range(timeslot::DAY_RANGE);
+      state.add_one_class(day_idx, timeslot_idx, class_id)
     }
   }
 
@@ -135,7 +109,9 @@ fn random_change(
   }
 }
 
-fn revert_change(state: &mut WeekCalendar<TimeslotClassHours>, delta: &Delta) {
+fn revert_change(state: &mut ClassCalendar, delta: ClassEntryDelta) {
+  swap(&mut delta.src_day_idx, &mut delta.dst_day_idx);
+  swap(&mut delta.src_timeslot_idx, &mut delta.dst_timeslot_idx);
   let i1 = delta.i1;
   let i2: usize = delta.i2;
   let class_id = delta.class_id;
@@ -144,7 +120,7 @@ fn revert_change(state: &mut WeekCalendar<TimeslotClassHours>, delta: &Delta) {
   debug!("Class Id: {}, {} <- {}", class_id, i1, i2);
 }
 
-fn cost(state: &WeekCalendar<TimeslotClassHours>, constraints: &SimulationConstraints) -> f32 {
+fn cost(state: &ClassCalendar, constraints: &SimulationConstraints) -> f32 {
   1.0 * heuristics::same_timeslot_classes_count(state, constraints)
     + 7.0 * heuristics::count_not_available(state, constraints)
     + 2.0 * heuristics::count_available_if_needed(state, constraints)

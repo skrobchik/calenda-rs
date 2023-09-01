@@ -1,24 +1,28 @@
 use itertools::Itertools;
 
 use crate::timeslot::{self, DAY_RANGE, TIMESLOT_RANGE};
+use serde::Serialize;
+use serde::Deserialize;
 
 pub const MAX_CLASS_ID: usize = 256;
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Debug, Clone, Serialize, Deserialize)]
 struct SingleClassEntry {
     day_idx: timeslot::Day,
     timeslot_idx: timeslot::Timeslot,
     class_id: usize
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct ClassEntryDelta {
-    class_id: usize,
-    src_day_idx: timeslot::Day,
-    src_timeslot_idx: timeslot::Timeslot,
-    dst_day_idx: timeslot::Day,
-    dst_timeslot_idx: timeslot::Timeslot,
+    pub class_id: usize,
+    pub src_day_idx: timeslot::Day,
+    pub src_timeslot_idx: timeslot::Timeslot,
+    pub dst_day_idx: timeslot::Day,
+    pub dst_timeslot_idx: timeslot::Timeslot,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct ClassCalendar {
     matrix: Vec<Vec<u8>>,
     class_entries: Vec<SingleClassEntry>,
@@ -75,7 +79,7 @@ impl ClassCalendar {
         self.add_one_class(target_day_idx, target_timeslot_idx, class_id);
     }
 
-    pub(super) fn add_one_class(&mut self, day_idx: timeslot::Day, timeslot_idx: timeslot::Timeslot, class_id: usize) {
+    pub(crate) fn add_one_class(&mut self, day_idx: timeslot::Day, timeslot_idx: timeslot::Timeslot, class_id: usize) {
         assert!(timeslot::DAY_RANGE.contains(&day_idx));
         assert!(timeslot::TIMESLOT_RANGE.contains(&timeslot_idx));
         assert!(class_id <= MAX_CLASS_ID);
@@ -119,6 +123,11 @@ impl ClassCalendar {
 
         self.class_entries.swap_remove(entry_idx);
     }
+
+    /// O(1)
+    pub(crate) fn get_total_class_count(&self) -> usize {
+        self.class_entries.len()
+    }
 }
 
 mod test {
@@ -147,5 +156,11 @@ mod test {
         assert_eq!(class_calendar.get_count(0, 1, 4), 1);
         class_calendar.remove_one_class_anywhere(4);
         assert_eq!(class_calendar.get_count(0, 1, 4), 0);
+    }
+}
+
+impl  Default for ClassCalendar {
+    fn default() -> Self {
+        Self::new()
     }
 }
