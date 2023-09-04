@@ -2,7 +2,6 @@ use egui::{Color32, Rect, Rounding, Sense, Stroke};
 
 use crate::school_schedule::SchoolSchedule;
 use crate::timeslot;
-use crate::week_calendar::Weekday;
 
 pub(crate) struct SimpleScheduleWidget<'a> {
   state: &'a SchoolSchedule,
@@ -28,18 +27,25 @@ impl<'a> SimpleScheduleWidget<'a> {
     let total_height = response.rect.height();
     let w = total_width / timeslot::DAY_COUNT as f32;
     let h: f32 = total_height / timeslot::TIMESLOT_COUNT as f32;
-    for i in timeslot::TIMESLOT_RANGE {
-      for j in timeslot::DAY_RANGE {
-        let day: Weekday = j.try_into().unwrap();
-        let class_data_list = self.state.get_class_data(day, i);
-        let num_sessions: u32 = class_data_list.iter().map(|data| data.count as u32).sum();
+    for day_idx in timeslot::TIMESLOT_RANGE {
+      for timeslot_idx in timeslot::DAY_RANGE {
+        let timeslot = self
+          .state
+          .get_class_calendar()
+          .get_timeslot(day_idx, timeslot_idx);
+
+        let num_sessions: u32 = timeslot.iter().map(|x| *x as u32).sum();
+
         let class_width = w / num_sessions as f32;
+
         let mut topleft: egui::Pos2 =
-          response.rect.left_top() + (w * j as f32, h * i as f32).into();
-        for class_data in class_data_list {
-          for _ in 0..class_data.count {
+          response.rect.left_top() + (w * timeslot_idx as f32, h * day_idx as f32).into();
+
+        for class_id in 0..timeslot.len() {
+          let class_metadata = self.state.get_class_metadata(class_id).unwrap();
+          for _ in 0..timeslot[class_id] {
             let botright: egui::Pos2 = topleft + (class_width, h).into();
-            let class_color = class_data.class_metadata.color;
+            let class_color = class_metadata.color;
             painter.rect(
               Rect::from_two_pos(topleft, botright),
               Rounding::same(0.02 * w.min(h)),

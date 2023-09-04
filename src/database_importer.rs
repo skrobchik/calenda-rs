@@ -108,8 +108,10 @@ pub(crate) fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
   let mut professor_ids: BTreeMap<String, usize> = BTreeMap::new();
 
   for my_professor in professors.iter().unique() {
-    let (professor, professor_metadata, professor_id) = schedule.add_new_professor();
+    let professor_id = schedule.add_new_professor();
+    let professor_metadata = schedule.get_professor_metadata_mut(professor_id).unwrap();
     professor_metadata.name = my_professor.name.clone();
+    let professor = schedule.get_professor_mut(professor_id).unwrap();
     professor_ids.insert(my_professor.rfc.clone(), professor_id);
     for day in timeslot::DAY_RANGE {
       for timeslot in timeslot::TIMESLOT_09_00..timeslot::TIMESLOT_17_00 {
@@ -119,26 +121,30 @@ pub(crate) fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
   }
 
   for my_class in classes.iter().filter(|c| c.ciclo == "2023-2").take(10) {
-    let (class, class_metadata) = schedule.add_new_class();
-    class_metadata.name = format!("{} {}", my_class.asignatura, my_class.name);
+    let class_id = schedule.add_new_class();
+    schedule.get_class_metadata_mut(class_id).unwrap().name =
+      format!("{} {}", my_class.asignatura, my_class.name);
     let professor_id = professor_ids.get(&my_class.rfc1).unwrap_or(&0);
-    class.professor_id = *professor_id;
+    let class = schedule.get_class_entry_mut(class_id).unwrap();
+    class.set_professor_id(*professor_id);
     if let Some((semester, group)) = parse_semester_group(&my_class.grupo) {
-      class.group = group;
-      class.semester = semester;
+      class.set_group(group);
+      class.set_semester(semester);
     }
 
     if my_class.rfc2.trim().is_empty() {
       continue;
     }
 
-    let (class, class_metadata) = schedule.add_new_class();
-    class_metadata.name = format!("{} {} (Lab)", my_class.asignatura, my_class.name);
+    let class_id = schedule.add_new_class();
+    schedule.get_class_metadata_mut(class_id).unwrap().name =
+      format!("{} {} (Lab)", my_class.asignatura, my_class.name);
     let professor_id = professor_ids.get(&my_class.rfc2).unwrap_or(&0);
-    class.professor_id = *professor_id;
+    let class = schedule.get_class_entry_mut(class_id).unwrap();
+    class.set_professor_id(*professor_id);
     if let Some((semester, group)) = parse_semester_group(&my_class.grupo) {
-      class.group = group;
-      class.semester = semester;
+      class.set_group(group);
+      class.set_semester(semester);
     }
   }
 

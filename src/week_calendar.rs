@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::timeslot::*;
+use crate::timeslot::{TIMESLOT_COUNT, DAY_COUNT};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub(crate) struct WeekCalendar<T> {
@@ -48,47 +48,5 @@ impl<T> WeekCalendar<T> {
       return None;
     }
     Some(&mut self.data[day * TIMESLOT_COUNT + timeslot])
-  }
-}
-
-#[derive(Clone, Copy)]
-pub(crate) enum Weekday {
-  Monday,
-  Tuesday,
-  Wednesday,
-  Thursday,
-  Friday,
-  Saturday,
-  Sunday,
-}
-
-impl From<Weekday> for usize {
-  fn from(val: Weekday) -> Self {
-    match val {
-      Weekday::Monday => 0,
-      Weekday::Tuesday => 1,
-      Weekday::Wednesday => 2,
-      Weekday::Thursday => 3,
-      Weekday::Friday => 4,
-      Weekday::Saturday => 5,
-      Weekday::Sunday => 6,
-    }
-  }
-}
-
-impl TryFrom<usize> for Weekday {
-  type Error = ();
-
-  fn try_from(value: usize) -> Result<Self, Self::Error> {
-    match value {
-      0 => Ok(Weekday::Monday),
-      1 => Ok(Weekday::Tuesday),
-      2 => Ok(Weekday::Wednesday),
-      3 => Ok(Weekday::Thursday),
-      4 => Ok(Weekday::Friday),
-      5 => Ok(Weekday::Saturday),
-      6 => Ok(Weekday::Sunday),
-      _ => Err(()),
-    }
   }
 }

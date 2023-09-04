@@ -52,6 +52,5 @@ impl<'a> ProfessorEditor<'a> {
     if ui.button("+").clicked() {
       self.state.add_new_professor();
     }
-    self.state.fill_classes();
   }
 }

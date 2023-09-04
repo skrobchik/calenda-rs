@@ -4,10 +4,9 @@ use crate::{
   class_editor::ClassEditor,
   professor_editor::ProfessorEditor,
   professor_schedule_widget::ProfessorScheduleWidget,
-  school_schedule::{SchoolSchedule, TimeslotClassHours},
+  school_schedule::{class_calendar::ClassCalendar, SchoolSchedule},
   simple_schedule_widget::SimpleScheduleWidget,
   simulation,
-  week_calendar::WeekCalendar,
 };
 use eframe::egui;
 use egui::Ui;
@@ -24,7 +23,7 @@ pub(crate) struct MyApp {
   availability_editor_professor_id: Option<usize>,
   availability_editor_widget_open: bool,
   #[serde(skip)]
-  new_schedule_join_handle: Option<JoinHandle<WeekCalendar<TimeslotClassHours>>>,
+  new_schedule_join_handle: Option<JoinHandle<ClassCalendar>>,
 }
 
 impl MyApp {
@@ -74,12 +73,7 @@ impl eframe::App for MyApp {
       .show(ctx, &mut self.professor_editor_widget_open);
 
       if let Some(professor_id) = self.availability_editor_professor_id {
-        if let Some(professor) = self
-          .school_schedule
-          .simulation_information
-          .professors
-          .get_mut(professor_id)
-        {
+        if let Some(professor) = self.school_schedule.get_professor_mut(professor_id) {
           ProfessorScheduleWidget::new(professor)
             .show(ctx, &mut self.availability_editor_widget_open);
         }
@@ -93,17 +87,19 @@ impl eframe::App for MyApp {
           .unwrap()
           .is_finished();
         if is_finished {
-          let new_schedule = mem::take(&mut self.new_schedule_join_handle)
+          let new_class_calendar = mem::take(&mut self.new_schedule_join_handle)
             .unwrap()
             .join()
             .unwrap();
+          self
+            .school_schedule
+            .replace_class_calendar(new_class_calendar)
+            .unwrap();
           info!("Applied new schedule");
-          self.school_schedule.schedule = new_schedule;
-          self.school_schedule.fill_classes();
         }
       } else if ui.button("Optimize").clicked() {
         self.new_schedule_join_handle = Some(simulation::generate_schedule(
-          self.school_schedule.simulation_information.clone(),
+          self.school_schedule.get_simulation_constraints().clone(),
         ));
       }
     });

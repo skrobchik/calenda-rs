@@ -4,6 +4,8 @@ use crate::timeslot::{self, DAY_RANGE, TIMESLOT_RANGE};
 use serde::Serialize;
 use serde::Deserialize;
 
+use super::SimulationConstraints;
+
 pub const MAX_CLASS_ID: usize = 256;
 
 #[derive(PartialEq, Eq, Debug, Clone, Serialize, Deserialize)]
@@ -36,7 +38,15 @@ impl ClassCalendar {
         }
     }
 
-    fn get_timeslot(&self, day_idx: timeslot::Day, timeslot_idx: timeslot::Timeslot) -> &Vec<u8> {
+    pub(crate) fn get_classes(&self) -> &Vec<SingleClassEntry> {
+        &self.class_entries
+    }
+
+    pub(crate) fn get_matrix(&self) -> &Vec<Vec<u8>> {
+        &self.matrix
+    }
+
+    pub(crate) fn get_timeslot(&self, day_idx: timeslot::Day, timeslot_idx: timeslot::Timeslot) -> &Vec<u8> {
         &self.matrix[day_idx * timeslot::DAY_COUNT + timeslot_idx]
     }
 
@@ -74,7 +84,7 @@ impl ClassCalendar {
         ClassEntryDelta { class_id, src_day_idx, src_timeslot_idx, dst_day_idx, dst_timeslot_idx }
     }
 
-    pub(super) fn move_one_class(&mut self, source_day_idx: timeslot::Day, source_timeslot_idx: timeslot::Timeslot, target_day_idx: timeslot::Day, target_timeslot_idx: timeslot::Timeslot, class_id: usize) {
+    pub(crate) fn move_one_class(&mut self, source_day_idx: timeslot::Day, source_timeslot_idx: timeslot::Timeslot, target_day_idx: timeslot::Day, target_timeslot_idx: timeslot::Timeslot, class_id: usize) {
         self.remove_one_class(source_day_idx, source_timeslot_idx, class_id);
         self.add_one_class(target_day_idx, target_timeslot_idx, class_id);
     }
@@ -93,7 +103,7 @@ impl ClassCalendar {
     }
 
 
-    pub(super) fn remove_one_class(&mut self, day_idx: timeslot::Day, timeslot_idx: timeslot::Timeslot, class_id: usize) {
+    pub(crate) fn remove_one_class(&mut self, day_idx: timeslot::Day, timeslot_idx: timeslot::Timeslot, class_id: usize) {
         assert!(class_id <= MAX_CLASS_ID);
         assert!(DAY_RANGE.contains(&day_idx));
         assert!(TIMESLOT_RANGE.contains(&timeslot_idx));

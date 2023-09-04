@@ -10,18 +10,47 @@ use anyhow::anyhow;
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[derive(Default)]
 pub(crate) struct SimulationConstraints {
-  pub(crate) classes: Vec<Class>,
-  pub(crate) professors: Vec<Professor>,
+  pub(super) classes: Vec<Class>,
+  pub(super) professors: Vec<Professor>,
 }
+
+impl SimulationConstraints {
+  pub(crate) fn get_classes(&self) -> &Vec<Class> {
+    &self.classes
+  }
+  pub(crate) fn get_professors(&self) -> &Vec<Professor> {
+    &self.professors
+  }
+}
+
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub(crate) struct Class {
-  pub(crate) professor_id: usize,
-  pub(crate) classroom_type: ClassroomType,
-  pub(crate) class_hours: u8,
-  pub(crate) semester: Semester,
-  pub(crate) group: Group,
+  pub(super) professor_id: usize,
+  pub(super) classroom_type: ClassroomType,
+  pub(super) class_hours: u8,
+  pub(super) semester: Semester,
+  pub(super) group: Group,
 }
+
+impl Class {
+  pub(crate) fn get_professor_id(&self) -> &usize {
+    &self.professor_id
+  }
+  pub(crate) fn get_classroom_type(&self) -> &ClassroomType {
+    &self.classroom_type
+  }
+  pub(crate) fn get_class_hours(&self) -> &u8 {
+    &self.class_hours
+  }
+  pub(crate) fn get_semester(&self) -> &Semester {
+    &self.semester
+  }
+  pub(crate) fn get_group(&self) -> &Group {
+    &self.group
+  }
+}
+
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub(crate) struct Professor {
