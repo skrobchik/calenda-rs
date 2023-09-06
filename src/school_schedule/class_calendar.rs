@@ -4,8 +4,6 @@ use crate::timeslot::{self, DAY_RANGE, TIMESLOT_RANGE};
 use serde::Serialize;
 use serde::Deserialize;
 
-use super::SimulationConstraints;
-
 pub const MAX_CLASS_ID: usize = 256;
 
 #[derive(PartialEq, Eq, Debug, Clone, Serialize, Deserialize)]
@@ -36,10 +34,6 @@ impl ClassCalendar {
             matrix: vec![Vec::new(); timeslot::TIMESLOT_COUNT * timeslot::DAY_COUNT],
             class_entries: Vec::new(),
         }
-    }
-
-    pub(crate) fn get_classes(&self) -> &Vec<SingleClassEntry> {
-        &self.class_entries
     }
 
     pub(crate) fn get_matrix(&self) -> &Vec<Vec<u8>> {
@@ -98,7 +92,6 @@ impl ClassCalendar {
             timeslot.resize(class_id+1, 0_u8);
         }
         timeslot[class_id] = timeslot[class_id].checked_add(1).unwrap();
-        let clas_entry_idx = self.class_entries.len();
         self.class_entries.push(SingleClassEntry { day_idx, timeslot_idx, class_id });
     }
 

@@ -1,5 +1,3 @@
-use std::{rc::Rc, cell::RefCell};
-
 use egui::Color32;
 
 use itertools::Itertools;
@@ -18,7 +16,7 @@ use self::class_calendar::ClassCalendar;
 
 #[derive(thiserror::Error, Debug)]
 #[error("Class hours in calendars do not match.")]
-struct ClassHourCountNotMatchingError {}
+pub(crate) struct ClassHourCountNotMatchingError {}
 
 pub(crate) fn parse_semester_group(s: &str) -> Option<(Semester, Group)> {
   match s.get(0..4).and_then(|s| s.chars().collect_tuple()) {
@@ -34,15 +32,20 @@ pub(crate) fn parse_semester_group(s: &str) -> Option<(Semester, Group)> {
 }
 
 #[derive(Debug)]
-struct ClassEntry<'a> {
+pub(crate) struct ClassEntry<'a> {
   school_schedule: &'a mut SchoolSchedule,
-  class: &'a mut simulation_types::Class,
   class_id: usize,
 }
 
 impl<'a> ClassEntry<'a> {
-  pub fn set_hours(&mut self, class_hours: u8) {
-    let curr_class_hours = self.class.class_hours;
+  pub(crate) fn set_hours(&mut self, class_hours: u8) {
+    let class = self
+      .school_schedule
+      .simulation_constraints
+      .classes
+      .get_mut(self.class_id)
+      .unwrap();
+    let curr_class_hours = class.class_hours;
     match class_hours.cmp(&curr_class_hours) {
       std::cmp::Ordering::Equal => {}
       std::cmp::Ordering::Less => {
@@ -53,7 +56,7 @@ impl<'a> ClassEntry<'a> {
             .class_calendar
             .remove_one_class_anywhere(self.class_id);
         }
-        self.class.class_hours = class_hours;
+        class.class_hours = class_hours;
       }
       std::cmp::Ordering::Greater => {
         let positive_delta = class_hours - curr_class_hours;
@@ -63,21 +66,39 @@ impl<'a> ClassEntry<'a> {
             .class_calendar
             .add_one_class(0, 0, self.class_id);
         }
-        self.class.class_hours = class_hours;
+        class.class_hours = class_hours;
       }
     };
   }
 
-  pub fn set_professor_id(&mut self, professor_id: usize) {
-    self.class.professor_id = professor_id;
+  pub(crate) fn set_professor_id(&mut self, professor_id: usize) {
+    let class = self
+      .school_schedule
+      .simulation_constraints
+      .classes
+      .get_mut(self.class_id)
+      .unwrap();
+    class.professor_id = professor_id;
   }
 
-  pub fn set_group(&mut self, group: Group) {
-    self.class.group = group;
+  pub(crate) fn set_group(&mut self, group: Group) {
+    let class = self
+      .school_schedule
+      .simulation_constraints
+      .classes
+      .get_mut(self.class_id)
+      .unwrap();
+    class.group = group;
   }
 
-  pub fn set_semester(&mut self, semester: Semester) {
-    self.class.semester = semester;
+  pub(crate) fn set_semester(&mut self, semester: Semester) {
+    let class = self
+      .school_schedule
+      .simulation_constraints
+      .classes
+      .get_mut(self.class_id)
+      .unwrap();
+    class.semester = semester;
   }
 }
 
@@ -86,8 +107,6 @@ pub(crate) struct SchoolSchedule {
   metadata: ScheduleMetadata,
   simulation_constraints: SimulationConstraints,
   class_calendar: ClassCalendar,
-  #[serde(skip)]
-  borrowed_class_entry: Option<()>,
 }
 
 impl SchoolSchedule {
@@ -99,17 +118,11 @@ impl SchoolSchedule {
     self.simulation_constraints.classes.get(class_id)
   }
 
-  pub(crate) fn get_class_entry_mut(&mut self, class_id: usize) -> Option<&mut ClassEntry> {
-    let class = self
-      .simulation_constraints
-      .get_classes()
-      .get_mut(class_id)?;
-    let class_entry = ClassEntry {
+  pub(crate) fn get_class_entry_mut(&mut self, class_id: usize) -> Option<ClassEntry> {
+    Some(ClassEntry {
       school_schedule: self,
-      class,
       class_id,
-    };
-    todo!()
+    })
   }
 
   pub(crate) fn get_class_metadata(&self, class_id: usize) -> Option<&ClassMetadata> {

@@ -125,11 +125,11 @@ pub(crate) fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
     schedule.get_class_metadata_mut(class_id).unwrap().name =
       format!("{} {}", my_class.asignatura, my_class.name);
     let professor_id = professor_ids.get(&my_class.rfc1).unwrap_or(&0);
-    let class = schedule.get_class_entry_mut(class_id).unwrap();
-    class.set_professor_id(*professor_id);
+    let mut class_entry = schedule.get_class_entry_mut(class_id).unwrap();
+    class_entry.set_professor_id(*professor_id);
     if let Some((semester, group)) = parse_semester_group(&my_class.grupo) {
-      class.set_group(group);
-      class.set_semester(semester);
+      class_entry.set_group(group);
+      class_entry.set_semester(semester);
     }
 
     if my_class.rfc2.trim().is_empty() {
@@ -140,11 +140,11 @@ pub(crate) fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
     schedule.get_class_metadata_mut(class_id).unwrap().name =
       format!("{} {} (Lab)", my_class.asignatura, my_class.name);
     let professor_id = professor_ids.get(&my_class.rfc2).unwrap_or(&0);
-    let class = schedule.get_class_entry_mut(class_id).unwrap();
-    class.set_professor_id(*professor_id);
+    let mut class_entry = schedule.get_class_entry_mut(class_id).unwrap();
+    class_entry.set_professor_id(*professor_id);
     if let Some((semester, group)) = parse_semester_group(&my_class.grupo) {
-      class.set_group(group);
-      class.set_semester(semester);
+      class_entry.set_group(group);
+      class_entry.set_semester(semester);
     }
   }
 
