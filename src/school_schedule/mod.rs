@@ -244,7 +244,7 @@ fn count_class_hours(class_calendar: &ClassCalendar) -> Vec<u8> {
         continue;
       }
       if class_id >= class_hour_count.len() {
-        class_hour_count.resize(class_id, 0);
+        class_hour_count.resize(class_id+1, 0);
       }
       class_hour_count[class_id] += count;
     }
