@@ -73,6 +73,9 @@ impl ClassCalendar {
         }
         {
             let dst_timeslot = self.get_timeslot_mut(dst_day_idx, dst_timeslot_idx);
+            if class_id >= dst_timeslot.len() {
+                dst_timeslot.resize(class_id+1, 0);
+            }
             dst_timeslot[class_id] = dst_timeslot[class_id].checked_add(1).unwrap();
         }
         ClassEntryDelta { class_id, src_day_idx, src_timeslot_idx, dst_day_idx, dst_timeslot_idx }
