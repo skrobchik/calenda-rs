@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::timeslot::{TIMESLOT_COUNT, DAY_COUNT};
+use crate::timeslot::{DAY_COUNT, TIMESLOT_COUNT};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub(crate) struct WeekCalendar<T> {
@@ -18,11 +18,7 @@ impl<T: Default + Clone> Default for WeekCalendar<T> {
 }
 
 impl<T> WeekCalendar<T> {
-  pub(crate) fn get<I1: Into<usize>, I2: Into<usize>>(
-    &self,
-    day: I1,
-    timeslot: I2,
-  ) -> Option<&T> {
+  pub(crate) fn get<I1: Into<usize>, I2: Into<usize>>(&self, day: I1, timeslot: I2) -> Option<&T> {
     let day: usize = day.into();
     let timeslot: usize = timeslot.into();
     if !(0..DAY_COUNT).contains(&day) {

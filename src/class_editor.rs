@@ -29,10 +29,11 @@ impl<'a> ClassEditor<'a> {
       .show(ui, |ui| {
         for class_id in 0..num_classes {
           ui.horizontal(|ui| {
-            ui.color_edit_button_srgba(&mut self.state.get_class_metadata_mut(class_id).unwrap().color);
+            ui.color_edit_button_srgba(
+              &mut self.state.get_class_metadata_mut(class_id).unwrap().color,
+            );
             ui.text_edit_singleline(&mut self.state.get_class_metadata_mut(class_id).unwrap().name);
           });
-
 
           // TODO: Fix
           // ui.horizontal(|ui| {
@@ -66,7 +67,6 @@ impl<'a> ClassEditor<'a> {
           //     });
           // });
 
-
           // TODO: Fix
           // ui.horizontal(|ui| {
           //   ui.label("Groupo");
@@ -79,19 +79,39 @@ impl<'a> ClassEditor<'a> {
           //     });
           // });
 
-          
           ui.horizontal(|ui| {
             ui.label("Profesor");
-            ui.label(format!("{}", self.state.get_class(class_id).unwrap().get_professor_id()));
+            ui.label(format!(
+              "{}",
+              self.state.get_class(class_id).unwrap().get_professor_id()
+            ));
             ComboBox::from_id_source(format!("professor_selector_{}", class_id.clone()))
               .selected_text(
-                self.state.get_professor_metadata(*self.state.get_class(class_id).unwrap().get_professor_id()).map(|professor_metadata| professor_metadata.name.as_str()). unwrap_or("Undefined Professor")
+                self
+                  .state
+                  .get_professor_metadata(
+                    *self.state.get_class(class_id).unwrap().get_professor_id(),
+                  )
+                  .map(|professor_metadata| professor_metadata.name.as_str())
+                  .unwrap_or("Undefined Professor"),
               )
               .show_ui(ui, |ui| {
                 let num_professors = self.state.get_num_professors();
-                let selected_professor_id = *self.state.get_class(class_id).unwrap().get_professor_id();
+                let selected_professor_id =
+                  *self.state.get_class(class_id).unwrap().get_professor_id();
                 for professor_id in 0..num_professors {
-                  if ui.selectable_label(professor_id==selected_professor_id, self.state.get_professor_metadata(professor_id).unwrap().name.as_str()).changed() {
+                  if ui
+                    .selectable_label(
+                      professor_id == selected_professor_id,
+                      self
+                        .state
+                        .get_professor_metadata(professor_id)
+                        .unwrap()
+                        .name
+                        .as_str(),
+                    )
+                    .changed()
+                  {
                     // TODO Set selected professor.
                   }
                 }
@@ -101,10 +121,13 @@ impl<'a> ClassEditor<'a> {
             let original_class_hours = *self.state.get_class(class_id).unwrap().get_class_hours();
             let mut class_hours = original_class_hours;
             ui.add(
-              egui::Slider::new(&mut class_hours, 0..=20)
-                .text(to_human_time(original_class_hours)),
+              egui::Slider::new(&mut class_hours, 0..=20).text(to_human_time(original_class_hours)),
             );
-            self.state.get_class_entry_mut(class_id).unwrap().set_hours(class_hours);
+            self
+              .state
+              .get_class_entry_mut(class_id)
+              .unwrap()
+              .set_hours(class_hours);
           });
           ui.separator();
         }

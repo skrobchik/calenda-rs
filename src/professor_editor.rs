@@ -40,7 +40,13 @@ impl<'a> ProfessorEditor<'a> {
         for professor_id in 0..num_professors {
           ui.horizontal(|ui| {
             ui.label("Nombre");
-            ui.text_edit_singleline(&mut self.state.get_professor_metadata_mut(professor_id).unwrap().name);
+            ui.text_edit_singleline(
+              &mut self
+                .state
+                .get_professor_metadata_mut(professor_id)
+                .unwrap()
+                .name,
+            );
           });
           if ui.button("Editar disponibilidad").clicked() {
             *self.availability_editor_professor_id = Some(professor_id);

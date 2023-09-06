@@ -7,8 +7,7 @@ use crate::week_calendar::WeekCalendar;
 
 use anyhow::anyhow;
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[derive(Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub(crate) struct SimulationConstraints {
   pub(super) classes: Vec<Class>,
   pub(super) professors: Vec<Professor>,
@@ -22,7 +21,6 @@ impl SimulationConstraints {
     &self.professors
   }
 }
-
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub(crate) struct Class {
@@ -50,7 +48,6 @@ impl Class {
     &self.group
   }
 }
-
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub(crate) struct Professor {
