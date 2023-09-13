@@ -14,7 +14,7 @@ use crate::{
 };
 
 pub(crate) fn generate_schedule(constraints: SimulationConstraints) -> JoinHandle<ClassCalendar> {
-  thread::spawn(move || simulated_annealing(constraints, 20_000_000))
+  thread::spawn(move || simulated_annealing(constraints, 100_000))
 }
 
 #[derive(Default, Serialize, Deserialize)]
