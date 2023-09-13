@@ -120,7 +120,7 @@ pub(crate) fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
     }
   }
 
-  for my_class in classes.iter().filter(|c| c.ciclo == "2023-2").take(10) {
+  for my_class in classes.iter().filter(|c| c.ciclo == "2023-2") {
     let class_id = schedule.add_new_class();
     schedule.get_class_metadata_mut(class_id).unwrap().name =
       format!("{} {}", my_class.asignatura, my_class.name);

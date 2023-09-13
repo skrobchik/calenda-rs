@@ -14,15 +14,17 @@ use crate::{
 };
 
 pub(crate) fn generate_schedule(constraints: SimulationConstraints) -> JoinHandle<ClassCalendar> {
-  thread::spawn(move || simulated_annealing(constraints, 10_000))
+  thread::spawn(move || simulated_annealing(constraints, 20_000_000))
 }
 
 #[derive(Default, Serialize, Deserialize)]
 struct Stats {
   accepted: Vec<bool>,
-  acceptance_probability: Vec<f32>,
-  temperature: Vec<f32>,
-  cost: Vec<f32>,
+  acceptance_probability: Vec<f64>,
+  temperature: Vec<f64>,
+  curr_cost: Vec<f64>,
+  new_cost: Vec<f64>,
+  x: Vec<f64>,
 }
 
 impl Stats {
@@ -31,7 +33,9 @@ impl Stats {
       accepted: Vec::with_capacity(capacity),
       acceptance_probability: Vec::with_capacity(capacity),
       temperature: Vec::with_capacity(capacity),
-      cost: Vec::with_capacity(capacity),
+      new_cost: Vec::with_capacity(capacity),
+      curr_cost: Vec::with_capacity(capacity),
+      x: Vec::with_capacity(capacity),
     }
   }
 }
@@ -50,11 +54,16 @@ fn simulated_annealing(constraints: SimulationConstraints, steps: u32) -> ClassC
   let mut state_cost = cost(&state, &constraints);
 
   for step in 0..steps {
-    let t = temperature(1.0 - ((step + 1) as f32) / 100.0); stats.temperature.push(t);
+    stats.curr_cost.push(state_cost);
+    let t = {
+      let x = ((step + 1) as f64) / (steps as f64); stats.x.push(x); 
+      let t = temperature(x); stats.temperature.push(t);
+      t
+    };
     let old_cost = state_cost;
     let delta = state.move_one_class_random(&mut rng);
     
-    let new_cost = cost(&state, &constraints); stats.cost.push(new_cost);
+    let new_cost = cost(&state, &constraints); stats.new_cost.push(new_cost);
 
     let ap = acceptance_probability(old_cost, new_cost, t); stats.acceptance_probability.push(ap);
     if ap >= rng.gen_range(0.0..=1.0) {
@@ -73,22 +82,26 @@ fn simulated_annealing(constraints: SimulationConstraints, steps: u32) -> ClassC
   }
 
   info!("Saving stats.");
-  let buffer = std::fs::File::create("stats.json").unwrap();
-  serde_json::ser::to_writer(buffer, &stats).unwrap();
+  let file = std::fs::File::create("stats.json").unwrap();
+  let writer = std::io::BufWriter::new(file);
+  serde_json::ser::to_writer(writer, &stats).unwrap();
 
   state
 }
 
-fn acceptance_probability(old_cost: f32, new_cost: f32, temperature: f32) -> f32 {
+fn acceptance_probability(old_cost: f64, new_cost: f64, temperature: f64) -> f64 {
   if new_cost < old_cost {
     1.0
   } else {
-    (-(new_cost - old_cost) / temperature.max(f32::EPSILON)).exp()
+    (-(new_cost - old_cost) / temperature.max(f64::EPSILON)).exp()
   }
 }
 
-fn temperature(x: f32) -> f32 {
-  100.0 * 0.95_f32.powf(x)
+fn temperature(x: f64) -> f64 {
+  // 10.0 - 10.0 * x
+  //0.0
+  // 7.5*(0.5*(5.0*std::f64::consts::PI*x+std::f64::consts::FRAC_2_PI).sin()+0.5)
+  if x <= 0.9 { 7.5*(0.5*(1.1*7.0*std::f64::consts::PI*x+std::f64::consts::FRAC_2_PI).sin()+0.5) } else { 0.0 }
 }
 
 fn random_init<R: Rng>(constraints: &SimulationConstraints, rng: &mut R) -> ClassCalendar {
@@ -115,7 +128,7 @@ fn revert_change(state: &mut ClassCalendar, delta: &ClassEntryDelta) {
   );
 }
 
-fn cost(state: &ClassCalendar, constraints: &SimulationConstraints) -> f32 {
+fn cost(state: &ClassCalendar, constraints: &SimulationConstraints) -> f64 {
   10.0 * heuristics::same_timeslot_classes_count(state, constraints)
     + 7.0 * heuristics::count_not_available(state, constraints)
     + 2.0 * heuristics::count_available_if_needed(state, constraints)

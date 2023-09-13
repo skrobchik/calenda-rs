@@ -6,8 +6,8 @@ use crate::{
 pub(crate) fn same_timeslot_classes_count(
   state: &ClassCalendar,
   _constraints: &SimulationConstraints,
-) -> f32 {
-  let mut same_timeslot_classes_count: f32 = 0.0;
+) -> f64 {
+  let mut same_timeslot_classes_count: f64 = 0.0;
   for classes in state.get_matrix().iter() {
     let same_timeslot: bool = classes.iter().filter(|x| **x > 1).nth(1).is_some();
     if same_timeslot {
@@ -20,8 +20,8 @@ pub(crate) fn same_timeslot_classes_count(
 pub(crate) fn count_not_available(
   state: &ClassCalendar,
   constraints: &SimulationConstraints,
-) -> f32 {
-  let mut not_available_count: f32 = 0.0;
+) -> f64 {
+  let mut not_available_count: f64 = 0.0;
   for day in timeslot::DAY_RANGE {
     for timeslot in timeslot::TIMESLOT_RANGE {
       let classes = state.get_timeslot(day, timeslot);
@@ -42,8 +42,8 @@ pub(crate) fn count_not_available(
 pub(crate) fn count_available_if_needed(
   state: &ClassCalendar,
   constraints: &SimulationConstraints,
-) -> f32 {
-  let mut available_if_needed_count: f32 = 0.0;
+) -> f64 {
+  let mut available_if_needed_count: f64 = 0.0;
   for day in timeslot::DAY_RANGE {
     for timeslot in timeslot::TIMESLOT_RANGE {
       let classes = state.get_timeslot(day, timeslot);
