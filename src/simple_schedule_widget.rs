@@ -39,8 +39,10 @@ impl<'a> SimpleScheduleWidget<'a> {
         let class_width = w / num_sessions as f32;
 
         let mut topleft: egui::Pos2 =
-          response.rect.left_top() + (w * timeslot_idx as f32, h * day_idx as f32).into();
-
+          response.rect.left_top() + (w * day_idx as f32, h * timeslot_idx as f32).into();
+          
+        painter.rect_stroke(Rect::from_two_pos(topleft, topleft+(w,h).into()), Rounding::none(), Stroke::new(1.0, Color32::from_gray(100)));
+        
         for class_id in 0..timeslot.len() {
           let class_metadata = self.state.get_class_metadata(class_id).unwrap();
           for _ in 0..timeslot[class_id] {
