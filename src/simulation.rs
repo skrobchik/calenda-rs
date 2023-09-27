@@ -42,9 +42,9 @@ impl Stats {
 
 fn simulated_annealing(constraints: SimulationConstraints, steps: u32) -> ClassCalendar {
   // let seed: [u8; 32] = "Aritz123Aritz123Aritz123Aritz123"
-  //   .as_bytes()
-  //   .try_into()
-  //   .unwrap();
+    //   .as_bytes()
+    //   .try_into()
+    //   .unwrap();
   // let mut rng = rand::rngs::StdRng::from_seed(seed);
   let mut rng = rand::rngs::ThreadRng::default();
 
@@ -123,7 +123,7 @@ fn revert_change(state: &mut ClassCalendar, delta: &ClassEntryDelta) {
     delta.dst_day_idx,
     delta.dst_timeslot_idx,
     delta.src_day_idx,
-    delta.dst_timeslot_idx,
+    delta.src_timeslot_idx,
     delta.class_id,
   );
 }
