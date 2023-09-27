@@ -27,8 +27,8 @@ impl<'a> SimpleScheduleWidget<'a> {
     let total_height = response.rect.height();
     let w = total_width / timeslot::DAY_COUNT as f32;
     let h: f32 = total_height / timeslot::TIMESLOT_COUNT as f32;
-    for day_idx in timeslot::TIMESLOT_RANGE {
-      for timeslot_idx in timeslot::DAY_RANGE {
+    for day_idx in timeslot::DAY_RANGE {
+      for timeslot_idx in timeslot::TIMESLOT_RANGE {
         let timeslot = self
           .state
           .get_class_calendar()
