@@ -45,7 +45,7 @@ impl ClassCalendar {
     day_idx: timeslot::Day,
     timeslot_idx: timeslot::Timeslot,
   ) -> &Vec<u8> {
-    &self.matrix[day_idx * timeslot::DAY_COUNT + timeslot_idx]
+    &self.matrix[day_idx * timeslot::TIMESLOT_COUNT + timeslot_idx]
   }
 
   fn get_timeslot_mut(
@@ -53,7 +53,7 @@ impl ClassCalendar {
     day_idx: timeslot::Day,
     timeslot_idx: timeslot::Timeslot,
   ) -> &mut Vec<u8> {
-    &mut self.matrix[day_idx * timeslot::DAY_COUNT + timeslot_idx]
+    &mut self.matrix[day_idx * timeslot::TIMESLOT_COUNT + timeslot_idx]
   }
 
   pub(crate) fn get_count(
