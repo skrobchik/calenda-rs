@@ -66,7 +66,7 @@ impl ClassCalendar {
     assert!(timeslot::TIMESLOT_RANGE.contains(&timeslot_idx));
     assert!(class_id <= MAX_CLASS_ID);
     let timeslot = self.get_timeslot(day_idx, timeslot_idx);
-    timeslot.get(class_id).map(|x| *x).unwrap_or(0_u8)
+    timeslot.get(class_id).copied().unwrap_or(0_u8)
   }
 
   pub(crate) fn move_one_class_random<R: rand::Rng>(&mut self, rng: &mut R) -> ClassEntryDelta {

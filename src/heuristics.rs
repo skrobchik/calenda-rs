@@ -78,7 +78,7 @@ pub(crate) fn count_outside_session_length(
     for timeslot_idx in timeslot::TIMESLOT_RANGE {
       let timeslot = state.get_timeslot(day_idx, timeslot_idx);
       for class_id in 0..=max_class_id {
-        let count = timeslot.get(class_id).map(|x| *x).unwrap_or_default();
+        let count = timeslot.get(class_id).copied().unwrap_or_default();
         if count > 0 {
           session_length[class_id] += 1;
         } else if session_length[class_id] > 0 {

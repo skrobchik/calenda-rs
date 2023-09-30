@@ -185,9 +185,9 @@ impl SchoolSchedule {
 
     assert_eq!(professors.len(), professor_metadata.len());
 
-    let professor_id = professors.len() - 1;
+    
 
-    professor_id
+    professors.len() - 1
   }
 
   pub(crate) fn add_new_class(&mut self) -> usize {
