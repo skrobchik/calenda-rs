@@ -5,7 +5,6 @@ use crate::{
 
 pub(crate) fn same_timeslot_classes_count(
   state: &ClassCalendar,
-  _constraints: &SimulationConstraints,
 ) -> f64 {
   let mut same_timeslot_classes_count: u64 = 0;
   for classes in state.get_matrix().iter() {
@@ -58,4 +57,71 @@ pub(crate) fn count_available_if_needed(
     }
   }
   available_if_needed_count
+}
+
+pub(crate) fn count_outside_session_length(
+  state: &ClassCalendar,
+  min_session_length: u8,
+  max_session_length: u8,
+) -> f64 {
+  let mut outside_session_length_count: u64 = 0;
+  for day_idx in timeslot::DAY_RANGE {
+    let max_class_id = timeslot::TIMESLOT_RANGE
+      .map(|timeslot_idx| {
+        state
+          .get_timeslot(day_idx, timeslot_idx)
+          .len()
+          .checked_sub(1)
+          .unwrap_or_default()
+      })
+      .max()
+      .unwrap();
+    let mut session_length: Vec<u8> = vec![0; max_class_id+1];
+    for timeslot_idx in timeslot::TIMESLOT_RANGE {
+      let timeslot = state.get_timeslot(day_idx, timeslot_idx);
+      for class_id in 0..=max_class_id {
+        let count = timeslot.get(class_id).map(|x| *x).unwrap_or_default();
+        if count > 0 {
+          session_length[class_id] += 1;
+        } else if session_length[class_id] > 0 {
+          if session_length[class_id] < min_session_length
+            || max_session_length < session_length[class_id]
+          {
+            outside_session_length_count += 1;
+          }
+          session_length[class_id] = 0;
+        }
+      }
+    }
+    for class_id in 0..=max_class_id {
+      if session_length[class_id] > 0
+        && (session_length[class_id] < min_session_length
+          || max_session_length < session_length[class_id])
+      {
+        outside_session_length_count += 1;
+      }
+    }
+  }
+  outside_session_length_count as f64
+}
+
+#[cfg(test)]
+mod test {
+  use super::*;
+
+  #[test]
+  fn count_outside_session_length_test() {
+    let mut state = ClassCalendar::new();
+    assert_eq!(count_outside_session_length(&state, 2, 4), 0.0);
+    state.add_one_class(0, timeslot::TIMESLOT_17_30, 0);
+    assert_eq!(count_outside_session_length(&state, 2, 4), 1.0);
+    state.add_one_class(0, timeslot::TIMESLOT_18_00, 0);
+    assert_eq!(count_outside_session_length(&state, 2, 4), 0.0);
+    state.add_one_class(0, timeslot::TIMESLOT_18_30, 0);
+    assert_eq!(count_outside_session_length(&state, 2, 4), 0.0);
+    state.add_one_class(0, timeslot::TIMESLOT_19_00, 0);
+    assert_eq!(count_outside_session_length(&state, 2, 4), 0.0);
+    state.add_one_class(0, timeslot::TIMESLOT_19_30, 0);
+    assert_eq!(count_outside_session_length(&state, 2, 4), 1.0);
+  }
 }

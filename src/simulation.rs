@@ -99,9 +99,10 @@ fn acceptance_probability(old_cost: f64, new_cost: f64, temperature: f64) -> f64
 
 fn temperature(x: f64) -> f64 {
   // 10.0 - 10.0 * x
-  //0.0
+  if x <= 0.9 { 9.0 - 10.0 * x } else { 0.0 }
+  // 0.0
   // 7.5*(0.5*(5.0*std::f64::consts::PI*x+std::f64::consts::FRAC_2_PI).sin()+0.5)
-  if x <= 0.9 { 7.5*(0.5*(1.1*7.0*std::f64::consts::PI*x+std::f64::consts::FRAC_2_PI).sin()+0.5) } else { 0.0 }
+  // if x <= 0.9 { 7.5*(0.5*(1.1*7.0*std::f64::consts::PI*x+std::f64::consts::FRAC_2_PI).sin()+0.5) } else { 0.0 }
 }
 
 fn random_init<R: Rng>(constraints: &SimulationConstraints, rng: &mut R) -> ClassCalendar {
@@ -129,7 +130,8 @@ fn revert_change(state: &mut ClassCalendar, delta: &ClassEntryDelta) {
 }
 
 fn cost(state: &ClassCalendar, constraints: &SimulationConstraints) -> f64 {
-  10.0 * heuristics::same_timeslot_classes_count(state, constraints)
-    + 7.0 * heuristics::count_not_available(state, constraints)
-    + 2.0 * heuristics::count_available_if_needed(state, constraints)
+  1.0 * heuristics::same_timeslot_classes_count(state)
+    + 1.0 * heuristics::count_not_available(state, constraints)
+    + 0.1 * heuristics::count_available_if_needed(state, constraints)
+    + 1.0 * heuristics::count_outside_session_length(state, 2, 4)
 }
