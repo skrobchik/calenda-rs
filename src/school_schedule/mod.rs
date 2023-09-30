@@ -10,7 +10,7 @@ pub(crate) mod class_calendar;
 pub(crate) mod metadata_types;
 pub(crate) use metadata_types::*;
 
-use crate::{week_calendar::WeekCalendar, timeslot};
+use crate::{timeslot, week_calendar::WeekCalendar};
 
 use self::class_calendar::ClassCalendar;
 
@@ -207,16 +207,32 @@ impl SchoolSchedule {
       group: Group::G1,
     });
     let class_id = class_list.len() - 1;
-    self.class_calendar.add_one_class(4, timeslot::TIMESLOT_18_00, class_id);
-    self.class_calendar.add_one_class(4, timeslot::TIMESLOT_18_30, class_id);
-    self.class_calendar.add_one_class(4, timeslot::TIMESLOT_19_00, class_id);
-    self.class_calendar.add_one_class(4, timeslot::TIMESLOT_19_30, class_id);
+    self
+      .class_calendar
+      .add_one_class(4, timeslot::TIMESLOT_18_00, class_id);
+    self
+      .class_calendar
+      .add_one_class(4, timeslot::TIMESLOT_18_30, class_id);
+    self
+      .class_calendar
+      .add_one_class(4, timeslot::TIMESLOT_19_00, class_id);
+    self
+      .class_calendar
+      .add_one_class(4, timeslot::TIMESLOT_19_30, class_id);
 
     assert_eq!(
-      self.class_calendar.get_count(4, timeslot::TIMESLOT_18_00, class_id) +
-      self.class_calendar.get_count(4, timeslot::TIMESLOT_18_30, class_id) +
-      self.class_calendar.get_count(4, timeslot::TIMESLOT_19_00, class_id) +
-      self.class_calendar.get_count(4, timeslot::TIMESLOT_19_30, class_id),
+      self
+        .class_calendar
+        .get_count(4, timeslot::TIMESLOT_18_00, class_id)
+        + self
+          .class_calendar
+          .get_count(4, timeslot::TIMESLOT_18_30, class_id)
+        + self
+          .class_calendar
+          .get_count(4, timeslot::TIMESLOT_19_00, class_id)
+        + self
+          .class_calendar
+          .get_count(4, timeslot::TIMESLOT_19_30, class_id),
       class_list[class_id].class_hours
     );
     assert_eq!(class_list.len(), class_metadata_list.len());

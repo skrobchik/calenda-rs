@@ -42,9 +42,9 @@ impl Stats {
 
 fn simulated_annealing(constraints: SimulationConstraints, steps: u32) -> ClassCalendar {
   // let seed: [u8; 32] = "Aritz123Aritz123Aritz123Aritz123"
-    //   .as_bytes()
-    //   .try_into()
-    //   .unwrap();
+  //   .as_bytes()
+  //   .try_into()
+  //   .unwrap();
   // let mut rng = rand::rngs::StdRng::from_seed(seed);
   let mut rng = rand::rngs::ThreadRng::default();
 
@@ -56,16 +56,20 @@ fn simulated_annealing(constraints: SimulationConstraints, steps: u32) -> ClassC
   for step in 0..steps {
     stats.curr_cost.push(state_cost);
     let t = {
-      let x = ((step + 1) as f64) / (steps as f64); stats.x.push(x); 
-      let t = temperature(x); stats.temperature.push(t);
+      let x = ((step + 1) as f64) / (steps as f64);
+      stats.x.push(x);
+      let t = temperature(x);
+      stats.temperature.push(t);
       t
     };
     let old_cost = state_cost;
     let delta = state.move_one_class_random(&mut rng);
-    
-    let new_cost = cost(&state, &constraints); stats.new_cost.push(new_cost);
 
-    let ap = acceptance_probability(old_cost, new_cost, t); stats.acceptance_probability.push(ap);
+    let new_cost = cost(&state, &constraints);
+    stats.new_cost.push(new_cost);
+
+    let ap = acceptance_probability(old_cost, new_cost, t);
+    stats.acceptance_probability.push(ap);
     if ap >= rng.gen_range(0.0..=1.0) {
       stats.accepted.push(true);
       // keep change
@@ -99,7 +103,11 @@ fn acceptance_probability(old_cost: f64, new_cost: f64, temperature: f64) -> f64
 
 fn temperature(x: f64) -> f64 {
   // 10.0 - 10.0 * x
-  if x <= 0.9 { 9.0 - 10.0 * x } else { 0.0 }
+  if x <= 0.9 {
+    9.0 - 10.0 * x
+  } else {
+    0.0
+  }
   // 0.0
   // 7.5*(0.5*(5.0*std::f64::consts::PI*x+std::f64::consts::FRAC_2_PI).sin()+0.5)
   // if x <= 0.9 { 7.5*(0.5*(1.1*7.0*std::f64::consts::PI*x+std::f64::consts::FRAC_2_PI).sin()+0.5) } else { 0.0 }

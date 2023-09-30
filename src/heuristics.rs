@@ -3,9 +3,7 @@ use crate::{
   timeslot,
 };
 
-pub(crate) fn same_timeslot_classes_count(
-  state: &ClassCalendar,
-) -> f64 {
+pub(crate) fn same_timeslot_classes_count(state: &ClassCalendar) -> f64 {
   let mut same_timeslot_classes_count: u64 = 0;
   for classes in state.get_matrix().iter() {
     let x: u64 = classes.iter().map(|a| *a as u64).sum();
@@ -76,7 +74,7 @@ pub(crate) fn count_outside_session_length(
       })
       .max()
       .unwrap();
-    let mut session_length: Vec<u8> = vec![0; max_class_id+1];
+    let mut session_length: Vec<u8> = vec![0; max_class_id + 1];
     for timeslot_idx in timeslot::TIMESLOT_RANGE {
       let timeslot = state.get_timeslot(day_idx, timeslot_idx);
       for class_id in 0..=max_class_id {
