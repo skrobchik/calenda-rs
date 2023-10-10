@@ -103,8 +103,33 @@ pub(crate) fn count_outside_session_length(
   outside_session_length_count as f64
 }
 
+pub(crate) fn count_inconsistent_class_timeslots(state: &ClassCalendar) -> f64 {
+  let max_class_id_plus_one = state
+    .get_matrix()
+    .iter()
+    .map(|timeslot| timeslot.len())
+    .max()
+    .unwrap();
+  let mut class_count: Vec<Vec<u16>> =
+    vec![vec![0; max_class_id_plus_one]; timeslot::TIMESLOT_COUNT];
+  for day_idx in timeslot::DAY_RANGE {
+    for timeslot_idx in timeslot::TIMESLOT_RANGE {
+      class_count[timeslot_idx]
+        .iter_mut()
+        .zip(state.get_timeslot(day_idx, timeslot_idx).iter())
+        .for_each(|(x, c)| {
+          *x += *c as u16;
+        });
+    }
+  }
+  let result = class_count.iter().flatten().filter(|x| **x == 1).count();
+  result as f64
+}
+
 #[cfg(test)]
 mod test {
+  use crate::timeslot::{TIMESLOT_19_00, TIMESLOT_19_30};
+
   use super::*;
 
   #[test]
@@ -121,5 +146,23 @@ mod test {
     assert_eq!(count_outside_session_length(&state, 2, 4), 0.0);
     state.add_one_class(0, timeslot::TIMESLOT_19_30, 0);
     assert_eq!(count_outside_session_length(&state, 2, 4), 1.0);
+  }
+
+  #[test]
+  fn count_inconsistent_class_timeslots_test() {
+    let mut state = ClassCalendar::new();
+    assert_eq!(count_inconsistent_class_timeslots(&state), 0.0);
+    state.add_one_class(0, TIMESLOT_19_30, 7);
+    assert_eq!(count_inconsistent_class_timeslots(&state), 1.0);
+    state.add_one_class(4, TIMESLOT_19_30, 6);
+    assert_eq!(count_inconsistent_class_timeslots(&state), 2.0);
+    state.add_one_class(4, TIMESLOT_19_30, 7);
+    assert_eq!(count_inconsistent_class_timeslots(&state), 1.0);
+    state.add_one_class(3, TIMESLOT_19_00, 6);
+    assert_eq!(count_inconsistent_class_timeslots(&state), 2.0);
+    state.add_one_class(3, TIMESLOT_19_30, 6);
+    assert_eq!(count_inconsistent_class_timeslots(&state), 1.0);
+    state.add_one_class(0, TIMESLOT_19_00, 6);
+    assert_eq!(count_inconsistent_class_timeslots(&state), 0.0);
   }
 }

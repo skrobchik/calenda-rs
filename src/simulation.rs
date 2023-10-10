@@ -1,5 +1,9 @@
-use std::thread::{self, JoinHandle};
+use std::{
+  sync::Arc,
+  thread::{self, JoinHandle},
+};
 
+use itertools::Itertools;
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 use tracing::info;
@@ -14,7 +18,32 @@ use crate::{
 };
 
 pub(crate) fn generate_schedule(constraints: SimulationConstraints) -> JoinHandle<ClassCalendar> {
-  thread::spawn(move || simulated_annealing(constraints, 100_000))
+  thread::spawn(move || {
+    let n = std::thread::available_parallelism().map_or(1, |x| x.into());
+    let constraints = Arc::new(constraints);
+    let handles: Vec<JoinHandle<ClassCalendar>> = (0..n).map(|i| {
+      let local_constraints = constraints.clone();
+      thread::spawn(move || {
+        simulated_annealing(
+          &local_constraints,
+          100_000,
+          std::path::Path::new(&format!("stats{}.json", i)),
+          i
+        )
+      })
+    }).collect();
+    let results: Vec<ClassCalendar> = handles.into_iter().map(|h| h.join().unwrap()).collect();
+    let mut best_result = None;
+    let mut best_cost = None;
+    for result in results.into_iter() {
+      let cost = cost(&result, &constraints);
+      if best_cost.is_none() || cost < best_cost.unwrap() {
+        best_result = Some(result);
+        best_cost = Some(cost);
+      }
+    }
+    best_result.unwrap()
+  })
 }
 
 #[derive(Default, Serialize, Deserialize)]
@@ -40,7 +69,12 @@ impl Stats {
   }
 }
 
-fn simulated_annealing(constraints: SimulationConstraints, steps: u32) -> ClassCalendar {
+fn simulated_annealing(
+  constraints: &SimulationConstraints,
+  steps: u32,
+  stats_path: &std::path::Path,
+  worker_thread_number: usize,
+) -> ClassCalendar {
   // let seed: [u8; 32] = "Aritz123Aritz123Aritz123Aritz123"
   //   .as_bytes()
   //   .try_into()
@@ -81,12 +115,12 @@ fn simulated_annealing(constraints: SimulationConstraints, steps: u32) -> ClassC
     }
 
     if step % 10_000 == 0 {
-      println!("Step: {}/{}", step, steps);
+      println!("Thread {}: Step: {}/{}", worker_thread_number, step, steps);
     }
   }
 
-  info!("Saving stats.");
-  let file = std::fs::File::create("stats.json").unwrap();
+  info!("Thread {}: Saving stats.", worker_thread_number);
+  let file = std::fs::File::create(stats_path).unwrap();
   let writer = std::io::BufWriter::new(file);
   serde_json::ser::to_writer(writer, &stats).unwrap();
 
@@ -103,11 +137,19 @@ fn acceptance_probability(old_cost: f64, new_cost: f64, temperature: f64) -> f64
 
 fn temperature(x: f64) -> f64 {
   // 10.0 - 10.0 * x
-  if x <= 0.9 {
-    9.0 - 10.0 * x
+
+  // if x <= 0.9 {
+  //   9.0 - 10.0 * x
+  // } else {
+  //   0.0
+  // }
+
+  if x <= 0.8 {
+    4.0 - 5.0 * x
   } else {
     0.0
   }
+
   // 0.0
   // 7.5*(0.5*(5.0*std::f64::consts::PI*x+std::f64::consts::FRAC_2_PI).sin()+0.5)
   // if x <= 0.9 { 7.5*(0.5*(1.1*7.0*std::f64::consts::PI*x+std::f64::consts::FRAC_2_PI).sin()+0.5) } else { 0.0 }
@@ -139,7 +181,8 @@ fn revert_change(state: &mut ClassCalendar, delta: &ClassEntryDelta) {
 
 fn cost(state: &ClassCalendar, constraints: &SimulationConstraints) -> f64 {
   1.0 * heuristics::same_timeslot_classes_count(state)
-    + 1.0 * heuristics::count_not_available(state, constraints)
-    + 0.1 * heuristics::count_available_if_needed(state, constraints)
+    + 3.0 * heuristics::count_not_available(state, constraints)
+    + 1.0 * heuristics::count_available_if_needed(state, constraints) 
     + 1.0 * heuristics::count_outside_session_length(state, 2, 4)
+    + 1.0 * heuristics::count_inconsistent_class_timeslots(state)
 }
