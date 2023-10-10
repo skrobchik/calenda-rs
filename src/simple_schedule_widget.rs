@@ -1,15 +1,23 @@
 use egui::{Color32, Rect, Rounding, Sense, Stroke};
+use serde::{Serialize, Deserialize};
 
-use crate::school_schedule::SchoolSchedule;
+use crate::school_schedule::{SchoolSchedule, Semester};
 use crate::timeslot;
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub(crate) enum ScheduleWidgetFilter {
+  SemesterFilter(Semester),
+  NoFilter,
+}
 
 pub(crate) struct SimpleScheduleWidget<'a> {
   state: &'a SchoolSchedule,
+  class_filter: ScheduleWidgetFilter,
 }
 
 impl<'a> SimpleScheduleWidget<'a> {
-  pub(crate) fn new(state: &'a SchoolSchedule) -> SimpleScheduleWidget<'a> {
-    SimpleScheduleWidget { state }
+  pub(crate) fn new(state: &'a SchoolSchedule, class_filter: ScheduleWidgetFilter) -> SimpleScheduleWidget<'a> {
+    SimpleScheduleWidget { state, class_filter }
   }
   pub(crate) fn show(&self, ctx: &egui::Context, open: &mut bool) {
     egui::Window::new("Schedule")
@@ -29,10 +37,25 @@ impl<'a> SimpleScheduleWidget<'a> {
     let h: f32 = total_height / timeslot::TIMESLOT_COUNT as f32;
     for day_idx in timeslot::DAY_RANGE {
       for timeslot_idx in timeslot::TIMESLOT_RANGE {
-        let timeslot = self
+        let timeslot: Vec<u8> = self
           .state
           .get_class_calendar()
-          .get_timeslot(day_idx, timeslot_idx);
+          .get_timeslot(day_idx, timeslot_idx)
+          .iter()
+          .enumerate()
+          .map(|(class_id, count)| {
+            if match self.class_filter {
+                ScheduleWidgetFilter::SemesterFilter(s) => {
+                  self.state.get_class(class_id).unwrap().get_semester() == &s
+                },
+                ScheduleWidgetFilter::NoFilter => true,
+            } {
+              *count
+            } else {
+              0
+            }
+          })
+          .collect();
 
         let num_sessions: u32 = timeslot.iter().map(|x| *x as u32).sum();
 

@@ -4,8 +4,8 @@ use crate::{
   class_editor::ClassEditor,
   professor_editor::ProfessorEditor,
   professor_schedule_widget::ProfessorScheduleWidget,
-  school_schedule::{class_calendar::ClassCalendar, SchoolSchedule},
-  simple_schedule_widget::SimpleScheduleWidget,
+  school_schedule::{class_calendar::ClassCalendar, SchoolSchedule, Semester},
+  simple_schedule_widget::{SimpleScheduleWidget, ScheduleWidgetFilter},
   simulation,
 };
 use eframe::egui;
@@ -24,6 +24,7 @@ pub(crate) struct MyApp {
   availability_editor_widget_open: bool,
   #[serde(skip)]
   new_schedule_join_handle: Option<JoinHandle<ClassCalendar>>,
+  schedule_widget_filter: ScheduleWidgetFilter,
 }
 
 impl MyApp {
@@ -48,6 +49,17 @@ impl MyApp {
           self.class_editor_widget_open = !self.class_editor_widget_open;
         }
       });
+      ui.menu_button("Filtro", |ui| {
+        if ui.button("Semestre 1").clicked() {
+          self.schedule_widget_filter = ScheduleWidgetFilter::SemesterFilter(Semester::S1);
+        }
+        if ui.button("Semestre 2").clicked() {
+          self.schedule_widget_filter = ScheduleWidgetFilter::SemesterFilter(Semester::S2);
+        }
+        if ui.button("Todos").clicked() {
+          self.schedule_widget_filter = ScheduleWidgetFilter::NoFilter;
+        }
+      })
     });
   }
 }
@@ -61,7 +73,7 @@ impl eframe::App for MyApp {
     egui::CentralPanel::default().show(ctx, |ui| {
       self.draw_menu_bar(ui);
 
-      SimpleScheduleWidget::new(&self.school_schedule).show(ctx, &mut self.schedule_widget_open);
+      SimpleScheduleWidget::new(&self.school_schedule, self.schedule_widget_filter.clone()).show(ctx, &mut self.schedule_widget_open);
 
       ClassEditor::new(&mut self.school_schedule).show(ctx, &mut self.class_editor_widget_open);
 
@@ -119,6 +131,7 @@ impl Default for MyApp {
       availability_editor_professor_id: None,
       availability_editor_widget_open: true,
       new_schedule_join_handle: None,
+      schedule_widget_filter: ScheduleWidgetFilter::NoFilter,
     }
   }
 }
