@@ -43,7 +43,7 @@ impl<'a> SimpleScheduleWidget<'a> {
 
         painter.rect_stroke(
           Rect::from_two_pos(topleft, topleft + (w, h).into()),
-          Rounding::none(),
+          Rounding::ZERO,
           Stroke::new(1.0, Color32::from_gray(100)),
         );
 
