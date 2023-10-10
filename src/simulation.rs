@@ -21,17 +21,19 @@ pub(crate) fn generate_schedule(constraints: SimulationConstraints) -> JoinHandl
   thread::spawn(move || {
     let n = std::thread::available_parallelism().map_or(1, |x| x.into());
     let constraints = Arc::new(constraints);
-    let handles: Vec<JoinHandle<ClassCalendar>> = (0..n).map(|i| {
-      let local_constraints = constraints.clone();
-      thread::spawn(move || {
-        simulated_annealing(
-          &local_constraints,
-          100_000,
-          std::path::Path::new(&format!("stats{}.json", i)),
-          i
-        )
+    let handles: Vec<JoinHandle<ClassCalendar>> = (0..n)
+      .map(|i| {
+        let local_constraints = constraints.clone();
+        thread::spawn(move || {
+          simulated_annealing(
+            &local_constraints,
+            100_000,
+            std::path::Path::new(&format!("stats{}.json", i)),
+            i,
+          )
+        })
       })
-    }).collect();
+      .collect();
     let results: Vec<ClassCalendar> = handles.into_iter().map(|h| h.join().unwrap()).collect();
     let mut best_result = None;
     let mut best_cost = None;
@@ -182,7 +184,7 @@ fn revert_change(state: &mut ClassCalendar, delta: &ClassEntryDelta) {
 fn cost(state: &ClassCalendar, constraints: &SimulationConstraints) -> f64 {
   1.0 * heuristics::same_timeslot_classes_count(state)
     + 3.0 * heuristics::count_not_available(state, constraints)
-    + 1.0 * heuristics::count_available_if_needed(state, constraints) 
+    + 1.0 * heuristics::count_available_if_needed(state, constraints)
     + 1.0 * heuristics::count_outside_session_length(state, 2, 4)
     + 1.0 * heuristics::count_inconsistent_class_timeslots(state)
 }

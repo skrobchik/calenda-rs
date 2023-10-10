@@ -185,8 +185,6 @@ impl SchoolSchedule {
 
     assert_eq!(professors.len(), professor_metadata.len());
 
-    
-
     professors.len() - 1
   }
 
