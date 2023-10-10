@@ -3,3 +3,5 @@
 /Archivos\ SQL
 temp_db.sqlite
 stats.json
+stats*.json
+.idea/
