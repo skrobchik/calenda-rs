@@ -3,9 +3,10 @@ use crate::{
   timeslot,
 };
 
+use egui::Color32;
 use itertools::Itertools;
 use std::{collections::BTreeMap, fs, path::Path};
-use tracing::trace;
+use tracing::{info, trace};
 
 const TEMP_DB_PATH: &str = "temp_db.sqlite";
 
@@ -44,7 +45,7 @@ pub(crate) fn import_temporary_database() -> anyhow::Result<()> {
   Ok(())
 }
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash, Clone)]
 struct Class {
   name: String,
   rfc1: String,
@@ -120,13 +121,25 @@ pub(crate) fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
     }
   }
 
-  for my_class in classes
+  let classes: Vec<Class> = classes
     .iter()
     .filter(|c| c.ciclo == "2023-1")
-    // .filter(|c| c.grupo.starts_with("01"))
-    .take(1)
-  {
+    .filter(|c| c.grupo.starts_with("01"))
+    .map(|c| c.clone())
+    .collect();
+
+  let num_classes = classes.len();
+  let colors_iterator = itertools_num::linspace(0.0, 1.0, num_classes).map(|x| {
+    let color = ecolor::Hsva::new(x, 1.0, 1.0, 1.0);
+    info!("{:?}", color);
+    let color = Color32::from(color);
+    info!("{:?}", color);
+    color
+  });
+
+  for (my_class, color) in classes.iter().take(num_classes).zip(colors_iterator) {
     let class_id = schedule.add_new_class();
+    schedule.get_class_metadata_mut(class_id).unwrap().color = color;
     schedule.get_class_metadata_mut(class_id).unwrap().name =
       format!("{} {}", my_class.asignatura, my_class.name);
     let professor_id = professor_ids.get(&my_class.rfc1).unwrap_or(&0);
@@ -142,6 +155,7 @@ pub(crate) fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
     }
 
     let class_id = schedule.add_new_class();
+    schedule.get_class_metadata_mut(class_id).unwrap().color = color;
     schedule.get_class_metadata_mut(class_id).unwrap().name =
       format!("{} {} (Lab)", my_class.asignatura, my_class.name);
     let professor_id = professor_ids.get(&my_class.rfc2).unwrap_or(&0);
