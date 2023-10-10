@@ -124,8 +124,7 @@ pub(crate) fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
   let classes: Vec<Class> = classes
     .iter()
     .filter(|c| c.ciclo == "2023-1")
-    .filter(|c| c.grupo.starts_with("01"))
-    .map(|c| c.clone())
+    .filter(|c| c.grupo.starts_with("01")).cloned()
     .collect();
 
   let num_classes = classes.len();

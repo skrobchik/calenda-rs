@@ -86,8 +86,8 @@ fn simulated_annealing(
 
   let mut stats = Stats::with_capacity(steps as usize);
 
-  let mut state = random_init(&constraints, &mut rng);
-  let mut state_cost = cost(&state, &constraints);
+  let mut state = random_init(constraints, &mut rng);
+  let mut state_cost = cost(&state, constraints);
 
   for step in 0..steps {
     stats.curr_cost.push(state_cost);
@@ -101,7 +101,7 @@ fn simulated_annealing(
     let old_cost = state_cost;
     let delta = state.move_one_class_random(&mut rng);
 
-    let new_cost = cost(&state, &constraints);
+    let new_cost = cost(&state, constraints);
     stats.new_cost.push(new_cost);
 
     let ap = acceptance_probability(old_cost, new_cost, t);
