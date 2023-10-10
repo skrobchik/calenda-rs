@@ -3,7 +3,6 @@ use std::{
   thread::{self, JoinHandle},
 };
 
-use itertools::Itertools;
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 use tracing::info;
