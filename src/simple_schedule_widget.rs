@@ -68,9 +68,9 @@ impl<'a> SimpleScheduleWidget<'a> {
           Stroke::new(1.0, Color32::from_gray(100)),
         );
 
-        for class_id in 0..timeslot.len() {
+        for (class_id, class_count) in timeslot.iter().enumerate() {
           let class_metadata = self.state.get_class_metadata(class_id).unwrap();
-          for _ in 0..timeslot[class_id] {
+          for _ in 0..*class_count {
             let botright: egui::Pos2 = topleft + (class_width, h).into();
             let class_color = class_metadata.color;
             painter.rect(
