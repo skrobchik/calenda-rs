@@ -1,8 +1,8 @@
 use egui::{Color32, Rect, Rounding, Sense, Stroke};
-use serde::{Deserialize, Serialize};
+
 
 use crate::class_filter::ClassFilter;
-use crate::school_schedule::{SchoolSchedule, Semester};
+use crate::school_schedule::{SchoolSchedule};
 use crate::timeslot;
 
 pub(crate) struct SimpleScheduleWidget<'a> {
