@@ -9,6 +9,7 @@ pub mod simple_schedule_widget;
 pub mod simulation;
 pub mod timeslot;
 pub mod week_calendar;
+pub mod class_filter;
 
 use crate::app::MyApp;
 

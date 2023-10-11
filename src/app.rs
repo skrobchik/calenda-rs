@@ -5,8 +5,8 @@ use crate::{
   professor_editor::ProfessorEditor,
   professor_schedule_widget::ProfessorScheduleWidget,
   school_schedule::{class_calendar::ClassCalendar, SchoolSchedule, Semester},
-  simple_schedule_widget::{SimpleScheduleWidget, ScheduleWidgetFilter},
-  simulation,
+  simple_schedule_widget::SimpleScheduleWidget,
+  simulation, class_filter::ClassFilter,
 };
 use eframe::egui;
 use egui::Ui;
@@ -24,7 +24,7 @@ pub(crate) struct MyApp {
   availability_editor_widget_open: bool,
   #[serde(skip)]
   new_schedule_join_handle: Option<JoinHandle<ClassCalendar>>,
-  schedule_widget_filter: ScheduleWidgetFilter,
+  schedule_widget_filter: ClassFilter,
 }
 
 impl MyApp {
@@ -51,13 +51,13 @@ impl MyApp {
       });
       ui.menu_button("Filtro", |ui| {
         if ui.button("Semestre 1").clicked() {
-          self.schedule_widget_filter = ScheduleWidgetFilter::SemesterFilter(Semester::S1);
+          self.schedule_widget_filter = ClassFilter::Semester(Semester::S1);
         }
-        if ui.button("Semestre 2").clicked() {
-          self.schedule_widget_filter = ScheduleWidgetFilter::SemesterFilter(Semester::S2);
+        if ui.button("Semestre 3").clicked() {
+          self.schedule_widget_filter = ClassFilter::Semester(Semester::S3);
         }
         if ui.button("Todos").clicked() {
-          self.schedule_widget_filter = ScheduleWidgetFilter::NoFilter;
+          self.schedule_widget_filter = ClassFilter::None;
         }
       })
     });
@@ -131,7 +131,7 @@ impl Default for MyApp {
       availability_editor_professor_id: None,
       availability_editor_widget_open: true,
       new_schedule_join_handle: None,
-      schedule_widget_filter: ScheduleWidgetFilter::NoFilter,
+      schedule_widget_filter: ClassFilter::None,
     }
   }
 }

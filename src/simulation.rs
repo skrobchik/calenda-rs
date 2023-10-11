@@ -26,7 +26,7 @@ pub(crate) fn generate_schedule(constraints: SimulationConstraints) -> JoinHandl
         thread::spawn(move || {
           simulated_annealing(
             &local_constraints,
-            100_000,
+            500_000,
             std::path::Path::new(&format!("stats{}.json", i)),
             i,
           )
@@ -84,33 +84,34 @@ fn simulated_annealing(
   let mut rng = rand::rngs::ThreadRng::default();
 
   let mut stats = Stats::with_capacity(steps as usize);
+  let stats_sampling = 10_000;
 
   let mut state = random_init(constraints, &mut rng);
   let mut state_cost = cost(&state, constraints);
 
   for step in 0..steps {
-    stats.curr_cost.push(state_cost);
+    if step % stats_sampling == 0 { stats.curr_cost.push(state_cost); }
     let t = {
       let x = ((step + 1) as f64) / (steps as f64);
-      stats.x.push(x);
+      if step % stats_sampling == 0 { stats.x.push(x); }
       let t = temperature(x);
-      stats.temperature.push(t);
+      if step % stats_sampling == 0 { stats.temperature.push(t); }
       t
     };
     let old_cost = state_cost;
     let delta = state.move_one_class_random(&mut rng);
 
     let new_cost = cost(&state, constraints);
-    stats.new_cost.push(new_cost);
+    if step % stats_sampling == 0 { stats.new_cost.push(new_cost); }
 
     let ap = acceptance_probability(old_cost, new_cost, t);
-    stats.acceptance_probability.push(ap);
+    if step % stats_sampling == 0 { stats.acceptance_probability.push(ap); }
     if ap >= rng.gen_range(0.0..=1.0) {
-      stats.accepted.push(true);
+      if step % stats_sampling == 0 { stats.accepted.push(true); }
       // keep change
       state_cost = new_cost;
     } else {
-      stats.accepted.push(false);
+      if step % stats_sampling == 0 { stats.accepted.push(false); }
       revert_change(&mut state, &delta);
       state_cost = old_cost;
     }
@@ -181,7 +182,7 @@ fn revert_change(state: &mut ClassCalendar, delta: &ClassEntryDelta) {
 }
 
 fn cost(state: &ClassCalendar, constraints: &SimulationConstraints) -> f64 {
-  1.0 * heuristics::same_timeslot_classes_count(state)
+  10.0 * heuristics::same_timeslot_classes_count(state)
     + 3.0 * heuristics::count_not_available(state, constraints)
     + 1.0 * heuristics::count_available_if_needed(state, constraints)
     + 1.0 * heuristics::count_outside_session_length(state, 2, 4)

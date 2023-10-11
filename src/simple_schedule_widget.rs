@@ -1,22 +1,17 @@
 use egui::{Color32, Rect, Rounding, Sense, Stroke};
 use serde::{Serialize, Deserialize};
 
+use crate::class_filter::ClassFilter;
 use crate::school_schedule::{SchoolSchedule, Semester};
 use crate::timeslot;
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub(crate) enum ScheduleWidgetFilter {
-  SemesterFilter(Semester),
-  NoFilter,
-}
-
 pub(crate) struct SimpleScheduleWidget<'a> {
   state: &'a SchoolSchedule,
-  class_filter: ScheduleWidgetFilter,
+  class_filter: ClassFilter,
 }
 
 impl<'a> SimpleScheduleWidget<'a> {
-  pub(crate) fn new(state: &'a SchoolSchedule, class_filter: ScheduleWidgetFilter) -> SimpleScheduleWidget<'a> {
+  pub(crate) fn new(state: &'a SchoolSchedule, class_filter: ClassFilter) -> SimpleScheduleWidget<'a> {
     SimpleScheduleWidget { state, class_filter }
   }
   pub(crate) fn show(&self, ctx: &egui::Context, open: &mut bool) {
@@ -44,12 +39,7 @@ impl<'a> SimpleScheduleWidget<'a> {
           .iter()
           .enumerate()
           .map(|(class_id, count)| {
-            if match self.class_filter {
-                ScheduleWidgetFilter::SemesterFilter(s) => {
-                  self.state.get_class(class_id).unwrap().get_semester() == &s
-                },
-                ScheduleWidgetFilter::NoFilter => true,
-            } {
+            if self.class_filter.filter(class_id, self.state.get_simulation_constraints()) {
               *count
             } else {
               0
