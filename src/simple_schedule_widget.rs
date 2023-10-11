@@ -1,8 +1,7 @@
 use egui::{Color32, Rect, Rounding, Sense, Stroke};
 
-
 use crate::class_filter::ClassFilter;
-use crate::school_schedule::{SchoolSchedule};
+use crate::school_schedule::SchoolSchedule;
 use crate::timeslot;
 
 pub(crate) struct SimpleScheduleWidget<'a> {
