@@ -90,28 +90,42 @@ fn simulated_annealing(
   let mut state_cost = cost(&state, constraints);
 
   for step in 0..steps {
-    if step % stats_sampling == 0 { stats.curr_cost.push(state_cost); }
+    if step % stats_sampling == 0 {
+      stats.curr_cost.push(state_cost);
+    }
     let t = {
       let x = ((step + 1) as f64) / (steps as f64);
-      if step % stats_sampling == 0 { stats.x.push(x); }
+      if step % stats_sampling == 0 {
+        stats.x.push(x);
+      }
       let t = temperature(x);
-      if step % stats_sampling == 0 { stats.temperature.push(t); }
+      if step % stats_sampling == 0 {
+        stats.temperature.push(t);
+      }
       t
     };
     let old_cost = state_cost;
     let delta = state.move_one_class_random(&mut rng);
 
     let new_cost = cost(&state, constraints);
-    if step % stats_sampling == 0 { stats.new_cost.push(new_cost); }
+    if step % stats_sampling == 0 {
+      stats.new_cost.push(new_cost);
+    }
 
     let ap = acceptance_probability(old_cost, new_cost, t);
-    if step % stats_sampling == 0 { stats.acceptance_probability.push(ap); }
+    if step % stats_sampling == 0 {
+      stats.acceptance_probability.push(ap);
+    }
     if ap >= rng.gen_range(0.0..=1.0) {
-      if step % stats_sampling == 0 { stats.accepted.push(true); }
+      if step % stats_sampling == 0 {
+        stats.accepted.push(true);
+      }
       // keep change
       state_cost = new_cost;
     } else {
-      if step % stats_sampling == 0 { stats.accepted.push(false); }
+      if step % stats_sampling == 0 {
+        stats.accepted.push(false);
+      }
       revert_change(&mut state, &delta);
       state_cost = old_cost;
     }

@@ -2,11 +2,12 @@ use std::{mem, thread::JoinHandle};
 
 use crate::{
   class_editor::ClassEditor,
+  class_filter::ClassFilter,
   professor_editor::ProfessorEditor,
   professor_schedule_widget::ProfessorScheduleWidget,
   school_schedule::{class_calendar::ClassCalendar, SchoolSchedule, Semester},
   simple_schedule_widget::SimpleScheduleWidget,
-  simulation, class_filter::ClassFilter,
+  simulation,
 };
 use eframe::egui;
 use egui::Ui;
@@ -73,7 +74,8 @@ impl eframe::App for MyApp {
     egui::CentralPanel::default().show(ctx, |ui| {
       self.draw_menu_bar(ui);
 
-      SimpleScheduleWidget::new(&self.school_schedule, self.schedule_widget_filter.clone()).show(ctx, &mut self.schedule_widget_open);
+      SimpleScheduleWidget::new(&self.school_schedule, self.schedule_widget_filter.clone())
+        .show(ctx, &mut self.schedule_widget_open);
 
       ClassEditor::new(&mut self.school_schedule).show(ctx, &mut self.class_editor_widget_open);
 

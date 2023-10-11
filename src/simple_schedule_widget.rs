@@ -1,5 +1,5 @@
 use egui::{Color32, Rect, Rounding, Sense, Stroke};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::class_filter::ClassFilter;
 use crate::school_schedule::{SchoolSchedule, Semester};
@@ -11,8 +11,14 @@ pub(crate) struct SimpleScheduleWidget<'a> {
 }
 
 impl<'a> SimpleScheduleWidget<'a> {
-  pub(crate) fn new(state: &'a SchoolSchedule, class_filter: ClassFilter) -> SimpleScheduleWidget<'a> {
-    SimpleScheduleWidget { state, class_filter }
+  pub(crate) fn new(
+    state: &'a SchoolSchedule,
+    class_filter: ClassFilter,
+  ) -> SimpleScheduleWidget<'a> {
+    SimpleScheduleWidget {
+      state,
+      class_filter,
+    }
   }
   pub(crate) fn show(&self, ctx: &egui::Context, open: &mut bool) {
     egui::Window::new("Schedule")
@@ -39,7 +45,10 @@ impl<'a> SimpleScheduleWidget<'a> {
           .iter()
           .enumerate()
           .map(|(class_id, count)| {
-            if self.class_filter.filter(class_id, self.state.get_simulation_constraints()) {
+            if self
+              .class_filter
+              .filter(class_id, self.state.get_simulation_constraints())
+            {
               *count
             } else {
               0

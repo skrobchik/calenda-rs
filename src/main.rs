@@ -1,5 +1,6 @@
 pub mod app;
 pub mod class_editor;
+pub mod class_filter;
 pub mod database_importer;
 pub mod heuristics;
 pub mod professor_editor;
@@ -9,7 +10,6 @@ pub mod simple_schedule_widget;
 pub mod simulation;
 pub mod timeslot;
 pub mod week_calendar;
-pub mod class_filter;
 
 use crate::app::MyApp;
 
