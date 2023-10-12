@@ -200,7 +200,6 @@ fn revert_change(state: &mut ClassCalendar, delta: &ClassEntryDelta) {
 }
 
 fn cost(state: &ClassCalendar, constraints: &SimulationConstraints) -> f64 {
-  
   // Collisions between classes of each semester
   std::iter::repeat(5.0)
     .zip(&[
@@ -222,7 +221,6 @@ fn cost(state: &ClassCalendar, constraints: &SimulationConstraints) -> f64 {
         )
     })
     .sum::<f64>()
-  
   // Collisions between classes of each professor
     + constraints
       .get_professors()
@@ -237,7 +235,6 @@ fn cost(state: &ClassCalendar, constraints: &SimulationConstraints) -> f64 {
           )
       })
       .sum::<f64>()
-    
     + 3.0 * heuristics::count_not_available(state, constraints)
     + 1.0 * heuristics::count_available_if_needed(state, constraints)
     + 1.0 * heuristics::count_outside_session_length(state, 2, 4)
