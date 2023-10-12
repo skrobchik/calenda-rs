@@ -3,22 +3,26 @@ use std::{
   thread::{self, JoinHandle},
 };
 
+use num::Integer;
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
 use crate::{
+  class_filter::ClassFilter,
   heuristics,
   school_schedule::{
     class_calendar::{ClassCalendar, ClassEntryDelta},
-    SimulationConstraints,
+    Semester, SimulationConstraints,
   },
   timeslot,
 };
 
 pub(crate) fn generate_schedule(constraints: SimulationConstraints) -> JoinHandle<ClassCalendar> {
   thread::spawn(move || {
-    let n = std::thread::available_parallelism().map_or(1, |x| x.into());
+    let n = std::thread::available_parallelism()
+      .map_or(1, |x| x.into())
+      .div_ceil(&2_usize);
     let constraints = Arc::new(constraints);
     let handles: Vec<JoinHandle<ClassCalendar>> = (0..n)
       .map(|i| {
@@ -84,7 +88,7 @@ fn simulated_annealing(
   let mut rng = rand::rngs::ThreadRng::default();
 
   let mut stats = Stats::with_capacity(steps as usize);
-  let stats_sampling = 10_000;
+  let stats_sampling = steps.div_ceil(&10_000);
 
   let mut state = random_init(constraints, &mut rng);
   let mut state_cost = cost(&state, constraints);
@@ -196,7 +200,44 @@ fn revert_change(state: &mut ClassCalendar, delta: &ClassEntryDelta) {
 }
 
 fn cost(state: &ClassCalendar, constraints: &SimulationConstraints) -> f64 {
-  10.0 * heuristics::same_timeslot_classes_count(state)
+  
+  // Collisions between classes of each semester
+  std::iter::repeat(5.0)
+    .zip(&[
+      Semester::S1,
+      Semester::S2,
+      Semester::S3,
+      Semester::S4,
+      Semester::S5,
+      Semester::S6,
+      Semester::S7,
+      Semester::S8,
+    ])
+    .map(|(weight, semester)| {
+      weight
+        * heuristics::same_timeslot_classes_count(
+          state,
+          &ClassFilter::Semester(*semester),
+          constraints,
+        )
+    })
+    .sum::<f64>()
+  
+  // Collisions between classes of each professor
+    + constraints
+      .get_professors()
+      .iter()
+      .enumerate()
+      .map(|(professor_id, _professor)| {
+        10.0
+          * heuristics::same_timeslot_classes_count(
+            state,
+            &ClassFilter::ProfessorId(professor_id),
+            constraints,
+          )
+      })
+      .sum::<f64>()
+    
     + 3.0 * heuristics::count_not_available(state, constraints)
     + 1.0 * heuristics::count_available_if_needed(state, constraints)
     + 1.0 * heuristics::count_outside_session_length(state, 2, 4)

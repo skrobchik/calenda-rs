@@ -1,12 +1,22 @@
 use crate::{
+  class_filter::ClassFilter,
   school_schedule::{class_calendar::ClassCalendar, Availability, SimulationConstraints},
   timeslot,
 };
 
-pub(crate) fn same_timeslot_classes_count(state: &ClassCalendar) -> f64 {
+pub(crate) fn same_timeslot_classes_count(
+  state: &ClassCalendar,
+  class_filter: &ClassFilter,
+  simulation_constraints: &SimulationConstraints,
+) -> f64 {
   let mut same_timeslot_classes_count: u64 = 0;
   for classes in state.get_matrix().iter() {
-    let x: u64 = classes.iter().map(|a| *a as u64).sum();
+    let x: u64 = classes
+      .iter()
+      .enumerate()
+      .filter(|(class_id, count)| class_filter.filter(*class_id, simulation_constraints))
+      .map(|(class_id, count)| *count as u64)
+      .sum();
     if x >= 2 {
       same_timeslot_classes_count += x;
     }
