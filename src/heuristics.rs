@@ -14,8 +14,8 @@ pub(crate) fn same_timeslot_classes_count(
     let x: u64 = classes
       .iter()
       .enumerate()
-      .filter(|(class_id, count)| class_filter.filter(*class_id, simulation_constraints))
-      .map(|(class_id, count)| *count as u64)
+      .filter(|(class_id, _count)| class_filter.filter(*class_id, simulation_constraints))
+      .map(|(_class_id, count)| *count as u64)
       .sum();
     if x >= 2 {
       same_timeslot_classes_count += x;
