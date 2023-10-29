@@ -1,4 +1,5 @@
 use std::{
+  collections::BTreeMap,
   sync::Arc,
   thread::{self, JoinHandle},
   time::Duration,
@@ -32,7 +33,7 @@ pub(crate) fn generate_schedule(constraints: SimulationConstraints) -> JoinHandl
         thread::spawn(move || {
           simulated_annealing(
             &local_constraints,
-            30_000_000,
+            500_000,
             std::path::Path::new(&format!("stats{}.json", i)),
             i,
           )
@@ -53,33 +54,80 @@ pub(crate) fn generate_schedule(constraints: SimulationConstraints) -> JoinHandl
   })
 }
 
-#[derive(Default, Serialize, Deserialize)]
-struct Stats {
-  accepted: Vec<bool>,
-  acceptance_probability: Vec<f64>,
-  temperature: Vec<f64>,
-  curr_cost: Vec<f64>,
-  new_cost: Vec<f64>,
-  x: Vec<f64>,
+#[derive(thiserror::Error, Debug)]
+pub enum StatsTrackerError {
+  #[error("You are logging the same stat twice per step `{0}`")]
+  MultiStatLogging(String),
+  #[error("You missed logging this stat in a step `{0}`")]
+  MissedStatLogging(String),
 }
 
-impl Stats {
-  fn with_capacity(capacity: usize) -> Self {
-    Stats {
-      accepted: Vec::with_capacity(capacity),
-      acceptance_probability: Vec::with_capacity(capacity),
-      temperature: Vec::with_capacity(capacity),
-      new_cost: Vec::with_capacity(capacity),
-      curr_cost: Vec::with_capacity(capacity),
-      x: Vec::with_capacity(capacity),
+#[derive(Serialize, Deserialize)]
+struct StatsTracker {
+  step_index: usize,
+  stats_index: usize,
+  sampling_rate: usize,
+  stats: BTreeMap<String, Vec<serde_json::Value>>,
+  is_logging_step: bool,
+}
+
+impl StatsTracker {
+  fn new(sampling_rate: usize) -> Self {
+    StatsTracker {
+      step_index: 0,
+      stats_index: 0,
+      sampling_rate,
+      stats: Default::default(),
+      is_logging_step: true,
     }
   }
+
+  fn into_stats(self) -> BTreeMap<String, Vec<serde_json::Value>> {
+    self.stats
+  }
+
+  fn inc_step(&mut self) {
+    self.step_index += 1;
+    if self.step_index % self.sampling_rate == 0 {
+      self.is_logging_step = true;
+      self.stats_index += 1;
+    } else {
+      self.is_logging_step = false;
+    }
+  }
+
+  fn log_stat<T: Into<serde_json::Value>>(
+    &mut self,
+    stat_label: &str,
+    stat_value: T,
+  ) -> Result<(), StatsTrackerError> {
+    if !self.is_logging_step {
+      return Ok(());
+    }
+    let stat_value: serde_json::Value = stat_value.into();
+    let stat_vector = self.stats.entry(stat_label.into()).or_default();
+    match stat_vector.len().cmp(&self.stats_index) {
+      std::cmp::Ordering::Less => Err(StatsTrackerError::MissedStatLogging(stat_label.into())),
+      std::cmp::Ordering::Equal => {
+        stat_vector.push(stat_value);
+        Ok(())
+      }
+      std::cmp::Ordering::Greater => Err(StatsTrackerError::MultiStatLogging(stat_label.into())),
+    }
+  }
+}
+
+#[derive(Serialize, Deserialize)]
+struct SimulationRunReport {
+  num_steps: u64,
+  stats: BTreeMap<String, Vec<serde_json::Value>>,
+  start_time: std::time::SystemTime,
 }
 
 fn simulated_annealing(
   constraints: &SimulationConstraints,
   steps: u32,
-  stats_path: &std::path::Path,
+  run_report_save_path: &std::path::Path,
   worker_thread_number: usize,
 ) -> ClassCalendar {
   // let seed: [u8; 32] = "Aritz123Aritz123Aritz123Aritz123"
@@ -89,9 +137,7 @@ fn simulated_annealing(
   // let mut rng = rand::rngs::StdRng::from_seed(seed);
   let mut rng = rand::rngs::ThreadRng::default();
 
-  let mut stats = Stats::with_capacity(steps as usize);
-  let stats_sampling = steps.div_ceil(&5_000);
-  debug!("Sampling every {} steps", stats_sampling);
+  let mut stats_tracker = StatsTracker::new(steps.div_ceil(&5_000) as usize);
 
   let mut state = random_init(constraints, &mut rng);
   let mut state_cost = cost(&state, constraints);
@@ -102,18 +148,12 @@ fn simulated_annealing(
   .unwrap()
   .progress_chars("#>-");
   for step in (0..steps).progress_with_style(progress_bar_style) {
-    if step % stats_sampling == 0 {
-      stats.curr_cost.push(state_cost);
-    }
+    stats_tracker.log_stat("curr_cost", state_cost).unwrap();
     let t = {
       let x = ((step + 1) as f64) / (steps as f64);
-      if step % stats_sampling == 0 {
-        stats.x.push(x);
-      }
+      stats_tracker.log_stat("x", x).unwrap();
       let t = temperature(x);
-      if step % stats_sampling == 0 {
-        stats.temperature.push(t);
-      }
+      stats_tracker.log_stat("temperature", t).unwrap();
       t
     };
     let old_cost = state_cost;
@@ -121,33 +161,36 @@ fn simulated_annealing(
 
     let new_cost = cost(&state, constraints);
 
-    if step % stats_sampling == 0 {
-      stats.new_cost.push(new_cost);
-    }
+    stats_tracker.log_stat("new_cost", new_cost).unwrap();
 
     let ap = acceptance_probability(old_cost, new_cost, t);
-    if step % stats_sampling == 0 {
-      stats.acceptance_probability.push(ap);
-    }
+    stats_tracker
+      .log_stat("acceptance_probability", ap)
+      .unwrap();
+
     if ap >= rng.gen_range(0.0..=1.0) {
-      if step % stats_sampling == 0 {
-        stats.accepted.push(true);
-      }
+      stats_tracker.log_stat("accepted", true).unwrap();
       // keep change
       state_cost = new_cost;
     } else {
-      if step % stats_sampling == 0 {
-        stats.accepted.push(false);
-      }
+      stats_tracker.log_stat("accepted", false).unwrap();
       revert_change(&mut state, &delta);
       state_cost = old_cost;
     }
+
+    stats_tracker.inc_step();
   }
 
-  info!("Thread {}: Saving stats.", worker_thread_number);
-  let file = std::fs::File::create(stats_path).unwrap();
+  info!("Thread {}: Saving run report.", worker_thread_number);
+  let file = std::fs::File::create(run_report_save_path).unwrap();
   let writer = std::io::BufWriter::new(file);
-  serde_json::ser::to_writer(writer, &stats).unwrap();
+  let run_report = SimulationRunReport {
+    num_steps: steps as u64,
+    stats: stats_tracker.into_stats(),
+    start_time: std::time::SystemTime::now(),
+  };
+
+  serde_json::ser::to_writer(writer, &run_report).unwrap();
 
   state
 }
