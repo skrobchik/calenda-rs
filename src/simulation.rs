@@ -2,14 +2,13 @@ use std::{
   collections::BTreeMap,
   sync::Arc,
   thread::{self, JoinHandle},
-  time::Duration,
 };
 
-use indicatif::{ProgressBar, ProgressIterator, ProgressState, ProgressStyle};
+use indicatif::{ProgressIterator, ProgressStyle};
 use num::Integer;
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
-use tracing::{debug, info};
+use tracing::{info};
 
 use crate::{
   heuristics,
