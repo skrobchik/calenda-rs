@@ -1,6 +1,7 @@
 use std::{
   sync::Arc,
   thread::{self, JoinHandle},
+  time::Duration,
 };
 
 use num::Integer;
@@ -11,7 +12,8 @@ use tracing::{debug, info};
 use crate::{
   heuristics,
   school_schedule::{
-    class_calendar::{ClassCalendar, ClassEntryDelta}, SimulationConstraints,
+    class_calendar::{ClassCalendar, ClassEntryDelta},
+    SimulationConstraints,
   },
   timeslot,
 };
@@ -87,6 +89,7 @@ fn simulated_annealing(
   let mut rng = rand::rngs::ThreadRng::default();
 
   let mut stats = Stats::with_capacity(steps as usize);
+  let mut cost_duration_sum: Duration = Duration::ZERO;
   let stats_sampling = steps.div_ceil(&10);
   debug!("Sampling every {} steps", stats_sampling);
 
@@ -113,9 +116,12 @@ fn simulated_annealing(
 
     let t0 = std::time::SystemTime::now();
     let new_cost = cost(&state, constraints);
+    cost_duration_sum += t0.elapsed().unwrap();
+
     if step % stats_sampling == 0 {
-      let dt = t0.elapsed().unwrap();
-      debug!("cost took: {} ns", dt.as_nanos());
+      let mean_cost_duration = cost_duration_sum.checked_div(stats_sampling).unwrap();
+      cost_duration_sum = Duration::ZERO;
+      debug!("mean cost duration: {} ns", mean_cost_duration.as_nanos());
     }
 
     if step % stats_sampling == 0 {
@@ -206,7 +212,6 @@ fn revert_change(state: &mut ClassCalendar, delta: &ClassEntryDelta) {
 }
 
 fn cost(state: &ClassCalendar, constraints: &SimulationConstraints) -> f64 {
-  
   0.0
     + 5.0 * heuristics::same_timeslot_classes_count_per_semester(state, constraints)
     + 10.0 * heuristics::same_timeslot_classes_count_per_professor(state, constraints)
