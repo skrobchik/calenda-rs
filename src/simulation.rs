@@ -1,12 +1,13 @@
 use std::{
+  ops::Sub,
   sync::Arc,
-  thread::{self, JoinHandle}, ops::Sub,
+  thread::{self, JoinHandle},
 };
 
 use num::Integer;
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
-use tracing::{info, debug};
+use tracing::{debug, info};
 
 use crate::{
   class_filter::ClassFilter,
@@ -119,7 +120,7 @@ fn simulated_annealing(
       let dt = t0.elapsed().unwrap();
       debug!("cost took: {} ns", dt.as_nanos());
     }
-    
+
     if step % stats_sampling == 0 {
       stats.new_cost.push(new_cost);
     }
@@ -249,5 +250,5 @@ fn cost(state: &ClassCalendar, constraints: &SimulationConstraints) -> f64 {
     + 1.0 * heuristics::count_outside_session_length(state, 2, 4)
     + 1.0 * heuristics::count_inconsistent_class_timeslots(state);
 
-    c
-  }
+  c
+}
