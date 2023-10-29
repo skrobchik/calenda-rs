@@ -31,7 +31,7 @@ pub(crate) fn generate_schedule(constraints: SimulationConstraints) -> JoinHandl
         thread::spawn(move || {
           simulated_annealing(
             &local_constraints,
-            100_000,
+            1000,
             std::path::Path::new(&format!("stats{}.json", i)),
             i,
           )
