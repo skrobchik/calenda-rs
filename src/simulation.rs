@@ -4,6 +4,7 @@ use std::{
   time::Duration,
 };
 
+use indicatif::{ProgressBar, ProgressIterator, ProgressState, ProgressStyle};
 use num::Integer;
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -31,7 +32,7 @@ pub(crate) fn generate_schedule(constraints: SimulationConstraints) -> JoinHandl
         thread::spawn(move || {
           simulated_annealing(
             &local_constraints,
-            1000,
+            30_000_000,
             std::path::Path::new(&format!("stats{}.json", i)),
             i,
           )
@@ -89,14 +90,18 @@ fn simulated_annealing(
   let mut rng = rand::rngs::ThreadRng::default();
 
   let mut stats = Stats::with_capacity(steps as usize);
-  let mut cost_duration_sum: Duration = Duration::ZERO;
-  let stats_sampling = steps.div_ceil(&10);
+  let stats_sampling = steps.div_ceil(&5_000);
   debug!("Sampling every {} steps", stats_sampling);
 
   let mut state = random_init(constraints, &mut rng);
   let mut state_cost = cost(&state, constraints);
 
-  for step in 0..steps {
+  let progress_bar_style = ProgressStyle::with_template(
+    "{spinner:.green} [{elapsed_precise}] [{bar:.cyan/blue}] {human_pos}/{human_len} ({percent} %) ({eta}) ({per_sec})",
+  )
+  .unwrap()
+  .progress_chars("#>-");
+  for step in (0..steps).progress_with_style(progress_bar_style) {
     if step % stats_sampling == 0 {
       stats.curr_cost.push(state_cost);
     }
@@ -114,15 +119,7 @@ fn simulated_annealing(
     let old_cost = state_cost;
     let delta = state.move_one_class_random(&mut rng);
 
-    let t0 = std::time::SystemTime::now();
     let new_cost = cost(&state, constraints);
-    cost_duration_sum += t0.elapsed().unwrap();
-
-    if step % stats_sampling == 0 {
-      let mean_cost_duration = cost_duration_sum.checked_div(stats_sampling).unwrap();
-      cost_duration_sum = Duration::ZERO;
-      debug!("mean cost duration: {} ns", mean_cost_duration.as_nanos());
-    }
 
     if step % stats_sampling == 0 {
       stats.new_cost.push(new_cost);
@@ -144,10 +141,6 @@ fn simulated_annealing(
       }
       revert_change(&mut state, &delta);
       state_cost = old_cost;
-    }
-
-    if step % stats_sampling == 0 {
-      println!("Thread {}: Step: {}/{}", worker_thread_number, step, steps);
     }
   }
 
