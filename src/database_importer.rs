@@ -136,9 +136,7 @@ pub(crate) fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
   let num_classes = classes.len();
   let colors_iterator = itertools_num::linspace(0.0, 1.0, num_classes).map(|x| {
     let color = ecolor::Hsva::new(x, 1.0, 1.0, 1.0);
-    info!("{:?}", color);
     let color = Color32::from(color);
-    info!("{:?}", color);
     color
   });
 
