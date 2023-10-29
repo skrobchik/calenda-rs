@@ -207,10 +207,44 @@ fn revert_change(state: &mut ClassCalendar, delta: &ClassEntryDelta) {
 
 fn cost(state: &ClassCalendar, constraints: &SimulationConstraints) -> f64 {
   // Collisions between classes of each semester
-  
-
-  3.0 * heuristics::count_not_available(state, constraints)
+  let c = 
+  // let c = std::iter::repeat(5.0)
+  //   .zip(&[
+  //     Semester::S1,
+  //     Semester::S2,
+  //     Semester::S3,
+  //     Semester::S4,
+  //     Semester::S5,
+  //     Semester::S6,
+  //     Semester::S7,
+  //     Semester::S8,
+  //   ])
+  //   .map(|(weight, semester)| {
+  //     weight
+  //       * heuristics::same_timeslot_classes_count(
+  //         state,
+  //         &ClassFilter::Semester(*semester),
+  //         constraints,
+  //       )
+  //   })
+  //   .sum::<f64>()
+  // Collisions between classes of each professor
+    // + constraints
+    //   .get_professors()
+    //   .iter()
+    //   .enumerate()
+    //   .map(|(professor_id, _professor)| {
+    //     10.0
+    //       * heuristics::same_timeslot_classes_count(
+    //         state,
+    //         &ClassFilter::ProfessorId(professor_id),
+    //         constraints,
+    //       )
+    //   })
+    //   .sum::<f64>()
+     3.0 * heuristics::count_not_available(state, constraints)
     + 1.0 * heuristics::count_available_if_needed(state, constraints)
     + 1.0 * heuristics::count_outside_session_length(state, 2, 4)
-    + 1.0 * heuristics::count_inconsistent_class_timeslots(state)
+    + 1.0 * heuristics::count_inconsistent_class_timeslots(state);
+    c
 }
