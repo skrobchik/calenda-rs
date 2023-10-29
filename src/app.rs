@@ -51,11 +51,33 @@ impl MyApp {
         }
       });
       ui.menu_button("Filtro", |ui| {
-        if ui.button("Semestre 1").clicked() {
-          self.schedule_widget_filter = ClassFilter::Semester(Semester::S1);
-        }
-        if ui.button("Semestre 3").clicked() {
-          self.schedule_widget_filter = ClassFilter::Semester(Semester::S3);
+        for (semester, semester_name) in [
+          Semester::S1,
+          Semester::S2,
+          Semester::S3,
+          Semester::S4,
+          Semester::S5,
+          Semester::S6,
+          Semester::S7,
+          Semester::S8,
+        ]
+        .iter()
+        .zip(
+          [
+            "Semestre 1",
+            "Semestre 2",
+            "Semestre 3",
+            "Semestre 4",
+            "Semestre 5",
+            "Semestre 6",
+            "Semestre 7",
+            "Semestre 8",
+          ]
+          .iter(),
+        ) {
+          if ui.button(semester_name.to_string()).clicked() {
+            self.schedule_widget_filter = ClassFilter::Semester(*semester);
+          }
         }
         if ui.button("Todos").clicked() {
           self.schedule_widget_filter = ClassFilter::None;

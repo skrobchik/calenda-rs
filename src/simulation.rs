@@ -1,12 +1,12 @@
 use std::{
   sync::Arc,
-  thread::{self, JoinHandle},
+  thread::{self, JoinHandle}, ops::Sub,
 };
 
 use num::Integer;
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
-use tracing::info;
+use tracing::{info, debug};
 
 use crate::{
   class_filter::ClassFilter,
@@ -20,9 +20,10 @@ use crate::{
 
 pub(crate) fn generate_schedule(constraints: SimulationConstraints) -> JoinHandle<ClassCalendar> {
   thread::spawn(move || {
-    let n = std::thread::available_parallelism()
-      .map_or(1, |x| x.into())
-      .div_ceil(&2_usize);
+    // let n = std::thread::available_parallelism()
+    //   .map_or(1, |x| x.into())
+    //   .div_ceil(&2_usize);
+    let n = 1;
     let constraints = Arc::new(constraints);
     let handles: Vec<JoinHandle<ClassCalendar>> = (0..n)
       .map(|i| {
@@ -30,7 +31,7 @@ pub(crate) fn generate_schedule(constraints: SimulationConstraints) -> JoinHandl
         thread::spawn(move || {
           simulated_annealing(
             &local_constraints,
-            500_000,
+            100_000,
             std::path::Path::new(&format!("stats{}.json", i)),
             i,
           )
@@ -88,7 +89,8 @@ fn simulated_annealing(
   let mut rng = rand::rngs::ThreadRng::default();
 
   let mut stats = Stats::with_capacity(steps as usize);
-  let stats_sampling = steps.div_ceil(&10_000);
+  let stats_sampling = steps.div_ceil(&10);
+  debug!("Sampling every {} steps", stats_sampling);
 
   let mut state = random_init(constraints, &mut rng);
   let mut state_cost = cost(&state, constraints);
@@ -111,7 +113,13 @@ fn simulated_annealing(
     let old_cost = state_cost;
     let delta = state.move_one_class_random(&mut rng);
 
+    let t0 = std::time::SystemTime::now();
     let new_cost = cost(&state, constraints);
+    if step % stats_sampling == 0 {
+      let dt = t0.elapsed().unwrap();
+      debug!("cost took: {} ns", dt.as_nanos());
+    }
+    
     if step % stats_sampling == 0 {
       stats.new_cost.push(new_cost);
     }
@@ -134,7 +142,7 @@ fn simulated_annealing(
       state_cost = old_cost;
     }
 
-    if step % 10_000 == 0 {
+    if step % stats_sampling == 0 {
       println!("Thread {}: Step: {}/{}", worker_thread_number, step, steps);
     }
   }
@@ -201,42 +209,45 @@ fn revert_change(state: &mut ClassCalendar, delta: &ClassEntryDelta) {
 
 fn cost(state: &ClassCalendar, constraints: &SimulationConstraints) -> f64 {
   // Collisions between classes of each semester
-  std::iter::repeat(5.0)
-    .zip(&[
-      Semester::S1,
-      Semester::S2,
-      Semester::S3,
-      Semester::S4,
-      Semester::S5,
-      Semester::S6,
-      Semester::S7,
-      Semester::S8,
-    ])
-    .map(|(weight, semester)| {
-      weight
-        * heuristics::same_timeslot_classes_count(
-          state,
-          &ClassFilter::Semester(*semester),
-          constraints,
-        )
-    })
-    .sum::<f64>()
+  let c = 
+  // let c = std::iter::repeat(5.0)
+  //   .zip(&[
+  //     Semester::S1,
+  //     Semester::S2,
+  //     Semester::S3,
+  //     Semester::S4,
+  //     Semester::S5,
+  //     Semester::S6,
+  //     Semester::S7,
+  //     Semester::S8,
+  //   ])
+  //   .map(|(weight, semester)| {
+  //     weight
+  //       * heuristics::same_timeslot_classes_count(
+  //         state,
+  //         &ClassFilter::Semester(*semester),
+  //         constraints,
+  //       )
+  //   })
+  //   .sum::<f64>()
   // Collisions between classes of each professor
-    + constraints
-      .get_professors()
-      .iter()
-      .enumerate()
-      .map(|(professor_id, _professor)| {
-        10.0
-          * heuristics::same_timeslot_classes_count(
-            state,
-            &ClassFilter::ProfessorId(professor_id),
-            constraints,
-          )
-      })
-      .sum::<f64>()
-    + 3.0 * heuristics::count_not_available(state, constraints)
+    // + constraints
+    //   .get_professors()
+    //   .iter()
+    //   .enumerate()
+    //   .map(|(professor_id, _professor)| {
+    //     10.0
+    //       * heuristics::same_timeslot_classes_count(
+    //         state,
+    //         &ClassFilter::ProfessorId(professor_id),
+    //         constraints,
+    //       )
+    //   })
+    //   .sum::<f64>()
+     3.0 * heuristics::count_not_available(state, constraints)
     + 1.0 * heuristics::count_available_if_needed(state, constraints)
     + 1.0 * heuristics::count_outside_session_length(state, 2, 4)
-    + 1.0 * heuristics::count_inconsistent_class_timeslots(state)
-}
+    + 1.0 * heuristics::count_inconsistent_class_timeslots(state);
+
+    c
+  }
