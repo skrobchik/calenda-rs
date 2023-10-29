@@ -8,7 +8,7 @@ use indicatif::{ProgressIterator, ProgressStyle};
 use num::Integer;
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
-use tracing::{info};
+use tracing::info;
 
 use crate::{
   heuristics,
