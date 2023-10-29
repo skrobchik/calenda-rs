@@ -9,11 +9,9 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, info};
 
 use crate::{
-  class_filter::ClassFilter,
   heuristics,
   school_schedule::{
-    class_calendar::{ClassCalendar, ClassEntryDelta},
-    Semester, SimulationConstraints,
+    class_calendar::{ClassCalendar, ClassEntryDelta}, SimulationConstraints,
   },
   timeslot,
 };
@@ -208,12 +206,12 @@ fn revert_change(state: &mut ClassCalendar, delta: &ClassEntryDelta) {
 }
 
 fn cost(state: &ClassCalendar, constraints: &SimulationConstraints) -> f64 {
-  let c = 0.0
+  
+  0.0
     + 5.0 * heuristics::same_timeslot_classes_count_per_semester(state, constraints)
     + 10.0 * heuristics::same_timeslot_classes_count_per_professor(state, constraints)
     + 3.0 * heuristics::count_not_available(state, constraints)
     + 1.0 * heuristics::count_available_if_needed(state, constraints)
     + 1.0 * heuristics::count_outside_session_length(state, 2, 4)
-    + 1.0 * heuristics::count_inconsistent_class_timeslots(state);
-  c
+    + 1.0 * heuristics::count_inconsistent_class_timeslots(state)
 }

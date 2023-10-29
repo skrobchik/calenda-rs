@@ -1,6 +1,6 @@
 use crate::{
   class_filter::ClassFilter,
-  school_schedule::{class_calendar::ClassCalendar, Availability, Semester, SimulationConstraints},
+  school_schedule::{class_calendar::ClassCalendar, Availability, SimulationConstraints},
   timeslot,
 };
 
