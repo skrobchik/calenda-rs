@@ -118,6 +118,12 @@ impl TryFrom<u32> for Semester {
 
 impl Into<u32> for Semester {
   fn into(self) -> u32 {
+    (&self).into()
+  }
+}
+
+impl Into<u32> for &Semester {
+  fn into(self) -> u32 {
     match self {
       Semester::S1 => 1,
       Semester::S2 => 2,

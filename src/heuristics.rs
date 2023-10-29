@@ -29,6 +29,32 @@ pub(crate) fn same_timeslot_classes_count_per_professor(
   same_timeslot_classes_count as f64
 }
 
+pub(crate) fn same_timeslot_classes_count_per_semester(
+  state: &ClassCalendar,
+  simulation_constraints: &SimulationConstraints,
+) -> f64 {
+  let mut same_timeslot_classes_count: u32 = 0;
+  const NUM_SEMESTERS: usize = 8;
+  let mut semester_class_counter = [0_u32; NUM_SEMESTERS];
+  for classes in state.get_matrix().iter() {
+    semester_class_counter.fill(0);
+    for (class_id, count) in classes.iter().enumerate() {
+      let semester = simulation_constraints
+        .get_classes()
+        .get(class_id)
+        .unwrap()
+        .get_semester();
+      let semester: u32 = semester.into();
+      semester_class_counter[semester as usize] += *count as u32;
+    }
+    same_timeslot_classes_count += semester_class_counter
+      .iter()
+      .filter(|x| **x >= 2)
+      .sum::<u32>();
+  }
+  same_timeslot_classes_count as f64
+}
+
 pub(crate) fn same_timeslot_classes_count(
   state: &ClassCalendar,
   class_filter: &ClassFilter,
