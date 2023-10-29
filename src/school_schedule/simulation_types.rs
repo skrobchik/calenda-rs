@@ -137,8 +137,6 @@ impl Into<u32> for &Semester {
   }
 }
 
-
-
 #[derive(Serialize, Deserialize, Clone, Copy, Sequence, PartialEq, Eq, Debug)]
 pub(crate) enum Group {
   G1,
