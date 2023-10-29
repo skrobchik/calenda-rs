@@ -1,21 +1,46 @@
 use crate::{
   class_filter::ClassFilter,
-  school_schedule::{class_calendar::ClassCalendar, Availability, SimulationConstraints},
+  school_schedule::{class_calendar::ClassCalendar, Availability, Semester, SimulationConstraints},
   timeslot,
 };
+
+pub(crate) fn same_timeslot_classes_count_per_professor(
+  state: &ClassCalendar,
+  simulation_constraints: &SimulationConstraints,
+) -> f64 {
+  let mut same_timeslot_classes_count: u32 = 0;
+  let num_professors = simulation_constraints.get_professors().len();
+  let mut professor_class_counter = vec![0_u32; num_professors];
+  for classes in state.get_matrix().iter() {
+    professor_class_counter.fill(0);
+    for (class_id, count) in classes.iter().enumerate() {
+      let professor_id = simulation_constraints
+        .get_classes()
+        .get(class_id)
+        .unwrap()
+        .get_professor_id();
+      professor_class_counter[*professor_id] += *count as u32;
+    }
+    same_timeslot_classes_count += professor_class_counter
+      .iter()
+      .filter(|x| **x >= 2)
+      .sum::<u32>();
+  }
+  same_timeslot_classes_count as f64
+}
 
 pub(crate) fn same_timeslot_classes_count(
   state: &ClassCalendar,
   class_filter: &ClassFilter,
   simulation_constraints: &SimulationConstraints,
 ) -> f64 {
-  let mut same_timeslot_classes_count: u64 = 0;
+  let mut same_timeslot_classes_count: u32 = 0;
   for classes in state.get_matrix().iter() {
-    let x: u64 = classes
+    let x: u32 = classes
       .iter()
       .enumerate()
       .filter(|(class_id, _count)| class_filter.filter(*class_id, simulation_constraints))
-      .map(|(_class_id, count)| *count as u64)
+      .map(|(_class_id, count)| *count as u32)
       .sum();
     if x >= 2 {
       same_timeslot_classes_count += x;

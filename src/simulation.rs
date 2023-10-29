@@ -228,19 +228,7 @@ fn cost(state: &ClassCalendar, constraints: &SimulationConstraints) -> f64 {
         )
     })
     .sum::<f64>()
-    + constraints
-      .get_professors()
-      .iter()
-      .enumerate()
-      .map(|(professor_id, _professor)| {
-        10.0
-          * heuristics::same_timeslot_classes_count(
-            state,
-            &ClassFilter::ProfessorId(professor_id),
-            constraints,
-          )
-      })
-      .sum::<f64>()
+    + 10.0 * heuristics::same_timeslot_classes_count_per_professor(state, constraints)
     + 3.0 * heuristics::count_not_available(state, constraints)
     + 1.0 * heuristics::count_available_if_needed(state, constraints)
     + 1.0 * heuristics::count_outside_session_length(state, 2, 4)

@@ -116,6 +116,23 @@ impl TryFrom<u32> for Semester {
   }
 }
 
+impl Into<u32> for Semester {
+  fn into(self) -> u32 {
+    match self {
+      Semester::S1 => 1,
+      Semester::S2 => 2,
+      Semester::S3 => 3,
+      Semester::S4 => 4,
+      Semester::S5 => 5,
+      Semester::S6 => 6,
+      Semester::S7 => 7,
+      Semester::S8 => 8,
+    }
+  }
+}
+
+
+
 #[derive(Serialize, Deserialize, Clone, Copy, Sequence, PartialEq, Eq, Debug)]
 pub(crate) enum Group {
   G1,
