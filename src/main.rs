@@ -20,9 +20,23 @@ use simulation::ScheduleGenerationOptions;
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
 
+pub(crate) fn load_results<P: AsRef<std::path::Path>>(path: P) -> Vec<simulation::ScheduleGenerationOutput> {
+  let path = path.as_ref();
+  let file = std::fs::File::open(path).unwrap();
+  let reader = std::io::BufReader::new(file);
+  serde_json::from_reader(reader).unwrap()
+}
+
 fn run_app() {
   database_importer::import_temporary_database().expect("Error");
-  let schedule = database_importer::parse_database_data().expect("Failed to import");
+  let mut schedule = database_importer::parse_database_data().expect("Failed to import");
+  
+  let simulation_output = load_results("results3.json").into_iter().nth(20).unwrap();
+  println!("Num Steps: {}", simulation_output.best_schedule_run_report.num_steps);
+  println!("Cost: {}", simulation_output.best_schedule_cost);
+  let class_calendar = simulation_output.best_schedule;
+  schedule.replace_class_calendar(class_calendar).unwrap();
+
 
   let options = eframe::NativeOptions::default();
   eframe::run_native(

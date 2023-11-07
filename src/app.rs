@@ -82,7 +82,18 @@ impl MyApp {
         if ui.button("Todos").clicked() {
           self.schedule_widget_filter = ClassFilter::None;
         }
-      })
+      });
+      ui.menu_button("Load results3.json", |ui| {
+        (0..21).into_iter().for_each(|i| {
+          if ui.button(i.to_string()).clicked() {
+            let simulation_output = crate::load_results("results3.json").into_iter().nth(i).unwrap();
+            println!("Num Steps: {}", simulation_output.best_schedule_run_report.num_steps);
+            println!("Cost: {}", simulation_output.best_schedule_cost);
+            let class_calendar = simulation_output.best_schedule;
+            self.school_schedule.replace_class_calendar(class_calendar).unwrap();
+          }
+        })
+      });
     });
   }
 }
