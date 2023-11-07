@@ -5,3 +5,4 @@ temp_db.sqlite
 stats.json
 stats*.json
 .idea/
+results*.json

@@ -7,7 +7,7 @@ use crate::{
   professor_schedule_widget::ProfessorScheduleWidget,
   school_schedule::{class_calendar::ClassCalendar, SchoolSchedule, Semester},
   simple_schedule_widget::SimpleScheduleWidget,
-  simulation,
+  simulation::{self, ScheduleGenerationOptions, ScheduleGenerationOutput},
 };
 use eframe::egui;
 use egui::Ui;
@@ -24,7 +24,7 @@ pub(crate) struct MyApp {
   availability_editor_professor_id: Option<usize>,
   availability_editor_widget_open: bool,
   #[serde(skip)]
-  new_schedule_join_handle: Option<JoinHandle<ClassCalendar>>,
+  new_schedule_join_handle: Option<JoinHandle<ScheduleGenerationOutput>>,
   schedule_widget_filter: ClassFilter,
 }
 
@@ -126,7 +126,8 @@ impl eframe::App for MyApp {
           let new_class_calendar = mem::take(&mut self.new_schedule_join_handle)
             .unwrap()
             .join()
-            .unwrap();
+            .unwrap()
+            .best_schedule;
           self
             .school_schedule
             .replace_class_calendar(new_class_calendar)
@@ -134,9 +135,14 @@ impl eframe::App for MyApp {
           info!("Applied new schedule");
         }
       } else if ui.button("Optimize").clicked() {
-        self.new_schedule_join_handle = Some(simulation::generate_schedule(
-          self.school_schedule.get_simulation_constraints().clone(),
-        ));
+        self.new_schedule_join_handle =
+          Some(simulation::generate_schedule(ScheduleGenerationOptions {
+            simulation_constraints: self.school_schedule.get_simulation_constraints().clone(),
+            steps: 500_000,
+            parallel_count: 1,
+            initial_state: None,
+            multi_progress: None,
+          }));
       }
     });
 

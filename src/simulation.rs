@@ -1,6 +1,6 @@
 use std::{
   collections::BTreeMap,
-  sync::Arc,
+  sync::{Arc, Mutex},
   thread::{self, JoinHandle},
 };
 
@@ -19,37 +19,53 @@ use crate::{
   timeslot,
 };
 
-pub(crate) fn generate_schedule(constraints: SimulationConstraints) -> JoinHandle<ClassCalendar> {
+pub(crate) struct ScheduleGenerationOptions {
+  pub(crate) simulation_constraints: SimulationConstraints,
+  pub(crate) steps: usize,
+  pub(crate) parallel_count: usize,
+  pub(crate) initial_state: Option<ClassCalendar>,
+  pub(crate) multi_progress: Option<Arc<Mutex<indicatif::MultiProgress>>>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub(crate) struct ScheduleGenerationOutput {
+  pub(crate) best_schedule: ClassCalendar,
+  pub(crate) best_schedule_cost: f64,
+  pub(crate) best_schedule_run_report: SimulationRunReport,
+}
+
+pub(crate) fn generate_schedule(
+  options: ScheduleGenerationOptions,
+) -> JoinHandle<ScheduleGenerationOutput> {
+  if options.initial_state.is_some() {
+    unimplemented!()
+  }
   thread::spawn(move || {
     // let n = std::thread::available_parallelism()
     //   .map_or(1, |x| x.into())
     //   .div_ceil(&2_usize);
-    let n = 1;
-    let constraints = Arc::new(constraints);
-    let handles: Vec<JoinHandle<ClassCalendar>> = (0..n)
-      .map(|i| {
+    let constraints = Arc::new(options.simulation_constraints);
+    let handles: Vec<JoinHandle<(ClassCalendar, f64, SimulationRunReport)>> = (0..options
+      .parallel_count)
+      .map(|_i: usize| {
         let local_constraints = constraints.clone();
+        let local_multi_progress = options.multi_progress.clone();
         thread::spawn(move || {
-          simulated_annealing(
-            &local_constraints,
-            500_000,
-            std::path::Path::new(&format!("stats{}.json", i)),
-            i,
-          )
+          simulated_annealing(&local_constraints, options.steps, local_multi_progress)
         })
       })
       .collect();
-    let results: Vec<ClassCalendar> = handles.into_iter().map(|h| h.join().unwrap()).collect();
-    let mut best_result = None;
-    let mut best_cost = None;
-    for result in results.into_iter() {
-      let cost = cost(&result, &constraints);
-      if best_cost.is_none() || cost < best_cost.unwrap() {
-        best_result = Some(result);
-        best_cost = Some(cost);
-      }
+    let results: Vec<(ClassCalendar, f64, SimulationRunReport)> =
+      handles.into_iter().map(|h| h.join().unwrap()).collect();
+    let best_result = results
+      .into_iter()
+      .min_by(|x, y| x.1.partial_cmp(&y.1).unwrap())
+      .unwrap();
+    ScheduleGenerationOutput {
+      best_schedule: best_result.0,
+      best_schedule_cost: best_result.1,
+      best_schedule_run_report: best_result.2,
     }
-    best_result.unwrap()
   })
 }
 
@@ -116,19 +132,18 @@ impl StatsTracker {
   }
 }
 
-#[derive(Serialize, Deserialize)]
-struct SimulationRunReport {
-  num_steps: u64,
-  stats: BTreeMap<String, Vec<serde_json::Value>>,
-  start_time: std::time::SystemTime,
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub(crate) struct SimulationRunReport {
+  pub(crate) num_steps: u64,
+  pub(crate) stats: BTreeMap<String, Vec<serde_json::Value>>,
+  pub(crate) start_time: std::time::SystemTime,
 }
 
 fn simulated_annealing(
   constraints: &SimulationConstraints,
-  steps: u32,
-  run_report_save_path: &std::path::Path,
-  worker_thread_number: usize,
-) -> ClassCalendar {
+  steps: usize,
+  multi_progress: Option<Arc<Mutex<indicatif::MultiProgress>>>,
+) -> (ClassCalendar, f64, SimulationRunReport) {
   // let seed: [u8; 32] = "Aritz123Aritz123Aritz123Aritz123"
   //   .as_bytes()
   //   .try_into()
@@ -146,7 +161,18 @@ fn simulated_annealing(
   )
   .unwrap()
   .progress_chars("#>-");
-  for step in (0..steps).progress_with_style(progress_bar_style) {
+
+  let progress_bar = {
+    let pb = indicatif::ProgressBar::new(steps as u64).with_style(progress_bar_style);
+    if let Some(multi_progress) = multi_progress {
+      let multi_progress = multi_progress.lock().unwrap();
+      multi_progress.add(pb)
+    } else {
+      pb
+    }
+  };
+
+  for step in 0..steps {
     stats_tracker.log_stat("curr_cost", state_cost).unwrap();
     let t = {
       let x = ((step + 1) as f64) / (steps as f64);
@@ -178,20 +204,16 @@ fn simulated_annealing(
     }
 
     stats_tracker.inc_step();
+    progress_bar.inc(1);
   }
 
-  info!("Thread {}: Saving run report.", worker_thread_number);
-  let file = std::fs::File::create(run_report_save_path).unwrap();
-  let writer = std::io::BufWriter::new(file);
   let run_report = SimulationRunReport {
     num_steps: steps as u64,
     stats: stats_tracker.into_stats(),
     start_time: std::time::SystemTime::now(),
   };
 
-  serde_json::ser::to_writer(writer, &run_report).unwrap();
-
-  state
+  (state, state_cost, run_report)
 }
 
 fn acceptance_probability(old_cost: f64, new_cost: f64, temperature: f64) -> f64 {
