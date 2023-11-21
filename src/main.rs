@@ -93,10 +93,12 @@ fn run_experiment_2() {
   database_importer::import_temporary_database().expect("Error");
   let schedule = database_importer::parse_database_data().expect("Failed to import");
 
-  let steps = 2097152;
+  // let steps = 2097152;
+  let steps = 1_000_000;
   let temperature_functions = vec![
     TemperatureFunction::T001,
-    TemperatureFunction::T002
+    TemperatureFunction::T002,
+    TemperatureFunction::T003,
   ];
 
   let mp = Arc::new(Mutex::new(MultiProgress::new()));

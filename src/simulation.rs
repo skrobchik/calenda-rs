@@ -23,6 +23,8 @@ use crate::{
 pub(crate) enum TemperatureFunction {
   T001,
   T002,
+  T003,
+  T004,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -253,6 +255,12 @@ fn temperature(x: f64, temperature_function_variant: &TemperatureFunction) -> f6
     },
     TemperatureFunction::T002 => {
       if x <= 0.9 { 7.5*(0.5*(1.1*7.0*std::f64::consts::PI*x+std::f64::consts::FRAC_2_PI).sin()+0.5) } else { 0.0 }
+    },
+    TemperatureFunction::T003 => {
+      if x <= 0.9 { (1.0-x)*10.0*(0.5*(1.1*7.0*std::f64::consts::PI*x+std::f64::consts::FRAC_2_PI).sin()+0.5) } else { 0.0 }
+    },
+    TemperatureFunction::T004 => {
+      if x <= 0.9 { (1.0-x)*5.0*(0.5*(1.1*7.0*std::f64::consts::PI*x+std::f64::consts::FRAC_2_PI).sin()+0.5) } else { 0.0 }
     },
 }
   
