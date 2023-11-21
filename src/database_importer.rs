@@ -151,6 +151,8 @@ pub(crate) fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
     if let Some((semester, group)) = parse_semester_group(&my_class.grupo) {
       class_entry.set_group(group);
       class_entry.set_semester(semester);
+    } else {
+      println!("ERRRRRROOOOOR");
     }
 
     if my_class.rfc2.trim().is_empty() {

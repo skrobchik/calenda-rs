@@ -153,6 +153,7 @@ impl eframe::App for MyApp {
             parallel_count: 1,
             initial_state: None,
             multi_progress: None,
+            temperature_function: simulation::TemperatureFunction::T001,
           }));
       }
     });

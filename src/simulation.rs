@@ -19,15 +19,24 @@ use crate::{
   timeslot,
 };
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub(crate) enum TemperatureFunction {
+  T001,
+  T002,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub(crate) struct ScheduleGenerationOptions {
   pub(crate) simulation_constraints: SimulationConstraints,
   pub(crate) steps: usize,
   pub(crate) parallel_count: usize,
   pub(crate) initial_state: Option<ClassCalendar>,
+  #[serde(skip)]
   pub(crate) multi_progress: Option<Arc<Mutex<indicatif::MultiProgress>>>,
+  pub(crate) temperature_function: TemperatureFunction,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub(crate) struct ScheduleGenerationOutput {
   pub(crate) best_schedule: ClassCalendar,
   pub(crate) best_schedule_cost: f64,
@@ -50,8 +59,9 @@ pub(crate) fn generate_schedule(
       .map(|_i: usize| {
         let local_constraints = constraints.clone();
         let local_multi_progress = options.multi_progress.clone();
+        let local_temperature_function = options.temperature_function.clone();
         thread::spawn(move || {
-          simulated_annealing(&local_constraints, options.steps, local_multi_progress)
+          simulated_annealing(&local_constraints, options.steps, local_multi_progress, &local_temperature_function)
         })
       })
       .collect();
@@ -143,6 +153,7 @@ fn simulated_annealing(
   constraints: &SimulationConstraints,
   steps: usize,
   multi_progress: Option<Arc<Mutex<indicatif::MultiProgress>>>,
+  temperature_function: &TemperatureFunction,
 ) -> (ClassCalendar, f64, SimulationRunReport) {
   // let seed: [u8; 32] = "Aritz123Aritz123Aritz123Aritz123"
   //   .as_bytes()
@@ -177,7 +188,7 @@ fn simulated_annealing(
     let t = {
       let x = ((step + 1) as f64) / (steps as f64);
       stats_tracker.log_stat("x", x).unwrap();
-      let t = temperature(x);
+      let t = temperature(x, temperature_function);
       stats_tracker.log_stat("temperature", t).unwrap();
       t
     };
@@ -224,7 +235,7 @@ fn acceptance_probability(old_cost: f64, new_cost: f64, temperature: f64) -> f64
   }
 }
 
-fn temperature(x: f64) -> f64 {
+fn temperature(x: f64, temperature_function_variant: &TemperatureFunction) -> f64 {
   // 10.0 - 10.0 * x
 
   // if x <= 0.9 {
@@ -232,12 +243,19 @@ fn temperature(x: f64) -> f64 {
   // } else {
   //   0.0
   // }
-
-  if x <= 0.8 {
-    4.0 - 5.0 * x
-  } else {
-    0.0
-  }
+  match temperature_function_variant {
+    TemperatureFunction::T001 => {
+      if x <= 0.8 {
+        4.0 - 5.0 * x
+      } else {
+        0.0
+      }
+    },
+    TemperatureFunction::T002 => {
+      if x <= 0.9 { 7.5*(0.5*(1.1*7.0*std::f64::consts::PI*x+std::f64::consts::FRAC_2_PI).sin()+0.5) } else { 0.0 }
+    },
+}
+  
 
   // 0.0
   // 7.5*(0.5*(5.0*std::f64::consts::PI*x+std::f64::consts::FRAC_2_PI).sin()+0.5)

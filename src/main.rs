@@ -16,7 +16,7 @@ use std::sync::{Mutex, Arc};
 use crate::app::MyApp;
 
 use indicatif::MultiProgress;
-use simulation::ScheduleGenerationOptions;
+use simulation::{ScheduleGenerationOptions, TemperatureFunction};
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
 
@@ -72,6 +72,44 @@ fn run_experiment_1() {
         parallel_count: 1,
         initial_state: None,
         multi_progress: Some(mp.clone()),
+        temperature_function: simulation::TemperatureFunction::T001,
+      });
+      result
+    })
+    .collect();
+
+  let results: Vec<simulation::ScheduleGenerationOutput> = handles
+    .into_iter()
+    .map(|handle| handle.join().unwrap())
+    .collect();
+
+  let file = std::fs::File::create("results.json").unwrap();
+  let writer = std::io::BufWriter::new(file);
+  serde_json::ser::to_writer(writer, &results).unwrap()
+}
+
+fn run_experiment_2() {
+  database_importer::import_temporary_database().expect("Error");
+  let schedule = database_importer::parse_database_data().expect("Failed to import");
+
+  let steps = 2097152;
+  let temperature_functions = vec![
+    TemperatureFunction::T001,
+    TemperatureFunction::T002
+  ];
+
+  let mp = Arc::new(Mutex::new(MultiProgress::new()));
+  let handles: Vec<std::thread::JoinHandle<simulation::ScheduleGenerationOutput>> = temperature_functions
+    .into_iter()
+    .map(|temperature_function| {
+      println!("Starting run for {} steps", steps);
+      let result = simulation::generate_schedule(ScheduleGenerationOptions {
+        simulation_constraints: schedule.get_simulation_constraints().clone(),
+        steps,
+        parallel_count: 1,
+        initial_state: None,
+        multi_progress: Some(mp.clone()),
+        temperature_function,
       });
       result
     })
@@ -94,5 +132,6 @@ fn main() {
   tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 
   // run_experiment_1()
+  // run_experiment_2()
   run_app()
 }
