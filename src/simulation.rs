@@ -162,7 +162,7 @@ fn simulated_annealing(
   // let mut rng = rand::rngs::StdRng::from_seed(seed);
   let mut rng = rand::rngs::ThreadRng::default();
 
-  let mut stats_tracker = StatsTracker::new(steps.div_ceil(&5_000) as usize);
+  let mut stats_tracker = StatsTracker::new(steps.div_ceil(5_000_usize));
 
   let mut state = random_init(constraints, &mut rng);
   let mut state_cost = cost(&state, constraints);

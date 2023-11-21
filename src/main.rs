@@ -10,6 +10,7 @@ pub mod simple_schedule_widget;
 pub mod simulation;
 pub mod timeslot;
 pub mod week_calendar;
+pub mod color_list;
 
 use std::sync::{Mutex, Arc};
 
@@ -31,11 +32,11 @@ fn run_app() {
   database_importer::import_temporary_database().expect("Error");
   let mut schedule = database_importer::parse_database_data().expect("Failed to import");
   
-  let simulation_output = load_results("results3.json").into_iter().nth(20).unwrap();
-  println!("Num Steps: {}", simulation_output.best_schedule_run_report.num_steps);
-  println!("Cost: {}", simulation_output.best_schedule_cost);
-  let class_calendar = simulation_output.best_schedule;
-  schedule.replace_class_calendar(class_calendar).unwrap();
+  // let simulation_output = load_results("results3.json").into_iter().nth(20).unwrap();
+  // println!("Num Steps: {}", simulation_output.best_schedule_run_report.num_steps);
+  // println!("Cost: {}", simulation_output.best_schedule_cost);
+  // let class_calendar = simulation_output.best_schedule;
+  // schedule.replace_class_calendar(class_calendar).unwrap();
 
 
   let options = eframe::NativeOptions::default();

@@ -132,11 +132,18 @@ pub(crate) fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
     })
     .cloned()
     .collect();
+  println!("Imported {} classes", classes.len());
 
   let num_classes = classes.len();
-  let colors_iterator = itertools_num::linspace(0.0, 1.0, num_classes).map(|x| {
-    let color = ecolor::Hsva::new(x, 1.0, 1.0, 1.0);
-    let color = Color32::from(color);
+  // let colors_iterator = itertools_num::linspace(0.0, 1.0, num_classes).map(|x| {
+  //   let color = ecolor::Hsva::new(x, 1.0, 1.0, 1.0);
+  //   let color = Color32::from(color);
+  //   color
+  // });
+  let colors_iterator = crate::color_list::COLOR_LIST.iter().cycle().map(|s| {
+    let color = csscolorparser::parse(s).unwrap();
+    let color = color.to_rgba8();
+    let color = Color32::from_rgba_unmultiplied(color[0], color[1], color[2], color[3]);
     color
   });
 
