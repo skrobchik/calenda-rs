@@ -152,7 +152,7 @@ impl eframe::App for MyApp {
             steps: 500_000,
             parallel_count: 1,
             initial_state: None,
-            multi_progress: None,
+            progress_tracker: None,
             temperature_function: simulation::TemperatureFunction::T001,
           }));
       }

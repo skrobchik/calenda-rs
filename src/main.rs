@@ -72,7 +72,7 @@ fn run_experiment_1() {
         steps,
         parallel_count: 1,
         initial_state: None,
-        multi_progress: Some(mp.clone()),
+        progress_tracker: Some(mp.clone()),
         temperature_function: simulation::TemperatureFunction::T001,
       });
       result
@@ -109,7 +109,7 @@ fn run_experiment_2() {
         steps,
         parallel_count: 1,
         initial_state: None,
-        multi_progress: Some(mp.clone()),
+        progress_tracker: Some(mp.clone()),
         temperature_function,
       });
       result

@@ -1,7 +1,7 @@
 use std::{
   collections::BTreeMap,
   sync::{Arc, Mutex},
-  thread::{self, JoinHandle},
+  thread::{self, JoinHandle}, default,
 };
 
 use indicatif::{ProgressIterator, ProgressStyle};
@@ -19,6 +19,14 @@ use crate::{
   timeslot,
 };
 
+#[derive(Debug, Clone, Default)]
+pub(crate) enum SimulationProgressTracking {
+  MultiProgress(Arc<Mutex<indicatif::MultiProgress>>),
+  Float(Arc<Mutex<Vec<f32>>>),
+  #[default]
+  None
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub(crate) enum TemperatureFunction {
   T001,
@@ -32,7 +40,7 @@ pub(crate) struct ScheduleGenerationOptions {
   pub(crate) parallel_count: usize,
   pub(crate) initial_state: Option<ClassCalendar>,
   #[serde(skip)]
-  pub(crate) multi_progress: Option<Arc<Mutex<indicatif::MultiProgress>>>,
+  pub(crate) progress_tracker: SimulationProgressTracking,
   pub(crate) temperature_function: TemperatureFunction,
 }
 
@@ -58,7 +66,7 @@ pub(crate) fn generate_schedule(
       .parallel_count)
       .map(|_i: usize| {
         let local_constraints = constraints.clone();
-        let local_multi_progress = options.multi_progress.clone();
+        let local_multi_progress = options.progress_tracker.clone();
         let local_temperature_function = options.temperature_function.clone();
         thread::spawn(move || {
           simulated_annealing(&local_constraints, options.steps, local_multi_progress, &local_temperature_function)
@@ -152,7 +160,7 @@ pub(crate) struct SimulationRunReport {
 fn simulated_annealing(
   constraints: &SimulationConstraints,
   steps: usize,
-  multi_progress: Option<Arc<Mutex<indicatif::MultiProgress>>>,
+  progress_tracking: SimulationProgressTracking,
   temperature_function: &TemperatureFunction,
 ) -> (ClassCalendar, f64, SimulationRunReport) {
   // let seed: [u8; 32] = "Aritz123Aritz123Aritz123Aritz123"
@@ -175,7 +183,7 @@ fn simulated_annealing(
 
   let progress_bar = {
     let pb = indicatif::ProgressBar::new(steps as u64).with_style(progress_bar_style);
-    if let Some(multi_progress) = multi_progress {
+    if let Some(multi_progress) = progress_tracking {
       let multi_progress = multi_progress.lock().unwrap();
       multi_progress.add(pb)
     } else {
