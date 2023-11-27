@@ -5,6 +5,7 @@ use crate::{
 
 use egui::Color32;
 use itertools::Itertools;
+use std::fmt::Write;
 use std::{collections::BTreeMap, fs, path::Path};
 use tracing::trace;
 
@@ -22,13 +23,14 @@ fn preprocess_sql_file(contents: String) -> String {
       }
       true
     })
-    .map(|line| {
+    .fold(String::new(), |mut output, line| {
       if line.contains("ENGINE=InnoDB") {
-        return ");\n".into();
+        let _ = writeln!(output, ");");
+      } else {
+        let _ = writeln!(output, "{line}");
       }
-      format!("{line}\n")
+      output
     })
-    .collect()
 }
 
 pub(crate) fn import_temporary_database() -> anyhow::Result<()> {

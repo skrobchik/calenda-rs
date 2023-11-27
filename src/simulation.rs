@@ -6,7 +6,6 @@ use std::{
 
 use crate::stats_tracker::StatsTracker;
 use indicatif::ProgressStyle;
-use num::Integer;
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 

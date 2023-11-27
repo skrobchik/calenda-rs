@@ -56,6 +56,7 @@ fn run_app() {
   .expect("Something went wrong!");
 }
 
+#[allow(dead_code)]
 fn run_experiment_1() {
   database_importer::import_temporary_database().expect("Error");
   let schedule = database_importer::parse_database_data().expect("Failed to import");
@@ -92,6 +93,7 @@ fn run_experiment_1() {
   serde_json::ser::to_writer(writer, &results).unwrap()
 }
 
+#[allow(dead_code)]
 fn run_experiment_2() {
   database_importer::import_temporary_database().expect("Error");
   let schedule = database_importer::parse_database_data().expect("Failed to import");
