@@ -5,7 +5,7 @@ use crate::{
   class_filter::ClassFilter,
   professor_editor::ProfessorEditor,
   professor_schedule_widget::ProfessorScheduleWidget,
-  school_schedule::{class_calendar::ClassCalendar, SchoolSchedule, Semester},
+  school_schedule::{SchoolSchedule, Semester},
   simple_schedule_widget::SimpleScheduleWidget,
   simulation::{self, ScheduleGenerationOptions, ScheduleGenerationOutput},
 };
@@ -84,13 +84,22 @@ impl MyApp {
         }
       });
       ui.menu_button("Load results3.json", |ui| {
-        (0..21).into_iter().for_each(|i| {
+        (0..21).for_each(|i| {
           if ui.button(i.to_string()).clicked() {
-            let simulation_output = crate::load_results("results3.json").into_iter().nth(i).unwrap();
-            println!("Num Steps: {}", simulation_output.best_schedule_run_report.num_steps);
+            let simulation_output = crate::load_results("results3.json")
+              .into_iter()
+              .nth(i)
+              .unwrap();
+            println!(
+              "Num Steps: {}",
+              simulation_output.best_schedule_run_report.num_steps
+            );
             println!("Cost: {}", simulation_output.best_schedule_cost);
             let class_calendar = simulation_output.best_schedule;
-            self.school_schedule.replace_class_calendar(class_calendar).unwrap();
+            self
+              .school_schedule
+              .replace_class_calendar(class_calendar)
+              .unwrap();
           }
         })
       });

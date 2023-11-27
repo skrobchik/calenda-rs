@@ -4,11 +4,10 @@ use std::{
   thread::{self, JoinHandle}, default,
 };
 
-use indicatif::{ProgressIterator, ProgressStyle};
-use num::Integer;
+use crate::stats_tracker::StatsTracker;
+use indicatif::ProgressStyle;
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
-use tracing::info;
 
 use crate::{
   heuristics,
@@ -31,6 +30,8 @@ pub(crate) enum SimulationProgressTracking {
 pub(crate) enum TemperatureFunction {
   T001,
   T002,
+  T003,
+  T004,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -69,7 +70,12 @@ pub(crate) fn generate_schedule(
         let local_multi_progress = options.progress_tracker.clone();
         let local_temperature_function = options.temperature_function.clone();
         thread::spawn(move || {
-          simulated_annealing(&local_constraints, options.steps, local_multi_progress, &local_temperature_function)
+          simulated_annealing(
+            &local_constraints,
+            options.steps,
+            local_multi_progress,
+            &local_temperature_function,
+          )
         })
       })
       .collect();
@@ -85,69 +91,6 @@ pub(crate) fn generate_schedule(
       best_schedule_run_report: best_result.2,
     }
   })
-}
-
-#[derive(thiserror::Error, Debug)]
-pub enum StatsTrackerError {
-  #[error("You are logging the same stat twice per step `{0}`")]
-  MultiStatLogging(String),
-  #[error("You missed logging this stat in a step `{0}`")]
-  MissedStatLogging(String),
-}
-
-#[derive(Serialize, Deserialize)]
-struct StatsTracker {
-  step_index: usize,
-  stats_index: usize,
-  sampling_rate: usize,
-  stats: BTreeMap<String, Vec<serde_json::Value>>,
-  is_logging_step: bool,
-}
-
-impl StatsTracker {
-  fn new(sampling_rate: usize) -> Self {
-    StatsTracker {
-      step_index: 0,
-      stats_index: 0,
-      sampling_rate,
-      stats: Default::default(),
-      is_logging_step: true,
-    }
-  }
-
-  fn into_stats(self) -> BTreeMap<String, Vec<serde_json::Value>> {
-    self.stats
-  }
-
-  fn inc_step(&mut self) {
-    self.step_index += 1;
-    if self.step_index % self.sampling_rate == 0 {
-      self.is_logging_step = true;
-      self.stats_index += 1;
-    } else {
-      self.is_logging_step = false;
-    }
-  }
-
-  fn log_stat<T: Into<serde_json::Value>>(
-    &mut self,
-    stat_label: &str,
-    stat_value: T,
-  ) -> Result<(), StatsTrackerError> {
-    if !self.is_logging_step {
-      return Ok(());
-    }
-    let stat_value: serde_json::Value = stat_value.into();
-    let stat_vector = self.stats.entry(stat_label.into()).or_default();
-    match stat_vector.len().cmp(&self.stats_index) {
-      std::cmp::Ordering::Less => Err(StatsTrackerError::MissedStatLogging(stat_label.into())),
-      std::cmp::Ordering::Equal => {
-        stat_vector.push(stat_value);
-        Ok(())
-      }
-      std::cmp::Ordering::Greater => Err(StatsTrackerError::MultiStatLogging(stat_label.into())),
-    }
-  }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -258,12 +201,34 @@ fn temperature(x: f64, temperature_function_variant: &TemperatureFunction) -> f6
       } else {
         0.0
       }
-    },
+    }
     TemperatureFunction::T002 => {
-      if x <= 0.9 { 7.5*(0.5*(1.1*7.0*std::f64::consts::PI*x+std::f64::consts::FRAC_2_PI).sin()+0.5) } else { 0.0 }
-    },
-}
-  
+      if x <= 0.9 {
+        7.5
+          * (0.5 * (1.1 * 7.0 * std::f64::consts::PI * x + std::f64::consts::FRAC_2_PI).sin() + 0.5)
+      } else {
+        0.0
+      }
+    }
+    TemperatureFunction::T003 => {
+      if x <= 0.9 {
+        (1.0 - x)
+          * 10.0
+          * (0.5 * (1.1 * 7.0 * std::f64::consts::PI * x + std::f64::consts::FRAC_2_PI).sin() + 0.5)
+      } else {
+        0.0
+      }
+    }
+    TemperatureFunction::T004 => {
+      if x <= 0.9 {
+        (1.0 - x)
+          * 5.0
+          * (0.5 * (1.1 * 7.0 * std::f64::consts::PI * x + std::f64::consts::FRAC_2_PI).sin() + 0.5)
+      } else {
+        0.0
+      }
+    }
+  }
 
   // 0.0
   // 7.5*(0.5*(5.0*std::f64::consts::PI*x+std::f64::consts::FRAC_2_PI).sin()+0.5)

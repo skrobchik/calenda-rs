@@ -138,24 +138,25 @@ pub(crate) fn count_outside_session_length(
     let mut session_length: Vec<u8> = vec![0; max_class_id + 1];
     for timeslot_idx in timeslot::TIMESLOT_RANGE {
       let timeslot = state.get_timeslot(day_idx, timeslot_idx);
-      for class_id in 0..=max_class_id {
+      for (class_id, class_session_length) in
+        session_length.iter_mut().enumerate().take(max_class_id + 1)
+      {
         let count = timeslot.get(class_id).copied().unwrap_or_default();
         if count > 0 {
-          session_length[class_id] += 1;
-        } else if session_length[class_id] > 0 {
-          if session_length[class_id] < min_session_length
-            || max_session_length < session_length[class_id]
+          *class_session_length += 1;
+        } else if *class_session_length > 0 {
+          if *class_session_length < min_session_length
+            || max_session_length < *class_session_length
           {
             outside_session_length_count += 1;
           }
-          session_length[class_id] = 0;
+          *class_session_length = 0;
         }
       }
     }
-    for class_id in 0..=max_class_id {
-      if session_length[class_id] > 0
-        && (session_length[class_id] < min_session_length
-          || max_session_length < session_length[class_id])
+    for &class_session_length in session_length.iter().take(max_class_id + 1) {
+      if class_session_length > 0
+        && (class_session_length < min_session_length || max_session_length < class_session_length)
       {
         outside_session_length_count += 1;
       }
