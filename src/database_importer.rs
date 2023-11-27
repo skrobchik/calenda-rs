@@ -6,7 +6,7 @@ use crate::{
 use egui::Color32;
 use itertools::Itertools;
 use std::{collections::BTreeMap, fs, path::Path};
-use tracing::{info, trace};
+use tracing::{trace};
 
 const TEMP_DB_PATH: &str = "temp_db.sqlite";
 
@@ -143,8 +143,8 @@ pub(crate) fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
   let colors_iterator = crate::color_list::COLOR_LIST.iter().cycle().map(|s| {
     let color = csscolorparser::parse(s).unwrap();
     let color = color.to_rgba8();
-    let color = Color32::from_rgba_unmultiplied(color[0], color[1], color[2], color[3]);
-    color
+    
+    Color32::from_rgba_unmultiplied(color[0], color[1], color[2], color[3])
   });
 
   for (my_class, color) in classes.iter().take(num_classes).zip(colors_iterator) {

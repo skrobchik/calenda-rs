@@ -4,11 +4,11 @@ use std::{
   thread::{self, JoinHandle},
 };
 
-use indicatif::{ProgressIterator, ProgressStyle};
+use indicatif::{ProgressStyle};
 use num::Integer;
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
-use tracing::info;
+
 
 use crate::{
   heuristics,

@@ -32,7 +32,7 @@ pub(crate) fn load_results<P: AsRef<std::path::Path>>(
 
 fn run_app() {
   database_importer::import_temporary_database().expect("Error");
-  let mut schedule = database_importer::parse_database_data().expect("Failed to import");
+  let schedule = database_importer::parse_database_data().expect("Failed to import");
 
   // let simulation_output = load_results("results3.json").into_iter().nth(20).unwrap();
   // println!("Num Steps: {}", simulation_output.best_schedule_run_report.num_steps);
