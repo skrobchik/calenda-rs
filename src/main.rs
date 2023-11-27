@@ -31,6 +31,7 @@ pub(crate) fn load_results<P: AsRef<std::path::Path>>(
   serde_json::from_reader(reader).unwrap()
 }
 
+#[allow(dead_code)]
 fn run_app() {
   database_importer::import_temporary_database().expect("Error");
   let schedule = database_importer::parse_database_data().expect("Failed to import");
