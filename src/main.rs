@@ -9,6 +9,7 @@ pub mod professor_schedule_widget;
 pub mod school_schedule;
 pub mod simple_schedule_widget;
 pub mod simulation;
+pub mod stats_tracker;
 pub mod timeslot;
 pub mod week_calendar;
 
