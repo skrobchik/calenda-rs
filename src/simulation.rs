@@ -63,7 +63,12 @@ pub(crate) fn generate_schedule(
         let local_multi_progress = options.multi_progress.clone();
         let local_temperature_function = options.temperature_function.clone();
         thread::spawn(move || {
-          simulated_annealing(&local_constraints, options.steps, local_multi_progress, &local_temperature_function)
+          simulated_annealing(
+            &local_constraints,
+            options.steps,
+            local_multi_progress,
+            &local_temperature_function,
+          )
         })
       })
       .collect();
@@ -252,18 +257,34 @@ fn temperature(x: f64, temperature_function_variant: &TemperatureFunction) -> f6
       } else {
         0.0
       }
-    },
+    }
     TemperatureFunction::T002 => {
-      if x <= 0.9 { 7.5*(0.5*(1.1*7.0*std::f64::consts::PI*x+std::f64::consts::FRAC_2_PI).sin()+0.5) } else { 0.0 }
-    },
+      if x <= 0.9 {
+        7.5
+          * (0.5 * (1.1 * 7.0 * std::f64::consts::PI * x + std::f64::consts::FRAC_2_PI).sin() + 0.5)
+      } else {
+        0.0
+      }
+    }
     TemperatureFunction::T003 => {
-      if x <= 0.9 { (1.0-x)*10.0*(0.5*(1.1*7.0*std::f64::consts::PI*x+std::f64::consts::FRAC_2_PI).sin()+0.5) } else { 0.0 }
-    },
+      if x <= 0.9 {
+        (1.0 - x)
+          * 10.0
+          * (0.5 * (1.1 * 7.0 * std::f64::consts::PI * x + std::f64::consts::FRAC_2_PI).sin() + 0.5)
+      } else {
+        0.0
+      }
+    }
     TemperatureFunction::T004 => {
-      if x <= 0.9 { (1.0-x)*5.0*(0.5*(1.1*7.0*std::f64::consts::PI*x+std::f64::consts::FRAC_2_PI).sin()+0.5) } else { 0.0 }
-    },
-}
-  
+      if x <= 0.9 {
+        (1.0 - x)
+          * 5.0
+          * (0.5 * (1.1 * 7.0 * std::f64::consts::PI * x + std::f64::consts::FRAC_2_PI).sin() + 0.5)
+      } else {
+        0.0
+      }
+    }
+  }
 
   // 0.0
   // 7.5*(0.5*(5.0*std::f64::consts::PI*x+std::f64::consts::FRAC_2_PI).sin()+0.5)
