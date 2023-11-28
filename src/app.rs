@@ -7,7 +7,8 @@ use crate::{
   professor_schedule_widget::ProfessorScheduleWidget,
   school_schedule::{SchoolSchedule, Semester},
   simple_schedule_widget::SimpleScheduleWidget,
-  simulation::{self, SimulationOptions, SimulationOutput},
+  simulation::{self, SimulationOutput},
+  simulation_options::{self, SimulationOptions},
 };
 use eframe::egui;
 use egui::Ui;
@@ -163,8 +164,8 @@ impl eframe::App for MyApp {
             simulation_constraints: self.school_schedule.get_simulation_constraints().clone(),
             total_steps: 500_000,
             initial_state: None,
-            temperature_function: simulation::TemperatureFunction::T001,
-            progress: simulation::ProgressOption::None,
+            temperature_function: simulation_options::TemperatureFunction::T001,
+            progress: simulation_options::ProgressOption::None,
             advanced_options: Default::default(),
           }],
           None,

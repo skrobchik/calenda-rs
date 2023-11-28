@@ -9,6 +9,7 @@ pub mod professor_schedule_widget;
 pub mod school_schedule;
 pub mod simple_schedule_widget;
 pub mod simulation;
+pub mod simulation_options;
 pub mod stats_tracker;
 pub mod timeslot;
 pub mod week_calendar;
@@ -16,7 +17,7 @@ pub mod week_calendar;
 use crate::app::MyApp;
 
 use indicatif::{MultiProgress, ProgressStyle};
-use simulation::{SimulationOptions, TemperatureFunction};
+use simulation_options::{SimulationOptions, TemperatureFunction};
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
 
@@ -78,8 +79,8 @@ fn run_experiment_1() {
       simulation_constraints: schedule.get_simulation_constraints().clone(),
       total_steps: total_steps as usize,
       initial_state: None,
-      progress: simulation::ProgressOption::MultiProgress(mp.clone()),
-      temperature_function: simulation::TemperatureFunction::T001,
+      progress: simulation_options::ProgressOption::MultiProgress(mp.clone()),
+      temperature_function: simulation_options::TemperatureFunction::T001,
       advanced_options: Default::default(),
     })
     .collect();
@@ -114,7 +115,7 @@ fn run_experiment_2() {
       simulation_constraints: schedule.get_simulation_constraints().clone(),
       total_steps,
       initial_state: None,
-      progress: simulation::ProgressOption::MultiProgress(mp.clone()),
+      progress: simulation_options::ProgressOption::MultiProgress(mp.clone()),
       temperature_function,
       advanced_options: Default::default(),
     })
@@ -157,9 +158,9 @@ fn run_experiment_3() {
         simulation_constraints: schedule.get_simulation_constraints().clone(),
         total_steps,
         initial_state: None,
-        progress: simulation::ProgressOption::ProgressBar(pb.clone()),
-        temperature_function: simulation::TemperatureFunction::T001,
-        advanced_options: simulation::AdvancedSimulationOptions { progress_bar_update_interval },
+        progress: simulation_options::ProgressOption::ProgressBar(pb.clone()),
+        temperature_function: simulation_options::TemperatureFunction::T001,
+        advanced_options: simulation_options::AdvancedSimulationOptions { progress_bar_update_interval },
       }
     })
     .collect();
