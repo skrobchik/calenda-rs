@@ -180,8 +180,8 @@ fn main() {
     .finish();
   tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 
-  run_experiment_1()
+  // run_experiment_1()
   // run_experiment_2()
   // run_experiment_3()
-  // run_app()
+  run_app()
 }

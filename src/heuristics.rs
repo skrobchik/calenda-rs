@@ -190,23 +190,21 @@ pub(crate) fn count_inconsistent_class_timeslots(state: &ClassCalendar) -> f64 {
 
 #[cfg(test)]
 mod test {
-  use crate::timeslot::{TIMESLOT_19_00, TIMESLOT_19_30};
-
   use super::*;
 
   #[test]
   fn count_outside_session_length_test() {
     let mut state = ClassCalendar::new();
     assert_eq!(count_outside_session_length(&state, 2, 4), 0.0);
-    state.add_one_class(0, timeslot::TIMESLOT_17_30, 0);
+    state.add_one_class(0, timeslot::TIMESLOT_15_00, 0);
     assert_eq!(count_outside_session_length(&state, 2, 4), 1.0);
+    state.add_one_class(0, timeslot::TIMESLOT_16_00, 0);
+    assert_eq!(count_outside_session_length(&state, 2, 4), 0.0);
+    state.add_one_class(0, timeslot::TIMESLOT_17_00, 0);
+    assert_eq!(count_outside_session_length(&state, 2, 4), 0.0);
     state.add_one_class(0, timeslot::TIMESLOT_18_00, 0);
     assert_eq!(count_outside_session_length(&state, 2, 4), 0.0);
-    state.add_one_class(0, timeslot::TIMESLOT_18_30, 0);
-    assert_eq!(count_outside_session_length(&state, 2, 4), 0.0);
     state.add_one_class(0, timeslot::TIMESLOT_19_00, 0);
-    assert_eq!(count_outside_session_length(&state, 2, 4), 0.0);
-    state.add_one_class(0, timeslot::TIMESLOT_19_30, 0);
     assert_eq!(count_outside_session_length(&state, 2, 4), 1.0);
   }
 
@@ -214,17 +212,17 @@ mod test {
   fn count_inconsistent_class_timeslots_test() {
     let mut state = ClassCalendar::new();
     assert_eq!(count_inconsistent_class_timeslots(&state), 0.0);
-    state.add_one_class(0, TIMESLOT_19_30, 7);
+    state.add_one_class(0, timeslot::TIMESLOT_18_00, 7);
     assert_eq!(count_inconsistent_class_timeslots(&state), 1.0);
-    state.add_one_class(4, TIMESLOT_19_30, 6);
+    state.add_one_class(4, timeslot::TIMESLOT_18_00, 6);
     assert_eq!(count_inconsistent_class_timeslots(&state), 2.0);
-    state.add_one_class(4, TIMESLOT_19_30, 7);
+    state.add_one_class(4, timeslot::TIMESLOT_18_00, 7);
     assert_eq!(count_inconsistent_class_timeslots(&state), 1.0);
-    state.add_one_class(3, TIMESLOT_19_00, 6);
+    state.add_one_class(3, timeslot::TIMESLOT_19_00, 6);
     assert_eq!(count_inconsistent_class_timeslots(&state), 2.0);
-    state.add_one_class(3, TIMESLOT_19_30, 6);
+    state.add_one_class(3, timeslot::TIMESLOT_18_00, 6);
     assert_eq!(count_inconsistent_class_timeslots(&state), 1.0);
-    state.add_one_class(0, TIMESLOT_19_00, 6);
+    state.add_one_class(0, timeslot::TIMESLOT_19_00, 6);
     assert_eq!(count_inconsistent_class_timeslots(&state), 0.0);
   }
 }

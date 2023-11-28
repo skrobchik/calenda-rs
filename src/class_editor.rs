@@ -139,13 +139,10 @@ impl<'a> ClassEditor<'a> {
 }
 
 fn to_human_time(class_hours: u8) -> String {
-  // each unit is worth 30 minutes
-  let hours = class_hours / 2;
-  let half_hours = class_hours % 2;
-  match (hours > 0, half_hours > 0) {
-    (true, true) => format!("{} hr. 30 min.", hours),
-    (true, false) => format!("{} hr.", hours),
-    (false, true) => "30 min.".to_string(),
-    (false, false) => "0 min.".to_string(),
+  // each unit is worth 60 minutes
+  let hours = class_hours;
+  match hours == 1 {
+    true => "1 hr.".to_string(),
+    false => format!("{} hrs.", hours),
   }
 }

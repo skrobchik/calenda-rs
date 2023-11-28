@@ -200,7 +200,7 @@ impl SchoolSchedule {
     class_list.push(Class {
       professor_id: 0,
       classroom_type: ClassroomType::Single,
-      class_hours: 4,
+      class_hours: 2,
       semester: Semester::S1,
       group: Group::G1,
     });
@@ -210,13 +210,7 @@ impl SchoolSchedule {
       .add_one_class(4, timeslot::TIMESLOT_18_00, class_id);
     self
       .class_calendar
-      .add_one_class(4, timeslot::TIMESLOT_18_30, class_id);
-    self
-      .class_calendar
       .add_one_class(4, timeslot::TIMESLOT_19_00, class_id);
-    self
-      .class_calendar
-      .add_one_class(4, timeslot::TIMESLOT_19_30, class_id);
 
     assert_eq!(
       self
@@ -224,13 +218,7 @@ impl SchoolSchedule {
         .get_count(4, timeslot::TIMESLOT_18_00, class_id)
         + self
           .class_calendar
-          .get_count(4, timeslot::TIMESLOT_18_30, class_id)
-        + self
-          .class_calendar
-          .get_count(4, timeslot::TIMESLOT_19_00, class_id)
-        + self
-          .class_calendar
-          .get_count(4, timeslot::TIMESLOT_19_30, class_id),
+          .get_count(4, timeslot::TIMESLOT_19_00, class_id),
       class_list[class_id].class_hours
     );
     assert_eq!(class_list.len(), class_metadata_list.len());
