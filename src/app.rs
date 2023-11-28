@@ -165,6 +165,7 @@ impl eframe::App for MyApp {
             initial_state: None,
             temperature_function: simulation::TemperatureFunction::T001,
             progress: simulation::ProgressOption::None,
+            advanced_options: Default::default(),
           }],
           None,
         ));

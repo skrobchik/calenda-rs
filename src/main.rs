@@ -15,7 +15,7 @@ pub mod week_calendar;
 
 use crate::app::MyApp;
 
-use indicatif::MultiProgress;
+use indicatif::{MultiProgress, ProgressStyle};
 use simulation::{SimulationOptions, TemperatureFunction};
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
@@ -75,6 +75,7 @@ fn run_experiment_1() {
       initial_state: None,
       progress: simulation::ProgressOption::MultiProgress(mp.clone()),
       temperature_function: simulation::TemperatureFunction::T001,
+      advanced_options: Default::default(),
     })
     .collect();
 
@@ -110,6 +111,54 @@ fn run_experiment_2() {
       initial_state: None,
       progress: simulation::ProgressOption::MultiProgress(mp.clone()),
       temperature_function,
+      advanced_options: Default::default(),
+    })
+    .collect();
+
+  let results = simulation::generate_schedule(simulation_options, None)
+    .join()
+    .unwrap();
+
+  let file = std::fs::File::create("results.json").unwrap();
+  let writer = std::io::BufWriter::new(file);
+  serde_json::ser::to_writer(writer, &results).unwrap()
+}
+
+#[allow(dead_code)]
+fn run_experiment_3() {
+  database_importer::import_temporary_database().expect("Error");
+  let schedule = database_importer::parse_database_data().expect("Failed to import");
+
+  let total_steps = 2_000_000;
+
+  let progress_bar_update_interval_list = vec![1, 2, 10, 100, 1000, 20_000];
+
+  let mp = MultiProgress::new();
+
+  let simulation_options: Vec<SimulationOptions> = progress_bar_update_interval_list
+    .into_iter()
+    .map(|progress_bar_update_interval| {
+      let progress_bar_style = ProgressStyle::with_template(
+        "{prefix} progress_bar_update_interval {spinner:.green} [{elapsed_precise}] [{bar:.cyan/blue}] {human_pos}/{human_len} ({percent} %) ({eta}) ({per_sec})",
+      )
+      .unwrap()
+      .progress_chars("#>-");
+
+      let pb = indicatif::ProgressBar::new(total_steps as u64).with_style(progress_bar_style);
+      let pb = mp.add(pb);
+      pb.set_prefix(progress_bar_update_interval.to_string());
+
+      let mut advanced_options = simulation::AdvancedSimulationOptions::default();
+      advanced_options.progress_bar_update_interval = progress_bar_update_interval;
+
+      SimulationOptions {
+        simulation_constraints: schedule.get_simulation_constraints().clone(),
+        total_steps,
+        initial_state: None,
+        progress: simulation::ProgressOption::ProgressBar(pb.clone()),
+        temperature_function: simulation::TemperatureFunction::T001,
+        advanced_options,
+      }
     })
     .collect();
 
@@ -130,5 +179,6 @@ fn main() {
 
   // run_experiment_1()
   // run_experiment_2()
-  run_app()
+  run_experiment_3()
+  // run_app()
 }

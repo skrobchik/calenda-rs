@@ -43,6 +43,19 @@ const _: () = {
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub(crate) struct AdvancedSimulationOptions {
+  pub(crate) progress_bar_update_interval: usize,
+}
+
+impl Default for AdvancedSimulationOptions {
+  fn default() -> Self {
+    Self {
+      progress_bar_update_interval: 100,
+    }
+  }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub(crate) struct SimulationOptions {
   pub(crate) simulation_constraints: SimulationConstraints,
   pub(crate) total_steps: usize,
@@ -50,6 +63,7 @@ pub(crate) struct SimulationOptions {
   #[serde(skip)]
   pub(crate) progress: ProgressOption,
   pub(crate) temperature_function: TemperatureFunction,
+  pub(crate) advanced_options: AdvancedSimulationOptions,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -149,8 +163,10 @@ fn simulated_annealing<R: Rng>(options: SimulationOptions, mut rng: R) -> Simula
     }
 
     stats.inc_step();
-    if let Some(pb) = progress_bar.as_mut() {
-      pb.inc(1)
+    if step % options.advanced_options.progress_bar_update_interval == 0 {
+      if let Some(pb) = progress_bar.as_mut() {
+        pb.set_position(step as u64)
+      }
     }
   }
 
@@ -164,6 +180,7 @@ fn simulated_annealing<R: Rng>(options: SimulationOptions, mut rng: R) -> Simula
       initial_state: options.initial_state,
       progress: ProgressOption::None,
       temperature_function: options.temperature_function,
+      advanced_options: Default::default(),
     },
     final_calendar: state,
     final_cost: state_cost,
