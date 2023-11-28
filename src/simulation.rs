@@ -6,6 +6,7 @@ use std::{
 use crate::stats_tracker::StatsTracker;
 use indicatif::ProgressStyle;
 use rand::prelude::*;
+use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -82,12 +83,22 @@ pub(crate) struct SimulationOutput {
 
 pub(crate) fn generate_schedule(
   options_list: Vec<SimulationOptions>,
-  _seed: Option<u64>,
+  seed: Option<u64>,
 ) -> JoinHandle<Vec<SimulationOutput>> {
   thread::spawn(move || {
+    let rng = match seed {
+      Some(seed) => ChaCha8Rng::seed_from_u64(seed),
+      None => ChaCha8Rng::from_entropy(),
+    };
+
     let handles: Vec<JoinHandle<SimulationOutput>> = options_list
       .into_iter()
-      .map(|options| thread::spawn(move || simulated_annealing(options, thread_rng())))
+      .enumerate()
+      .map(|(simulation_idx, options)| {
+        let mut rng = rng.clone();
+        rng.set_stream(simulation_idx as u64);
+        thread::spawn(move || simulated_annealing(options, rng))
+      })
       .collect();
 
     let results: Vec<SimulationOutput> = handles.into_iter().map(|h| h.join().unwrap()).collect();
