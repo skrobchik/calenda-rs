@@ -436,6 +436,7 @@ dependencies = [
  "itertools-num",
  "num",
  "rand",
+ "rand_chacha",
  "serde",
  "serde_json",
  "sqlite",

@@ -46,21 +46,21 @@ impl StatsTracker {
 
   pub(crate) fn log_stat<T: Into<serde_json::Value>>(
     &mut self,
-    stat_label: &str,
-    stat_value: T,
+    label: &str,
+    value: T,
   ) -> Result<(), StatsTrackerError> {
     if !self.is_logging_step {
       return Ok(());
     }
-    let stat_value: serde_json::Value = stat_value.into();
-    let stat_vector = self.stats.entry(stat_label.into()).or_default();
+    let value: serde_json::Value = value.into();
+    let stat_vector = self.stats.entry(label.into()).or_default();
     match stat_vector.len().cmp(&self.stats_index) {
-      std::cmp::Ordering::Less => Err(StatsTrackerError::MissedStatLogging(stat_label.into())),
+      std::cmp::Ordering::Less => Err(StatsTrackerError::MissedStatLogging(label.into())),
       std::cmp::Ordering::Equal => {
-        stat_vector.push(stat_value);
+        stat_vector.push(value);
         Ok(())
       }
-      std::cmp::Ordering::Greater => Err(StatsTrackerError::MultiStatLogging(stat_label.into())),
+      std::cmp::Ordering::Greater => Err(StatsTrackerError::MultiStatLogging(label.into())),
     }
   }
 }

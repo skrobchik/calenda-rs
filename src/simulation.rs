@@ -1,7 +1,6 @@
 use std::{
   collections::BTreeMap,
-  sync::{Arc, Mutex},
-  thread::{self, JoinHandle}, default,
+  thread::{self, JoinHandle},
 };
 
 use crate::stats_tracker::StatsTracker;
@@ -19,11 +18,11 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Default)]
-pub(crate) enum SimulationProgressTracking {
-  MultiProgress(Arc<Mutex<indicatif::MultiProgress>>),
-  Float(Arc<Mutex<Vec<f32>>>),
+pub(crate) enum ProgressOption {
+  ProgressBar(indicatif::ProgressBar),
+  MultiProgress(indicatif::MultiProgress),
   #[default]
-  None
+  None,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -34,62 +33,52 @@ pub(crate) enum TemperatureFunction {
   T004,
 }
 
+const _: () = {
+  fn assert_send<T: Send>() {}
+  fn assert_sync<T: Sync>() {}
+  fn assert_all() {
+    assert_send::<SimulationOptions>();
+    assert_sync::<SimulationOptions>();
+  }
+};
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub(crate) struct ScheduleGenerationOptions {
+pub(crate) struct SimulationOptions {
   pub(crate) simulation_constraints: SimulationConstraints,
-  pub(crate) steps: usize,
-  pub(crate) parallel_count: usize,
+  pub(crate) total_steps: usize,
   pub(crate) initial_state: Option<ClassCalendar>,
   #[serde(skip)]
-  pub(crate) progress_tracker: SimulationProgressTracking,
+  pub(crate) progress: ProgressOption,
   pub(crate) temperature_function: TemperatureFunction,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub(crate) struct ScheduleGenerationOutput {
-  pub(crate) best_schedule: ClassCalendar,
-  pub(crate) best_schedule_cost: f64,
-  pub(crate) best_schedule_run_report: SimulationRunReport,
+pub(crate) struct SimulationOutput {
+  pub(crate) simulation_options: SimulationOptions,
+  pub(crate) final_calendar: ClassCalendar,
+  pub(crate) final_cost: f64,
+  pub(crate) start_time: std::time::SystemTime,
+  pub(crate) end_time: std::time::SystemTime,
+
+  /// Not necesarilly equal to `end_time - start_time` (e.g., the system time was changed during the simulation run).
+  pub(crate) duration: std::time::Duration,
+
+  pub(crate) stats: BTreeMap<String, Vec<serde_json::Value>>,
 }
 
 pub(crate) fn generate_schedule(
-  options: ScheduleGenerationOptions,
-) -> JoinHandle<ScheduleGenerationOutput> {
-  if options.initial_state.is_some() {
-    unimplemented!()
-  }
+  options_list: Vec<SimulationOptions>,
+  _seed: Option<u64>,
+) -> JoinHandle<Vec<SimulationOutput>> {
   thread::spawn(move || {
-    // let n = std::thread::available_parallelism()
-    //   .map_or(1, |x| x.into())
-    //   .div_ceil(&2_usize);
-    let constraints = Arc::new(options.simulation_constraints);
-    let handles: Vec<JoinHandle<(ClassCalendar, f64, SimulationRunReport)>> = (0..options
-      .parallel_count)
-      .map(|_i: usize| {
-        let local_constraints = constraints.clone();
-        let local_multi_progress = options.progress_tracker.clone();
-        let local_temperature_function = options.temperature_function.clone();
-        thread::spawn(move || {
-          simulated_annealing(
-            &local_constraints,
-            options.steps,
-            local_multi_progress,
-            &local_temperature_function,
-          )
-        })
-      })
-      .collect();
-    let results: Vec<(ClassCalendar, f64, SimulationRunReport)> =
-      handles.into_iter().map(|h| h.join().unwrap()).collect();
-    let best_result = results
+    let handles: Vec<JoinHandle<SimulationOutput>> = options_list
       .into_iter()
-      .min_by(|x, y| x.1.partial_cmp(&y.1).unwrap())
-      .unwrap();
-    ScheduleGenerationOutput {
-      best_schedule: best_result.0,
-      best_schedule_cost: best_result.1,
-      best_schedule_run_report: best_result.2,
-    }
+      .map(|options| thread::spawn(move || simulated_annealing(options, thread_rng())))
+      .collect();
+
+    let results: Vec<SimulationOutput> = handles.into_iter().map(|h| h.join().unwrap()).collect();
+
+    results
   })
 }
 
@@ -100,47 +89,43 @@ pub(crate) struct SimulationRunReport {
   pub(crate) start_time: std::time::SystemTime,
 }
 
-fn simulated_annealing(
-  constraints: &SimulationConstraints,
-  steps: usize,
-  progress_tracking: SimulationProgressTracking,
-  temperature_function: &TemperatureFunction,
-) -> (ClassCalendar, f64, SimulationRunReport) {
-  // let seed: [u8; 32] = "Aritz123Aritz123Aritz123Aritz123"
-  //   .as_bytes()
-  //   .try_into()
-  //   .unwrap();
-  // let mut rng = rand::rngs::StdRng::from_seed(seed);
-  let mut rng = rand::rngs::ThreadRng::default();
+fn simulated_annealing<R: Rng>(options: SimulationOptions, mut rng: R) -> SimulationOutput {
+  let start_time = std::time::SystemTime::now();
+  let start_instant = std::time::Instant::now();
 
-  let mut stats_tracker = StatsTracker::new(steps.div_ceil(5_000_usize));
+  let constraints = &options.simulation_constraints;
+  let total_steps = &options.total_steps;
+  let temperature_function = &options.temperature_function;
+
+  let mut stats = StatsTracker::new(total_steps.div_ceil(5_000_usize));
 
   let mut state = random_init(constraints, &mut rng);
   let mut state_cost = cost(&state, constraints);
 
-  let progress_bar_style = ProgressStyle::with_template(
-    "{spinner:.green} [{elapsed_precise}] [{bar:.cyan/blue}] {human_pos}/{human_len} ({percent} %) ({eta}) ({per_sec})",
-  )
-  .unwrap()
-  .progress_chars("#>-");
-
-  let progress_bar = {
-    let pb = indicatif::ProgressBar::new(steps as u64).with_style(progress_bar_style);
-    if let Some(multi_progress) = progress_tracking {
-      let multi_progress = multi_progress.lock().unwrap();
-      multi_progress.add(pb)
-    } else {
-      pb
+  let mut progress_bar: Option<indicatif::ProgressBar> = {
+    match options.progress {
+      ProgressOption::ProgressBar(pb) => Some(pb),
+      ProgressOption::MultiProgress(mp) => {
+        let progress_bar_style = ProgressStyle::with_template(
+            "{spinner:.green} [{elapsed_precise}] [{bar:.cyan/blue}] {human_pos}/{human_len} ({percent} %) ({eta}) ({per_sec})",
+          )
+          .unwrap()
+          .progress_chars("#>-");
+        let pb = indicatif::ProgressBar::new(*total_steps as u64).with_style(progress_bar_style);
+        let pb = mp.add(pb);
+        Some(pb)
+      }
+      ProgressOption::None => None,
     }
   };
 
-  for step in 0..steps {
-    stats_tracker.log_stat("curr_cost", state_cost).unwrap();
+  for step in 0..*total_steps {
+    stats.log_stat("curr_cost", state_cost).unwrap();
     let t = {
-      let x = ((step + 1) as f64) / (steps as f64);
-      stats_tracker.log_stat("x", x).unwrap();
+      let x = ((step + 1) as f64) / (*total_steps as f64);
+      stats.log_stat("x", x).unwrap();
       let t = temperature(x, temperature_function);
-      stats_tracker.log_stat("temperature", t).unwrap();
+      stats.log_stat("temperature", t).unwrap();
       t
     };
     let old_cost = state_cost;
@@ -148,34 +133,45 @@ fn simulated_annealing(
 
     let new_cost = cost(&state, constraints);
 
-    stats_tracker.log_stat("new_cost", new_cost).unwrap();
+    stats.log_stat("new_cost", new_cost).unwrap();
 
     let ap = acceptance_probability(old_cost, new_cost, t);
-    stats_tracker
-      .log_stat("acceptance_probability", ap)
-      .unwrap();
+    stats.log_stat("acceptance_probability", ap).unwrap();
 
     if ap >= rng.gen_range(0.0..=1.0) {
-      stats_tracker.log_stat("accepted", true).unwrap();
+      stats.log_stat("accepted", true).unwrap();
       // keep change
       state_cost = new_cost;
     } else {
-      stats_tracker.log_stat("accepted", false).unwrap();
+      stats.log_stat("accepted", false).unwrap();
       revert_change(&mut state, &delta);
       state_cost = old_cost;
     }
 
-    stats_tracker.inc_step();
-    progress_bar.inc(1);
+    stats.inc_step();
+    if let Some(pb) = progress_bar.as_mut() {
+      pb.inc(1)
+    }
   }
 
-  let run_report = SimulationRunReport {
-    num_steps: steps as u64,
-    stats: stats_tracker.into_stats(),
-    start_time: std::time::SystemTime::now(),
-  };
+  let end_time = std::time::SystemTime::now();
+  let duration = start_instant.elapsed();
 
-  (state, state_cost, run_report)
+  SimulationOutput {
+    simulation_options: SimulationOptions {
+      simulation_constraints: options.simulation_constraints,
+      total_steps: options.total_steps,
+      initial_state: options.initial_state,
+      progress: ProgressOption::None,
+      temperature_function: options.temperature_function,
+    },
+    final_calendar: state,
+    final_cost: state_cost,
+    start_time,
+    end_time,
+    duration,
+    stats: stats.into_stats(),
+  }
 }
 
 fn acceptance_probability(old_cost: f64, new_cost: f64, temperature: f64) -> f64 {

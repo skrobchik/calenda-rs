@@ -7,7 +7,7 @@ use crate::{
   professor_schedule_widget::ProfessorScheduleWidget,
   school_schedule::{SchoolSchedule, Semester},
   simple_schedule_widget::SimpleScheduleWidget,
-  simulation::{self, ScheduleGenerationOptions, ScheduleGenerationOutput},
+  simulation::{self, SimulationOptions, SimulationOutput},
 };
 use eframe::egui;
 use egui::Ui;
@@ -24,7 +24,7 @@ pub(crate) struct MyApp {
   availability_editor_professor_id: Option<usize>,
   availability_editor_widget_open: bool,
   #[serde(skip)]
-  new_schedule_join_handle: Option<JoinHandle<ScheduleGenerationOutput>>,
+  new_schedule_join_handle: Option<JoinHandle<Vec<SimulationOutput>>>,
   schedule_widget_filter: ClassFilter,
 }
 
@@ -92,10 +92,10 @@ impl MyApp {
               .unwrap();
             println!(
               "Num Steps: {}",
-              simulation_output.best_schedule_run_report.num_steps
+              simulation_output.simulation_options.total_steps
             );
-            println!("Cost: {}", simulation_output.best_schedule_cost);
-            let class_calendar = simulation_output.best_schedule;
+            println!("Cost: {}", simulation_output.final_cost);
+            let class_calendar = simulation_output.final_calendar;
             self
               .school_schedule
               .replace_class_calendar(class_calendar)
@@ -147,7 +147,10 @@ impl eframe::App for MyApp {
             .unwrap()
             .join()
             .unwrap()
-            .best_schedule;
+            .into_iter()
+            .nth(0)
+            .unwrap()
+            .final_calendar;
           self
             .school_schedule
             .replace_class_calendar(new_class_calendar)
@@ -155,15 +158,16 @@ impl eframe::App for MyApp {
           info!("Applied new schedule");
         }
       } else if ui.button("Optimize").clicked() {
-        self.new_schedule_join_handle =
-          Some(simulation::generate_schedule(ScheduleGenerationOptions {
+        self.new_schedule_join_handle = Some(simulation::generate_schedule(
+          vec![SimulationOptions {
             simulation_constraints: self.school_schedule.get_simulation_constraints().clone(),
-            steps: 500_000,
-            parallel_count: 1,
+            total_steps: 500_000,
             initial_state: None,
-            progress_tracker: None,
             temperature_function: simulation::TemperatureFunction::T001,
-          }));
+            progress: simulation::ProgressOption::None,
+          }],
+          None,
+        ));
       }
     });
 

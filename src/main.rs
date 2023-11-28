@@ -13,18 +13,16 @@ pub mod stats_tracker;
 pub mod timeslot;
 pub mod week_calendar;
 
-use std::sync::{Arc, Mutex};
-
 use crate::app::MyApp;
 
 use indicatif::MultiProgress;
-use simulation::{ScheduleGenerationOptions, TemperatureFunction};
+use simulation::{SimulationOptions, TemperatureFunction};
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
 
 pub(crate) fn load_results<P: AsRef<std::path::Path>>(
   path: P,
-) -> Vec<simulation::ScheduleGenerationOutput> {
+) -> Vec<simulation::SimulationOutput> {
   let path = path.as_ref();
   let file = std::fs::File::open(path).unwrap();
   let reader = std::io::BufReader::new(file);
@@ -67,26 +65,29 @@ fn run_experiment_1() {
     2097152, 4194304, 8388608, 16777216, 33554432, 67108864, 134217728,
   ];
 
-  let mp = Arc::new(Mutex::new(MultiProgress::new()));
-  let handles: Vec<std::thread::JoinHandle<simulation::ScheduleGenerationOutput>> = steps_vec
+  // TODO: Refactor
+  let mp = MultiProgress::new();
+  let handles: Vec<std::thread::JoinHandle<Vec<simulation::SimulationOutput>>> = steps_vec
     .into_iter()
     .map(|steps| {
       println!("Starting run for {} steps", steps);
-      let result = simulation::generate_schedule(ScheduleGenerationOptions {
-        simulation_constraints: schedule.get_simulation_constraints().clone(),
-        steps,
-        parallel_count: 1,
-        initial_state: None,
-        progress_tracker: Some(mp.clone()),
-        temperature_function: simulation::TemperatureFunction::T001,
-      });
-      result
+
+      simulation::generate_schedule(
+        vec![SimulationOptions {
+          simulation_constraints: schedule.get_simulation_constraints().clone(),
+          total_steps: steps,
+          initial_state: None,
+          temperature_function: simulation::TemperatureFunction::T001,
+          progress: simulation::ProgressOption::MultiProgress(mp.clone()),
+        }],
+        None,
+      )
     })
     .collect();
 
-  let results: Vec<simulation::ScheduleGenerationOutput> = handles
+  let results: Vec<simulation::SimulationOutput> = handles
     .into_iter()
-    .map(|handle| handle.join().unwrap())
+    .map(|handle| handle.join().unwrap().into_iter().next().unwrap())
     .collect();
 
   let file = std::fs::File::create("results.json").unwrap();
@@ -107,27 +108,30 @@ fn run_experiment_2() {
     TemperatureFunction::T003,
   ];
 
-  let mp = Arc::new(Mutex::new(MultiProgress::new()));
-  let handles: Vec<std::thread::JoinHandle<simulation::ScheduleGenerationOutput>> =
+  // TODO: Refactor
+  let mp = MultiProgress::new();
+  let handles: Vec<std::thread::JoinHandle<Vec<simulation::SimulationOutput>>> =
     temperature_functions
       .into_iter()
       .map(|temperature_function| {
         println!("Starting run for {} steps", steps);
-        let result = simulation::generate_schedule(ScheduleGenerationOptions {
-          simulation_constraints: schedule.get_simulation_constraints().clone(),
-          steps,
-          parallel_count: 1,
-          initial_state: None,
-          multi_progress: Some(mp.clone()),
-          temperature_function,
-        });
-        result
+
+        simulation::generate_schedule(
+          vec![SimulationOptions {
+            simulation_constraints: schedule.get_simulation_constraints().clone(),
+            total_steps: steps,
+            initial_state: None,
+            temperature_function,
+            progress: simulation::ProgressOption::MultiProgress(mp.clone()),
+          }],
+          None,
+        )
       })
       .collect();
 
-  let results: Vec<simulation::ScheduleGenerationOutput> = handles
+  let results: Vec<simulation::SimulationOutput> = handles
     .into_iter()
-    .map(|handle| handle.join().unwrap())
+    .map(|handle| handle.join().unwrap().into_iter().next().unwrap())
     .collect();
 
   let file = std::fs::File::create("results.json").unwrap();
