@@ -60,10 +60,15 @@ fn run_experiment_1() {
   database_importer::import_temporary_database().expect("Error");
   let schedule = database_importer::parse_database_data().expect("Failed to import");
 
-  let steps_vec = vec![
-    128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576,
-    2097152, 4194304, 8388608, 16777216, 33554432, 67108864, 134217728,
-  ];
+  let max_step_limit = 60 * 60 * 6 * 14000;
+  let steps_vec = (0..u32::MAX).map_while(|p| {
+    let steps = 2_i32.pow(p);
+    if steps <= max_step_limit {
+      Some(steps)
+    } else {
+      None
+    }
+  });
 
   let mp = MultiProgress::new();
 
@@ -71,7 +76,7 @@ fn run_experiment_1() {
     .into_iter()
     .map(|total_steps| SimulationOptions {
       simulation_constraints: schedule.get_simulation_constraints().clone(),
-      total_steps,
+      total_steps: total_steps as usize,
       initial_state: None,
       progress: simulation::ProgressOption::MultiProgress(mp.clone()),
       temperature_function: simulation::TemperatureFunction::T001,
@@ -148,16 +153,13 @@ fn run_experiment_3() {
       let pb = mp.add(pb);
       pb.set_prefix(progress_bar_update_interval.to_string());
 
-      let mut advanced_options = simulation::AdvancedSimulationOptions::default();
-      advanced_options.progress_bar_update_interval = progress_bar_update_interval;
-
       SimulationOptions {
         simulation_constraints: schedule.get_simulation_constraints().clone(),
         total_steps,
         initial_state: None,
         progress: simulation::ProgressOption::ProgressBar(pb.clone()),
         temperature_function: simulation::TemperatureFunction::T001,
-        advanced_options,
+        advanced_options: simulation::AdvancedSimulationOptions { progress_bar_update_interval },
       }
     })
     .collect();
@@ -177,8 +179,8 @@ fn main() {
     .finish();
   tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 
-  // run_experiment_1()
+  run_experiment_1()
   // run_experiment_2()
-  run_experiment_3()
+  // run_experiment_3()
   // run_app()
 }
