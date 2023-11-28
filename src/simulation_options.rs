@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use serde::{Deserialize, Serialize};
 
 use crate::school_schedule::{class_calendar::ClassCalendar, SimulationConstraints};
@@ -41,9 +43,15 @@ impl Default for AdvancedSimulationOptions {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub(crate) enum StopCondition {
+  Steps(usize),
+  Time(Duration),
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub(crate) struct SimulationOptions {
   pub(crate) simulation_constraints: SimulationConstraints,
-  pub(crate) total_steps: usize,
+  pub(crate) stop_condition: StopCondition,
   pub(crate) initial_state: Option<ClassCalendar>,
   #[serde(skip)]
   pub(crate) progress: ProgressOption,

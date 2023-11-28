@@ -77,7 +77,7 @@ fn run_experiment_1() {
     .into_iter()
     .map(|total_steps| SimulationOptions {
       simulation_constraints: schedule.get_simulation_constraints().clone(),
-      total_steps: total_steps as usize,
+      stop_condition: simulation_options::StopCondition::Steps(total_steps as usize),
       initial_state: None,
       progress: simulation_options::ProgressOption::MultiProgress(mp.clone()),
       temperature_function: simulation_options::TemperatureFunction::T001,
@@ -113,7 +113,7 @@ fn run_experiment_2() {
     .into_iter()
     .map(|temperature_function| SimulationOptions {
       simulation_constraints: schedule.get_simulation_constraints().clone(),
-      total_steps,
+      stop_condition: simulation_options::StopCondition::Steps(total_steps),
       initial_state: None,
       progress: simulation_options::ProgressOption::MultiProgress(mp.clone()),
       temperature_function,
@@ -156,7 +156,7 @@ fn run_experiment_3() {
 
       SimulationOptions {
         simulation_constraints: schedule.get_simulation_constraints().clone(),
-        total_steps,
+        stop_condition: simulation_options::StopCondition::Steps(total_steps),
         initial_state: None,
         progress: simulation_options::ProgressOption::ProgressBar(pb.clone()),
         temperature_function: simulation_options::TemperatureFunction::T001,

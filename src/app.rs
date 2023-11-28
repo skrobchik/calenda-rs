@@ -1,4 +1,4 @@
-use std::{mem, thread::JoinHandle};
+use std::{mem, thread::JoinHandle, time::Duration};
 
 use crate::{
   class_editor::ClassEditor,
@@ -8,7 +8,7 @@ use crate::{
   school_schedule::{SchoolSchedule, Semester},
   simple_schedule_widget::SimpleScheduleWidget,
   simulation::{self, SimulationOutput},
-  simulation_options::{self, SimulationOptions},
+  simulation_options::{self, SimulationOptions, StopCondition},
 };
 use eframe::egui;
 use egui::Ui;
@@ -91,10 +91,10 @@ impl MyApp {
               .into_iter()
               .nth(i)
               .unwrap();
-            println!(
-              "Num Steps: {}",
-              simulation_output.simulation_options.total_steps
-            );
+            // println!(
+            //   "Num Steps: {}",
+            //   simulation_output.simulation_options.total_steps
+            // );
             println!("Cost: {}", simulation_output.final_cost);
             let class_calendar = simulation_output.final_calendar;
             self
@@ -159,13 +159,14 @@ impl eframe::App for MyApp {
           info!("Applied new schedule");
         }
       } else if ui.button("Optimize").clicked() {
+        let multiprogress = indicatif::MultiProgress::new();
         self.new_schedule_join_handle = Some(simulation::generate_schedule(
           vec![SimulationOptions {
             simulation_constraints: self.school_schedule.get_simulation_constraints().clone(),
-            total_steps: 500_000,
+            stop_condition: StopCondition::Time(Duration::from_secs(30)),
             initial_state: None,
             temperature_function: simulation_options::TemperatureFunction::T001,
-            progress: simulation_options::ProgressOption::None,
+            progress: simulation_options::ProgressOption::MultiProgress(multiprogress),
             advanced_options: Default::default(),
           }],
           None,

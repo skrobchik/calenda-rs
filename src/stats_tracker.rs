@@ -1,6 +1,7 @@
-use std::collections::BTreeMap;
-
-use serde::{Deserialize, Serialize};
+use std::{
+  collections::BTreeMap,
+  time::{Duration, Instant},
+};
 
 #[derive(thiserror::Error, Debug)]
 pub enum StatsTrackerError {
@@ -10,23 +11,41 @@ pub enum StatsTrackerError {
   MissedStatLogging(String),
 }
 
-#[derive(Serialize, Deserialize)]
+pub(crate) enum SamplingRate {
+  Steps(usize),
+  Duration(Duration),
+}
+
+impl From<usize> for SamplingRate {
+  fn from(value: usize) -> Self {
+    SamplingRate::Steps(value)
+  }
+}
+
+impl From<Duration> for SamplingRate {
+  fn from(value: Duration) -> Self {
+    SamplingRate::Duration(value)
+  }
+}
+
 pub(crate) struct StatsTracker {
   step_index: usize,
   stats_index: usize,
-  sampling_rate: usize,
+  sampling_rate: SamplingRate,
   stats: BTreeMap<String, Vec<serde_json::Value>>,
   is_logging_step: bool,
+  latest_logging_step_start_instant: Instant,
 }
 
 impl StatsTracker {
-  pub(crate) fn new(sampling_rate: usize) -> Self {
+  pub(crate) fn new<T: Into<SamplingRate>>(sampling_rate: T) -> Self {
     StatsTracker {
       step_index: 0,
       stats_index: 0,
-      sampling_rate,
+      sampling_rate: sampling_rate.into(),
       stats: Default::default(),
       is_logging_step: true,
+      latest_logging_step_start_instant: Instant::now(),
     }
   }
 
@@ -36,9 +55,15 @@ impl StatsTracker {
 
   pub(crate) fn inc_step(&mut self) {
     self.step_index += 1;
-    if self.step_index % self.sampling_rate == 0 {
+    if match self.sampling_rate {
+      SamplingRate::Steps(sampling_rate) => self.step_index % sampling_rate == 0,
+      SamplingRate::Duration(sampling_rate) => {
+        self.latest_logging_step_start_instant.elapsed() > sampling_rate
+      }
+    } {
       self.is_logging_step = true;
       self.stats_index += 1;
+      self.latest_logging_step_start_instant = Instant::now();
     } else {
       self.is_logging_step = false;
     }
