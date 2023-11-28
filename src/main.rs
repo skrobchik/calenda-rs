@@ -65,30 +65,22 @@ fn run_experiment_1() {
     2097152, 4194304, 8388608, 16777216, 33554432, 67108864, 134217728,
   ];
 
-  // TODO: Refactor
   let mp = MultiProgress::new();
-  let handles: Vec<std::thread::JoinHandle<Vec<simulation::SimulationOutput>>> = steps_vec
-    .into_iter()
-    .map(|steps| {
-      println!("Starting run for {} steps", steps);
 
-      simulation::generate_schedule(
-        vec![SimulationOptions {
-          simulation_constraints: schedule.get_simulation_constraints().clone(),
-          total_steps: steps,
-          initial_state: None,
-          temperature_function: simulation::TemperatureFunction::T001,
-          progress: simulation::ProgressOption::MultiProgress(mp.clone()),
-        }],
-        None,
-      )
+  let simulation_options: Vec<SimulationOptions> = steps_vec
+    .into_iter()
+    .map(|total_steps| SimulationOptions {
+      simulation_constraints: schedule.get_simulation_constraints().clone(),
+      total_steps,
+      initial_state: None,
+      progress: simulation::ProgressOption::MultiProgress(mp.clone()),
+      temperature_function: simulation::TemperatureFunction::T001,
     })
     .collect();
 
-  let results: Vec<simulation::SimulationOutput> = handles
-    .into_iter()
-    .map(|handle| handle.join().unwrap().into_iter().next().unwrap())
-    .collect();
+  let results = simulation::generate_schedule(simulation_options, None)
+    .join()
+    .unwrap();
 
   let file = std::fs::File::create("results.json").unwrap();
   let writer = std::io::BufWriter::new(file);
@@ -100,8 +92,7 @@ fn run_experiment_2() {
   database_importer::import_temporary_database().expect("Error");
   let schedule = database_importer::parse_database_data().expect("Failed to import");
 
-  // let steps = 2097152;
-  let steps = 1_000_000;
+  let total_steps = 1_000_000;
   let temperature_functions = vec![
     TemperatureFunction::T001,
     TemperatureFunction::T002,
@@ -110,29 +101,21 @@ fn run_experiment_2() {
 
   // TODO: Refactor
   let mp = MultiProgress::new();
-  let handles: Vec<std::thread::JoinHandle<Vec<simulation::SimulationOutput>>> =
-    temperature_functions
-      .into_iter()
-      .map(|temperature_function| {
-        println!("Starting run for {} steps", steps);
 
-        simulation::generate_schedule(
-          vec![SimulationOptions {
-            simulation_constraints: schedule.get_simulation_constraints().clone(),
-            total_steps: steps,
-            initial_state: None,
-            temperature_function,
-            progress: simulation::ProgressOption::MultiProgress(mp.clone()),
-          }],
-          None,
-        )
-      })
-      .collect();
-
-  let results: Vec<simulation::SimulationOutput> = handles
+  let simulation_options: Vec<SimulationOptions> = temperature_functions
     .into_iter()
-    .map(|handle| handle.join().unwrap().into_iter().next().unwrap())
+    .map(|temperature_function| SimulationOptions {
+      simulation_constraints: schedule.get_simulation_constraints().clone(),
+      total_steps,
+      initial_state: None,
+      progress: simulation::ProgressOption::MultiProgress(mp.clone()),
+      temperature_function,
+    })
     .collect();
+
+  let results = simulation::generate_schedule(simulation_options, None)
+    .join()
+    .unwrap();
 
   let file = std::fs::File::create("results.json").unwrap();
   let writer = std::io::BufWriter::new(file);
