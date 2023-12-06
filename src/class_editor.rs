@@ -1,7 +1,7 @@
 use egui::{ComboBox, ScrollArea};
 use serde::{Deserialize, Serialize};
 
-use crate::school_schedule::{ClassroomType, SchoolSchedule};
+use crate::school_schedule::{ClassroomType, Group, SchoolSchedule, Semester};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct ClassEditor {
@@ -70,33 +70,47 @@ impl ClassEditor {
         });
     });
 
-    // TODO: Fix
-    // ui.horizontal(|ui| {
-    //   ui.label("Semestre");
-    //   ComboBox::from_id_source(format!("semester_selector_{}", class_id))
-    //     .selected_text(class.semester.to_string())
-    //     .show_ui(ui, |ui| {
-    //       for semester_variant in enum_iterator::all::<Semester>() {
-    //         ui.selectable_value(
-    //           &mut class.semester,
-    //           semester_variant,
-    //           semester_variant.to_string(),
-    //         );
-    //       }
-    //     });
-    // });
+    ui.horizontal(|ui| {
+      ui.label("Semestre");
+      ComboBox::from_id_source(format!("semester_selector_{}", class_id))
+        .selected_text(
+          state
+            .get_class(class_id)
+            .unwrap()
+            .get_semester()
+            .to_string(),
+        )
+        .show_ui(ui, |ui| {
+          let mut semester = *state.get_class(class_id).unwrap().get_semester();
+          for semester_variant in enum_iterator::all::<Semester>() {
+            ui.selectable_value(
+              &mut semester,
+              semester_variant,
+              semester_variant.to_string(),
+            );
+          }
+          state
+            .get_class_entry_mut(class_id)
+            .unwrap()
+            .set_semester(semester);
+        });
+    });
 
-    // TODO: Fix
-    // ui.horizontal(|ui| {
-    //   ui.label("Groupo");
-    //   ComboBox::from_id_source(format!("group_selector_{}", class_id))
-    //     .selected_text(class.group.to_string())
-    //     .show_ui(ui, |ui| {
-    //       for group_variant in enum_iterator::all::<Group>() {
-    //         ui.selectable_value(&mut class.group, group_variant, group_variant.to_string());
-    //       }
-    //     });
-    // });
+    ui.horizontal(|ui| {
+      ui.label("Groupo");
+      ComboBox::from_id_source(format!("group_selector_{}", class_id))
+        .selected_text(state.get_class(class_id).unwrap().get_group().to_string())
+        .show_ui(ui, |ui| {
+          let mut group = *state.get_class(class_id).unwrap().get_group();
+          for group_variant in enum_iterator::all::<Group>() {
+            ui.selectable_value(&mut group, group_variant, group_variant.to_string());
+          }
+          state
+            .get_class_entry_mut(class_id)
+            .unwrap()
+            .set_group(group);
+        });
+    });
 
     ui.horizontal(|ui| {
       ui.label("Profesor");
