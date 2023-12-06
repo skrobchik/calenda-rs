@@ -100,6 +100,16 @@ impl<'a> ClassEntry<'a> {
       .unwrap();
     class.semester = semester;
   }
+
+  pub(crate) fn set_classroom_type(&mut self, classroom_type: ClassroomType) {
+    let class = self
+      .school_schedule
+      .simulation_constraints
+      .classes
+      .get_mut(self.class_id)
+      .unwrap();
+    class.classroom_type = classroom_type;
+  }
 }
 
 #[derive(Serialize, Deserialize, Debug, Default)]

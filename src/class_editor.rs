@@ -1,7 +1,7 @@
 use egui::{ComboBox, ScrollArea};
 use serde::{Deserialize, Serialize};
 
-use crate::school_schedule::SchoolSchedule;
+use crate::school_schedule::{ClassroomType, SchoolSchedule};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct ClassEditor {
@@ -44,21 +44,31 @@ impl ClassEditor {
       ui.text_edit_singleline(&mut state.get_class_metadata_mut(class_id).unwrap().name);
     });
 
-    // TODO: Fix
-    // ui.horizontal(|ui| {
-    //   ui.label("Aula");
-    //   ComboBox::from_id_source(format!("classroom_type_selector_{}", class_id))
-    //     .selected_text(state.get_class(class_id).unwrap().classroom_type.to_string())
-    //     .show_ui(ui, |ui| {
-    //       for classroom_type_variant in enum_iterator::all::<ClassroomType>() {
-    //         ui.selectable_value(
-    //           &mut class.classroom_type,
-    //           classroom_type_variant,
-    //           classroom_type_variant.to_string(),
-    //         );
-    //       }
-    //     });
-    // });
+    ui.horizontal(|ui| {
+      ui.label("Aula");
+      ComboBox::from_id_source(format!("classroom_type_selector_{}", class_id))
+        .selected_text(
+          state
+            .get_class(class_id)
+            .unwrap()
+            .get_classroom_type()
+            .to_string(),
+        )
+        .show_ui(ui, |ui| {
+          let mut classroom_type = *state.get_class(class_id).unwrap().get_classroom_type();
+          for classroom_type_variant in enum_iterator::all::<ClassroomType>() {
+            ui.selectable_value(
+              &mut classroom_type,
+              classroom_type_variant,
+              classroom_type_variant.to_string(),
+            );
+          }
+          state
+            .get_class_entry_mut(class_id)
+            .unwrap()
+            .set_classroom_type(classroom_type);
+        });
+    });
 
     // TODO: Fix
     // ui.horizontal(|ui| {
