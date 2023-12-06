@@ -22,11 +22,13 @@ pub(crate) struct MyApp {
   schedule_widget_open: bool,
   professor_editor_widget_open: bool,
   class_editor_widget_open: bool,
+  class_editor: ClassEditor,
   availability_editor_professor_id: Option<usize>,
   availability_editor_widget_open: bool,
+  schedule_widget_filter: ClassFilter,
+
   #[serde(skip)]
   new_schedule_join_handle: Option<JoinHandle<Vec<SimulationOutput>>>,
-  schedule_widget_filter: ClassFilter,
 }
 
 impl MyApp {
@@ -120,7 +122,7 @@ impl eframe::App for MyApp {
       SimpleScheduleWidget::new(&self.school_schedule, self.schedule_widget_filter.clone())
         .show(ctx, &mut self.schedule_widget_open);
 
-      ClassEditor::new(&mut self.school_schedule).show(ctx, &mut self.class_editor_widget_open);
+      self.class_editor.show(ctx, &mut self.school_schedule);
 
       ProfessorEditor::new(
         &mut self.school_schedule,
@@ -190,6 +192,7 @@ impl Default for MyApp {
       availability_editor_widget_open: true,
       new_schedule_join_handle: None,
       schedule_widget_filter: ClassFilter::None,
+      class_editor: Default::default(),
     }
   }
 }

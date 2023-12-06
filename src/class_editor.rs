@@ -1,45 +1,53 @@
 use egui::{ComboBox, ScrollArea};
+use serde::{Deserialize, Serialize};
 
 use crate::school_schedule::SchoolSchedule;
 
-pub(crate) struct ClassEditor<'a> {
-  state: &'a mut SchoolSchedule,
+#[derive(Serialize, Deserialize, Debug)]
+pub(crate) struct ClassEditor {
+  pub search_text: String,
+  pub open: bool,
 }
 
-impl<'a> ClassEditor<'a> {
-  pub(crate) fn new(state: &'a mut SchoolSchedule) -> Self {
-    ClassEditor { state }
+impl Default for ClassEditor {
+  fn default() -> Self {
+    Self {
+      search_text: Default::default(),
+      open: true,
+    }
   }
+}
 
-  pub(crate) fn show(&mut self, ctx: &egui::Context, open: &mut bool) {
+impl ClassEditor {
+  pub(crate) fn show(&mut self, ctx: &egui::Context, state: &mut SchoolSchedule) {
+    let mut open = self.open;
     egui::Window::new("Class Editor")
-      .open(open)
+      .open(&mut open)
       .resizable(true)
       .show(ctx, |ui| {
-        self.ui(ui);
+        self.ui(ui, state);
       });
+    self.open = open;
   }
 
-  pub(crate) fn ui(&mut self, ui: &mut egui::Ui) {
+  fn ui(&mut self, ui: &mut egui::Ui, state: &mut SchoolSchedule) {
     ui.separator();
-    let num_classes = self.state.get_num_classes();
+    let num_classes = state.get_num_classes();
     ScrollArea::vertical()
       .auto_shrink([false; 2])
       .max_height(500.0)
       .show(ui, |ui| {
         for class_id in 0..num_classes {
           ui.horizontal(|ui| {
-            ui.color_edit_button_srgba(
-              &mut self.state.get_class_metadata_mut(class_id).unwrap().color,
-            );
-            ui.text_edit_singleline(&mut self.state.get_class_metadata_mut(class_id).unwrap().name);
+            ui.color_edit_button_srgba(&mut state.get_class_metadata_mut(class_id).unwrap().color);
+            ui.text_edit_singleline(&mut state.get_class_metadata_mut(class_id).unwrap().name);
           });
 
           // TODO: Fix
           // ui.horizontal(|ui| {
           //   ui.label("Aula");
           //   ComboBox::from_id_source(format!("classroom_type_selector_{}", class_id))
-          //     .selected_text(self.state.get_class(class_id).unwrap().classroom_type.to_string())
+          //     .selected_text(state.get_class(class_id).unwrap().classroom_type.to_string())
           //     .show_ui(ui, |ui| {
           //       for classroom_type_variant in enum_iterator::all::<ClassroomType>() {
           //         ui.selectable_value(
@@ -83,28 +91,23 @@ impl<'a> ClassEditor<'a> {
             ui.label("Profesor");
             ui.label(format!(
               "{}",
-              self.state.get_class(class_id).unwrap().get_professor_id()
+              state.get_class(class_id).unwrap().get_professor_id()
             ));
             ComboBox::from_id_source(format!("professor_selector_{}", class_id.clone()))
               .selected_text(
-                self
-                  .state
-                  .get_professor_metadata(
-                    *self.state.get_class(class_id).unwrap().get_professor_id(),
-                  )
+                state
+                  .get_professor_metadata(*state.get_class(class_id).unwrap().get_professor_id())
                   .map(|professor_metadata| professor_metadata.name.as_str())
                   .unwrap_or("Undefined Professor"),
               )
               .show_ui(ui, |ui| {
-                let num_professors = self.state.get_num_professors();
-                let selected_professor_id =
-                  *self.state.get_class(class_id).unwrap().get_professor_id();
+                let num_professors = state.get_num_professors();
+                let selected_professor_id = *state.get_class(class_id).unwrap().get_professor_id();
                 for professor_id in 0..num_professors {
                   if ui
                     .selectable_label(
                       professor_id == selected_professor_id,
-                      self
-                        .state
+                      state
                         .get_professor_metadata(professor_id)
                         .unwrap()
                         .name
@@ -118,13 +121,12 @@ impl<'a> ClassEditor<'a> {
               })
           });
           ui.horizontal(|ui| {
-            let original_class_hours = *self.state.get_class(class_id).unwrap().get_class_hours();
+            let original_class_hours = *state.get_class(class_id).unwrap().get_class_hours();
             let mut class_hours = original_class_hours;
             ui.add(
               egui::Slider::new(&mut class_hours, 0..=20).text(to_human_time(original_class_hours)),
             );
-            self
-              .state
+            state
               .get_class_entry_mut(class_id)
               .unwrap()
               .set_hours(class_hours);
@@ -133,7 +135,7 @@ impl<'a> ClassEditor<'a> {
         }
       });
     if ui.button("+").clicked() {
-      self.state.add_new_class();
+      state.add_new_class();
     }
   }
 }
