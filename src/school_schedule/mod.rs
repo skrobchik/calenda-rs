@@ -38,13 +38,17 @@ pub(crate) struct ClassEntry<'a> {
 }
 
 impl<'a> ClassEntry<'a> {
-  pub(crate) fn set_hours(&mut self, class_hours: u8) {
-    let class = self
+  fn get_class(&mut self) -> &mut Class {
+    self
       .school_schedule
       .simulation_constraints
       .classes
       .get_mut(self.class_id)
-      .unwrap();
+      .unwrap()
+  }
+
+  pub(crate) fn set_hours(&mut self, class_hours: u8) {
+    let class = self.get_class();
     let curr_class_hours = class.class_hours;
     match class_hours.cmp(&curr_class_hours) {
       std::cmp::Ordering::Equal => {}
@@ -72,32 +76,17 @@ impl<'a> ClassEntry<'a> {
   }
 
   pub(crate) fn set_professor_id(&mut self, professor_id: usize) {
-    let class = self
-      .school_schedule
-      .simulation_constraints
-      .classes
-      .get_mut(self.class_id)
-      .unwrap();
+    let class = self.get_class();
     class.professor_id = professor_id;
   }
 
   pub(crate) fn set_group(&mut self, group: Group) {
-    let class = self
-      .school_schedule
-      .simulation_constraints
-      .classes
-      .get_mut(self.class_id)
-      .unwrap();
+    let class = self.get_class();
     class.group = group;
   }
 
   pub(crate) fn set_semester(&mut self, semester: Semester) {
-    let class = self
-      .school_schedule
-      .simulation_constraints
-      .classes
-      .get_mut(self.class_id)
-      .unwrap();
+    let class = self.get_class();
     class.semester = semester;
   }
 }
