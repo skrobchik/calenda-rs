@@ -14,6 +14,8 @@ pub mod stats_tracker;
 pub mod timeslot;
 pub mod week_calendar;
 
+use std::time::Duration;
+
 use crate::app::MyApp;
 
 use indicatif::{MultiProgress, ProgressStyle};
@@ -61,7 +63,7 @@ fn run_experiment_1() {
   database_importer::import_temporary_database().expect("Error");
   let schedule = database_importer::parse_database_data().expect("Failed to import");
 
-  let max_step_limit = 60 * 60 * 6 * 14000;
+  let max_step_limit = 60 * 28000;
   let steps_vec = (0..u32::MAX).map_while(|p| {
     let steps = 2_i32.pow(p);
     if steps <= max_step_limit {
@@ -174,14 +176,38 @@ fn run_experiment_3() {
   serde_json::ser::to_writer(writer, &results).unwrap()
 }
 
+#[allow(dead_code)]
+fn run_experiment_4() {
+  database_importer::import_temporary_database().expect("Error");
+  let schedule = database_importer::parse_database_data().expect("Failed to import");
+
+  let simulation_options: Vec<SimulationOptions> = vec![SimulationOptions {
+    simulation_constraints: schedule.get_simulation_constraints().clone(),
+    stop_condition: simulation_options::StopCondition::Time(Duration::from_secs(60 * 60)),
+    initial_state: None,
+    progress: simulation_options::ProgressOption::MultiProgress(MultiProgress::new()),
+    temperature_function: simulation_options::TemperatureFunction::T001,
+    advanced_options: Default::default(),
+  }];
+
+  let results = simulation::generate_schedule(simulation_options, None)
+    .join()
+    .unwrap();
+
+  let file = std::fs::File::create("results.json").unwrap();
+  let writer = std::io::BufWriter::new(file);
+  serde_json::ser::to_writer(writer, &results).unwrap()
+}
+
 fn main() {
   let subscriber = FmtSubscriber::builder()
     .with_max_level(Level::DEBUG)
     .finish();
   tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 
-  // run_experiment_1()
+  run_experiment_1()
   // run_experiment_2()
   // run_experiment_3()
-  run_app()
+  // run_experiment_4()
+  // run_app()
 }

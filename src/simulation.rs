@@ -33,6 +33,9 @@ pub(crate) struct SimulationOutput {
   pub(crate) duration: std::time::Duration,
 
   pub(crate) stats: BTreeMap<String, Vec<serde_json::Value>>,
+
+  /// Needed if stop condition is not number of steps
+  pub(crate) total_steps: usize,
 }
 
 pub(crate) fn generate_schedule(
@@ -190,6 +193,7 @@ fn simulated_annealing<R: Rng>(options: SimulationOptions, mut rng: R) -> Simula
       advanced_options: Default::default(),
       stop_condition: options.stop_condition,
     },
+    total_steps: step_idx,
     final_calendar: state,
     final_cost: state_cost,
     start_time,
