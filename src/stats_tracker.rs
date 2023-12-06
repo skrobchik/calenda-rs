@@ -3,6 +3,8 @@ use std::{
   time::{Duration, Instant},
 };
 
+use crate::simulation_options::StopCondition;
+
 #[derive(thiserror::Error, Debug)]
 pub enum StatsTrackerError {
   #[error("You are logging the same stat twice per step `{0}`")]
@@ -47,6 +49,14 @@ impl StatsTracker {
       is_logging_step: true,
       latest_logging_step_start_instant: Instant::now(),
     }
+  }
+
+  pub(crate) fn with_estimated_size(total_runtime: &StopCondition, estimated_size: usize) -> Self {
+    let sampling_rate = match total_runtime {
+      StopCondition::Steps(steps) => SamplingRate::from(steps.div_ceil(estimated_size)),
+      StopCondition::Time(time) => SamplingRate::from(time.div_f64(estimated_size as f64)),
+    };
+    Self::new(sampling_rate)
   }
 
   pub(crate) fn into_stats(self) -> BTreeMap<String, Vec<serde_json::Value>> {

@@ -4,10 +4,10 @@ use std::{
 };
 
 use crate::{
-  simulation_options::{ProgressOption, SimulationOptions, TemperatureFunction},
-  stats_tracker::{SamplingRate, StatsTracker},
+  simulation_options::{ProgressOption, SimulationOptions, StopCondition, TemperatureFunction},
+  stats_tracker::StatsTracker,
 };
-use indicatif::ProgressStyle;
+use indicatif::{HumanCount, HumanDuration, ProgressStyle};
 use rand::prelude::*;
 use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
@@ -76,74 +76,71 @@ fn simulated_annealing<R: Rng>(options: SimulationOptions, mut rng: R) -> Simula
   let stop_condition = &options.stop_condition;
   let temperature_function = &options.temperature_function;
 
-  let mut stats = StatsTracker::new(match stop_condition {
-    crate::simulation_options::StopCondition::Steps(steps) => {
-      SamplingRate::from(steps.div_ceil(5_000_usize))
-    }
-    crate::simulation_options::StopCondition::Time(time) => {
-      SamplingRate::from(time.div_f32(5_000.0_f32))
-    }
-  });
+  let mut stats = StatsTracker::with_estimated_size(stop_condition, 5_000);
 
   let mut state = random_init(constraints, &mut rng);
   let mut state_cost = cost(&state, constraints);
 
   let mut progress_bar: Option<indicatif::ProgressBar> = {
-    match options.progress {
-      ProgressOption::ProgressBar(pb) => Some(pb),
-      ProgressOption::MultiProgress(mp) => {
+    match (options.progress, &options.stop_condition) {
+      (ProgressOption::ProgressBar(pb), StopCondition::Steps(total_steps)) => {
+        pb.set_length(*total_steps as u64);
+        pb.set_position(0);
+        Some(pb)
+      }
+      (ProgressOption::MultiProgress(mp), StopCondition::Steps(total_steps)) => {
         let progress_bar_style = ProgressStyle::with_template(
             "{spinner:.green} [{elapsed_precise}] [{bar:.cyan/blue}] {human_pos}/{human_len} ({percent} %) ({eta}) ({per_sec})",
           )
           .unwrap()
           .progress_chars("#>-");
-        let pb_len = match options.stop_condition {
-          crate::simulation_options::StopCondition::Steps(total_steps) => total_steps as u64,
-          crate::simulation_options::StopCondition::Time(total_time) => total_time.as_secs(),
-        };
-        let pb = indicatif::ProgressBar::new(pb_len).with_style(progress_bar_style);
+        let pb = indicatif::ProgressBar::new(*total_steps as u64).with_style(progress_bar_style);
         let pb = mp.add(pb);
         Some(pb)
       }
-      ProgressOption::None => None,
-    }
-  };
-  if let Some(pb) = &progress_bar {
-    let pb_len = pb.length().unwrap();
-    match options.stop_condition {
-      crate::simulation_options::StopCondition::Steps(total_steps) => {
-        assert_eq!(pb_len, total_steps as u64)
+      (ProgressOption::MultiProgress(mp), StopCondition::Time(total_duration)) => {
+        let human_total_time = HumanDuration(*total_duration);
+        let pb_style = ProgressStyle::with_template(
+          format!(
+            "{{spinner:.green}} [{{bar:.cyan/blue}}] ({{percent}} %) [{{elapsed}}/{}] ({{msg}} steps)",
+            human_total_time
+          )
+          .as_str(),
+        )
+        .unwrap()
+        .progress_chars("#>-");
+        let pb = indicatif::ProgressBar::new(total_duration.as_secs())
+          .with_style(pb_style)
+          .with_message("0");
+        let pb = mp.add(pb);
+        Some(pb)
       }
-      crate::simulation_options::StopCondition::Time(total_time) => {
-        assert_eq!(pb_len, total_time.as_secs())
+      (ProgressOption::ProgressBar(pb), StopCondition::Time(total_duration)) => {
+        pb.set_length(total_duration.as_secs());
+        pb.set_position(0);
+        Some(pb)
       }
+      (ProgressOption::None, _) => None,
     }
   };
 
   let mut step_idx = 0;
   while match stop_condition {
-    crate::simulation_options::StopCondition::Steps(total_steps) => step_idx < *total_steps,
-    crate::simulation_options::StopCondition::Time(total_time) => {
-      start_instant.elapsed().lt(total_time)
-    }
+    StopCondition::Steps(total_steps) => step_idx < *total_steps,
+    StopCondition::Time(total_time) => start_instant.elapsed().lt(total_time),
   } {
     stats.log_stat("curr_cost", state_cost).unwrap();
 
     let x = match stop_condition {
-      crate::simulation_options::StopCondition::Steps(total_steps) => {
-        ((step_idx + 1) as f64) / (*total_steps as f64)
-      }
-      crate::simulation_options::StopCondition::Time(total_time) => {
+      StopCondition::Steps(total_steps) => ((step_idx + 1) as f64) / (*total_steps as f64),
+      StopCondition::Time(total_time) => {
         (start_instant.elapsed().as_nanos() / total_time.as_nanos()).min(1) as f64
       }
     };
     stats.log_stat("x", x).unwrap();
 
-    let t = {
-      let t = temperature(x, temperature_function);
-      stats.log_stat("temperature", t).unwrap();
-      t
-    };
+    let t = temperature(x, temperature_function);
+    stats.log_stat("temperature", t).unwrap();
 
     let old_cost = state_cost;
     let delta = state.move_one_class_random(&mut rng);
@@ -166,16 +163,17 @@ fn simulated_annealing<R: Rng>(options: SimulationOptions, mut rng: R) -> Simula
 
     stats.inc_step();
     if step_idx % options.advanced_options.progress_bar_update_interval == 0 {
-      if let Some(pb) = progress_bar.as_mut() {
-        match stop_condition {
-          crate::simulation_options::StopCondition::Steps(_) => {
-            pb.set_position(step_idx as u64);
-          }
-          crate::simulation_options::StopCondition::Time(_) => {
-            pb.set_position(start_instant.elapsed().as_secs())
-          }
-        };
-      }
+      match (progress_bar.as_mut(), stop_condition) {
+        (Some(pb), StopCondition::Steps(_)) => {
+          pb.set_position(step_idx as u64);
+        }
+        (Some(pb), StopCondition::Time(_)) => {
+          let human_steps = HumanCount(step_idx as u64);
+          pb.set_position(start_instant.elapsed().as_secs());
+          pb.set_message(human_steps.to_string());
+        }
+        _ => (),
+      };
     }
     step_idx += 1;
   }
