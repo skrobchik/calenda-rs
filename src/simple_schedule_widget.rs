@@ -1,4 +1,4 @@
-use egui::{Color32, Rect, Rounding, Sense, Stroke};
+use egui::{Align2, Color32, FontId, Rect, Rounding, Sense, Stroke};
 
 use crate::class_filter::ClassFilter;
 use crate::school_schedule::SchoolSchedule;
@@ -78,6 +78,16 @@ impl<'a> SimpleScheduleWidget<'a> {
               Rounding::same(0.02 * w.min(h)),
               class_color,
               Stroke::new(1.0, Color32::from_gray(100)),
+            );
+            let semester = self.state.get_class(class_id).unwrap().get_semester();
+            let group = self.state.get_class(class_id).unwrap().get_group();
+            let class_code = format!("{}{}", semester, group);
+            painter.text(
+              topleft,
+              Align2::LEFT_TOP,
+              &class_code,
+              FontId::default(),
+              Color32::BLACK,
             );
             topleft += (class_width, 0.0).into();
           }
