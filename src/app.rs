@@ -1,14 +1,15 @@
-use std::{mem, thread::JoinHandle, time::Duration};
+use std::{mem, thread::JoinHandle};
 
 use crate::{
   class_editor::ClassEditor,
   class_filter::ClassFilter,
+  optimization_widget::OptimizationWidget,
   professor_editor::ProfessorEditor,
   professor_schedule_widget::ProfessorScheduleWidget,
   school_schedule::{SchoolSchedule, Semester},
   simple_schedule_widget::SimpleScheduleWidget,
   simulation::{self, SimulationOutput},
-  simulation_options::{self, SimulationOptions, StopCondition},
+  simulation_options::{self, SimulationOptions},
 };
 use eframe::egui;
 use egui::Ui;
@@ -24,6 +25,7 @@ pub(crate) struct MyApp {
   professor_editor_widget_open: bool,
   class_editor_widget_open: bool,
   class_editor: ClassEditor,
+  optimization_widget: OptimizationWidget,
   availability_editor_professor_id: Option<usize>,
   availability_editor_widget_open: bool,
   schedule_widget_filter: ClassFilter,
@@ -148,6 +150,21 @@ impl eframe::App for MyApp {
         }
       }
 
+      if let Some(stop_condition) = self.optimization_widget.show(ctx) {
+        let multiprogress = indicatif::MultiProgress::new();
+        self.new_schedule_join_handle = Some(simulation::generate_schedule(
+          vec![SimulationOptions {
+            simulation_constraints: self.school_schedule.get_simulation_constraints().clone(),
+            stop_condition,
+            initial_state: None,
+            temperature_function: simulation_options::TemperatureFunction::T001,
+            progress: simulation_options::ProgressOption::MultiProgress(multiprogress),
+            advanced_options: Default::default(),
+          }],
+          None,
+        ));
+      }
+
       if self.new_schedule_join_handle.is_some() {
         ui.label("Optimizing...");
         let is_finished = self
@@ -170,19 +187,6 @@ impl eframe::App for MyApp {
             .unwrap();
           info!("Applied new schedule");
         }
-      } else if ui.button("Optimize").clicked() {
-        let multiprogress = indicatif::MultiProgress::new();
-        self.new_schedule_join_handle = Some(simulation::generate_schedule(
-          vec![SimulationOptions {
-            simulation_constraints: self.school_schedule.get_simulation_constraints().clone(),
-            stop_condition: StopCondition::Time(Duration::from_secs(30)),
-            initial_state: None,
-            temperature_function: simulation_options::TemperatureFunction::T001,
-            progress: simulation_options::ProgressOption::MultiProgress(multiprogress),
-            advanced_options: Default::default(),
-          }],
-          None,
-        ));
       }
     });
 
@@ -203,6 +207,7 @@ impl Default for MyApp {
       new_schedule_join_handle: None,
       schedule_widget_filter: ClassFilter::None,
       class_editor: Default::default(),
+      optimization_widget: Default::default(),
     }
   }
 }

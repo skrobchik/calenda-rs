@@ -42,10 +42,16 @@ impl Default for AdvancedSimulationOptions {
   }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub(crate) enum StopCondition {
   Steps(usize),
   Time(Duration),
+}
+
+impl Default for StopCondition {
+  fn default() -> Self {
+    StopCondition::Steps(0)
+  }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
