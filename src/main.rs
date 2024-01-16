@@ -5,6 +5,7 @@ pub mod color_list;
 pub mod database_importer;
 pub mod heuristics;
 pub mod optimization_widget;
+pub mod optimization_widget;
 pub mod professor_editor;
 pub mod professor_schedule_widget;
 pub mod school_schedule;
