@@ -34,16 +34,30 @@ impl OptimizationWidget {
   }
 
   fn ui(&mut self, ui: &mut egui::Ui) -> Option<StopCondition> {
-    ui.radio_value(
-      &mut self.current_stop_condition,
-      StopCondition::Steps(0),
-      "Pasos de simulacion",
-    );
-    ui.radio_value(
-      &mut self.current_stop_condition,
-      StopCondition::Time(Duration::ZERO),
-      "Tiempo de simulacion",
-    );
+    if ui
+      .add(egui::RadioButton::new(
+        match &self.current_stop_condition {
+          StopCondition::Steps(_) => true,
+          _ => false,
+        },
+        "Pasos de simulacion",
+      ))
+      .clicked()
+    {
+      self.current_stop_condition = StopCondition::Steps(0);
+    };
+    if ui
+      .add(egui::RadioButton::new(
+        match self.current_stop_condition {
+          StopCondition::Time(_) => true,
+          _ => false,
+        },
+        "Tiempo de simulacion",
+      ))
+      .clicked()
+    {
+      self.current_stop_condition = StopCondition::Time(Duration::ZERO);
+    }
     match &mut self.current_stop_condition {
       StopCondition::Steps(n) => {
         ui.add(egui::widgets::DragValue::new(n));
