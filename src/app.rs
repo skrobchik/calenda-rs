@@ -12,6 +12,7 @@ use crate::{
 };
 use eframe::egui;
 use egui::Ui;
+use rfd::FileDialog;
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
@@ -43,6 +44,15 @@ impl MyApp {
       ui.menu_button("Archivo", |ui| {
         if ui.button("Restaurar Valores Predeterminados").clicked() {
           *self = MyApp::default();
+        }
+        if ui.button("Exportar").clicked() {
+          if let Some(path) = FileDialog::new()
+            .set_title("Exportar Calendario")
+            .add_filter("ical", &["ical"])
+            .save_file()
+          {
+            self.school_schedule.export_ical(path);
+          }
         }
       });
       ui.menu_button("Vista", |ui| {

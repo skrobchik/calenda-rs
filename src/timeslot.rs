@@ -9,6 +9,10 @@ pub(crate) const DAY_RANGE: Range<usize> = 0..DAY_COUNT;
 pub(crate) type Timeslot = usize;
 pub(crate) type Day = usize;
 
+pub(crate) fn timeslot_to_hour(timeslot: Timeslot) -> u32 {
+  (timeslot as u32) + 8
+}
+
 #[allow(unused)]
 pub(crate) const TIMESLOT_08_00: usize = 0;
 #[allow(unused)]
