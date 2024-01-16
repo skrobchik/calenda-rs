@@ -275,31 +275,68 @@ impl SchoolSchedule {
       .prodid("https://github.com/skrobchik/calenda-rs/")
       .build();
     let timestamp_format = "%Y%m%dT%H%M%S";
+    struct ClassRange {
+      class_id: usize,
+      day: usize,
+      start_timeslot: usize,
+      /// inclusive
+      end_timeslot: usize,
+    }
+    let mut class_ranges: Vec<ClassRange> = Vec::new();
     for day in DAY_RANGE {
       for timeslot in TIMESLOT_RANGE {
         let classes = self.class_calendar.get_timeslot(day, timeslot);
-        for (class_id, _count) in classes.iter().enumerate().filter(|(_, c)| **c > 0) {
-          let event = IcalEventBuilder::tzid(chrono_tz::Mexico::BajaNorte.name())
-            .uid(uuid::Uuid::new_v4())
-            .changed(current_time.format(timestamp_format).to_string())
-            .start(
-              semester_start
-                .checked_add_days(Days::new(day as u64))
-                .unwrap()
-                .with_hour(crate::timeslot::timeslot_to_hour(timeslot))
-                .unwrap()
-                .format(timestamp_format)
-                .to_string(),
-            )
-            .duration("PT1H")
-            .set(ical_property!(
-              "SUMMARY",
-              &self.get_class_metadata(class_id).unwrap().name
-            ))
-            .build();
-          cal.events.push(event);
+        for (class_id, &count) in classes.iter().enumerate().filter(|(_, c)| **c > 0) {
+          for _ in 0..count {
+            let new_range = ClassRange {
+              class_id,
+              day,
+              start_timeslot: timeslot,
+              end_timeslot: timeslot,
+            };
+            if let Some(prev_range) = class_ranges.iter_mut().find(|r| {
+              r.class_id == new_range.class_id
+                && r.day == new_range.day
+                && r
+                  .end_timeslot
+                  .checked_add(1)
+                  .map_or(false, |prev_range_end_timeslot_plus_one| {
+                    prev_range_end_timeslot_plus_one == new_range.start_timeslot
+                  })
+            }) {
+              prev_range.end_timeslot = new_range.end_timeslot;
+            } else {
+              class_ranges.push(new_range);
+            }
+          }
         }
       }
+    }
+    for class_range in class_ranges {
+      let event = IcalEventBuilder::tzid(chrono_tz::Mexico::BajaNorte.name())
+        .uid(uuid::Uuid::new_v4())
+        .changed(current_time.format(timestamp_format).to_string())
+        .start(
+          semester_start
+            .checked_add_days(Days::new(class_range.start_timeslot as u64))
+            .unwrap()
+            .with_hour(crate::timeslot::timeslot_to_hour(
+              class_range.start_timeslot,
+            ))
+            .unwrap()
+            .format(timestamp_format)
+            .to_string(),
+        )
+        .duration(format!(
+          "PT{}H",
+          (class_range.end_timeslot - class_range.start_timeslot) + 1
+        ))
+        .set(ical_property!(
+          "SUMMARY",
+          &self.get_class_metadata(class_range.class_id).unwrap().name
+        ))
+        .build();
+      cal.events.push(event);
     }
     std::fs::write(export_path, cal.generate()).unwrap();
   }
