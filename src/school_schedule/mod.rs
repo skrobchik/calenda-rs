@@ -318,7 +318,7 @@ impl SchoolSchedule {
         .changed(current_time.format(timestamp_format).to_string())
         .start(
           semester_start
-            .checked_add_days(Days::new(class_range.start_timeslot as u64))
+            .checked_add_days(Days::new(class_range.day as u64))
             .unwrap()
             .with_hour(crate::timeslot::timeslot_to_hour(
               class_range.start_timeslot,
