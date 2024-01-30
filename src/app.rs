@@ -1,4 +1,4 @@
-use std::{mem, thread::JoinHandle};
+use std::thread::JoinHandle;
 
 use crate::{
   class_editor::ClassEditor,
@@ -17,6 +17,11 @@ use rfd::FileDialog;
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
+struct CurrentSimulation {
+  progress_bar: indicatif::ProgressBar,
+  join_handle: JoinHandle<Vec<SimulationOutput>>,
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
 pub(crate) struct MyApp {
@@ -29,9 +34,8 @@ pub(crate) struct MyApp {
   availability_editor_professor_id: Option<usize>,
   availability_editor_widget_open: bool,
   schedule_widget_filter: ClassFilter,
-
   #[serde(skip)]
-  new_schedule_join_handle: Option<JoinHandle<Vec<SimulationOutput>>>,
+  current_simulation: Option<CurrentSimulation>,
 }
 
 impl MyApp {
@@ -150,37 +154,64 @@ impl eframe::App for MyApp {
         }
       }
 
-      if let Some(stop_condition) = self.optimization_widget.show(ctx) {
-        let multiprogress = indicatif::MultiProgress::new();
-        self.new_schedule_join_handle = Some(simulation::generate_schedule(
-          vec![SimulationOptions {
-            simulation_constraints: self.school_schedule.get_simulation_constraints().clone(),
-            stop_condition,
-            initial_state: None,
-            temperature_function: simulation_options::TemperatureFunction::T001,
-            progress: simulation_options::ProgressOption::MultiProgress(multiprogress),
-            advanced_options: Default::default(),
-          }],
-          None,
-        ));
+      if let Some(stop_condition) = self.optimization_widget.show(
+        ctx,
+        self.current_simulation.as_ref().map(|x| &x.progress_bar),
+      ) {
+        self.current_simulation = {
+          let progress_bar = indicatif::ProgressBar::hidden();
+          let local_progress_bar = progress_bar.clone();
+          let local_simulation_constraints =
+            self.school_schedule.get_simulation_constraints().clone();
+          let local_ctx = ctx.clone();
+          let join_handle = std::thread::spawn(move || {
+            let local_progress_bar2 = local_progress_bar.clone();
+            let local_ctx2 = local_ctx.clone();
+            let h2 = std::thread::spawn(move || {
+              let mut p = local_progress_bar2.position();
+              local_ctx2.request_repaint();
+              loop {
+                if local_progress_bar2.position() != p {
+                  p = local_progress_bar2.position();
+                  local_ctx2.request_repaint();
+                }
+                std::thread::sleep(std::time::Duration::from_millis(100));
+              }
+            });
+            let h1: JoinHandle<Vec<SimulationOutput>> = simulation::generate_schedule(
+              vec![SimulationOptions {
+                simulation_constraints: local_simulation_constraints,
+                stop_condition,
+                initial_state: None,
+                temperature_function: simulation_options::TemperatureFunction::T001,
+                progress: simulation_options::ProgressOption::ProgressBar(local_progress_bar),
+                advanced_options: Default::default(),
+              }],
+              None,
+            );
+            let r = h1.join().unwrap();
+            drop(h2);
+            local_ctx.request_repaint();
+            r
+          });
+          Some(CurrentSimulation {
+            progress_bar,
+            join_handle,
+          })
+        };
       }
 
-      if self.new_schedule_join_handle.is_some() {
-        ui.label("Optimizing...");
+      if self.current_simulation.is_some() {
         let is_finished = self
-          .new_schedule_join_handle
+          .current_simulation
           .as_ref()
           .unwrap()
+          .join_handle
           .is_finished();
         if is_finished {
-          let new_class_calendar = mem::take(&mut self.new_schedule_join_handle)
-            .unwrap()
-            .join()
-            .unwrap()
-            .into_iter()
-            .nth(0)
-            .unwrap()
-            .final_calendar;
+          let simulation_output = self.current_simulation.take();
+          let simulation_output = simulation_output.unwrap().join_handle.join().unwrap();
+          let new_class_calendar = simulation_output.into_iter().nth(0).unwrap().final_calendar;
           self
             .school_schedule
             .replace_class_calendar(new_class_calendar)
@@ -201,7 +232,7 @@ impl Default for MyApp {
       school_schedule: Default::default(),
       availability_editor_professor_id: None,
       availability_editor_widget_open: true,
-      new_schedule_join_handle: None,
+      current_simulation: None,
       schedule_widget_filter: ClassFilter::None,
       class_editor: Default::default(),
       optimization_widget: Default::default(),
