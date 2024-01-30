@@ -36,10 +36,7 @@ impl OptimizationWidget {
   fn ui(&mut self, ui: &mut egui::Ui) -> Option<StopCondition> {
     if ui
       .add(egui::RadioButton::new(
-        match &self.current_stop_condition {
-          StopCondition::Steps(_) => true,
-          _ => false,
-        },
+        matches!(self.current_stop_condition, StopCondition::Steps(_)),
         "Pasos de simulacion",
       ))
       .clicked()
@@ -48,10 +45,7 @@ impl OptimizationWidget {
     };
     if ui
       .add(egui::RadioButton::new(
-        match self.current_stop_condition {
-          StopCondition::Time(_) => true,
-          _ => false,
-        },
+        matches!(self.current_stop_condition, StopCondition::Time(_)),
         "Tiempo de simulacion",
       ))
       .clicked()
