@@ -3,6 +3,7 @@ use std::thread::JoinHandle;
 use crate::{
   class_editor::ClassEditor,
   class_filter::ClassFilter,
+  database_importer,
   optimization_widget::OptimizationWidget,
   professor_editor::ProfessorEditor,
   professor_schedule_widget::ProfessorScheduleWidget,
@@ -80,6 +81,11 @@ impl MyApp {
             let schedule: SchoolSchedule = serde_json::from_str(&buf).unwrap();
             self.school_schedule = schedule;
           }
+        }
+        if ui.button("Importar SQLs").clicked() {
+          let schedule =
+            database_importer::import_schedule(Default::default()).expect("Failed to import");
+          self.school_schedule = schedule;
         }
       });
       ui.menu_button("Vista", |ui| {
