@@ -117,7 +117,7 @@ impl<'a> ClassEntry<'a> {
   }
 }
 
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub(crate) struct SchoolSchedule {
   metadata: ScheduleMetadata,
   simulation_constraints: SimulationConstraints,
@@ -257,7 +257,7 @@ impl SchoolSchedule {
     Ok(())
   }
 
-  pub(crate) fn export_ics<P: AsRef<std::path::Path>>(&self, export_path: P) {
+  pub(crate) fn export_ics(&self) -> icalendar::Calendar {
     // let school_timezone = chrono_tz::Mexico::BajaNorte;
     let school_timezone = chrono_tz::Europe::Dublin;
     let semester_start = school_timezone
@@ -331,7 +331,7 @@ impl SchoolSchedule {
 
       cal.push(event);
     }
-    std::fs::write(export_path, cal.to_string()).unwrap();
+    cal
   }
 }
 

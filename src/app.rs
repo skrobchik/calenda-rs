@@ -57,7 +57,28 @@ impl MyApp {
             .add_filter("ics", &["ics"])
             .save_file()
           {
-            self.school_schedule.export_ics(path);
+            std::fs::write(path, self.school_schedule.export_ics().to_string()).unwrap();
+          }
+        }
+        if ui.button("Guardar").clicked() {
+          if let Some(path) = FileDialog::new()
+            .set_title("Guardar Horario Escolar")
+            .add_filter("horario", &["horario"])
+            .save_file()
+          {
+            let schedule = self.school_schedule.clone();
+            std::fs::write(path, serde_json::to_string(&schedule).unwrap()).unwrap();
+          }
+        }
+        if ui.button("Cargar").clicked() {
+          if let Some(path) = FileDialog::new()
+            .set_title("Cargar Horario Escolar")
+            .add_filter("horario", &["horario"])
+            .pick_file()
+          {
+            let buf = std::fs::read_to_string(path).unwrap();
+            let schedule: SchoolSchedule = serde_json::from_str(&buf).unwrap();
+            self.school_schedule = schedule;
           }
         }
       });

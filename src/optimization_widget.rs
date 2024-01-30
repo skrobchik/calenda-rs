@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::simulation_options::StopCondition;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) struct OptimizationWidget {
   pub open: bool,
   current_stop_condition: StopCondition,

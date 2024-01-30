@@ -30,3 +30,4 @@ chrono = "0.4.31"
 chrono-tz = "0.8.5"
 rfd = "0.13.0"
 icalendar = {version="0.16.0", features = ["chrono-tz"]}
+tempfile = "3.9.0"

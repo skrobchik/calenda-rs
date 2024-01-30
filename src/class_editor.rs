@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::school_schedule::{ClassroomType, Group, SchoolSchedule, Semester};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) struct ClassEditor {
   pub search_text: String,
   pub open: bool,

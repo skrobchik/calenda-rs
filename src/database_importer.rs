@@ -6,10 +6,12 @@ use crate::{
 use egui::Color32;
 use itertools::Itertools;
 use std::fmt::Write;
-use std::{collections::BTreeMap, fs, path::Path};
+use std::{
+  collections::BTreeMap,
+  fs,
+  path::{Path, PathBuf},
+};
 use tracing::trace;
-
-const TEMP_DB_PATH: &str = "temp_db.sqlite";
 
 fn preprocess_sql_file(contents: String) -> String {
   contents
@@ -33,18 +35,19 @@ fn preprocess_sql_file(contents: String) -> String {
     })
 }
 
-pub(crate) fn import_temporary_database() -> anyhow::Result<()> {
-  let materias_sql_export_path = "Archivos SQL/Materias.sql";
-  let profesores_sql_export_path = "Archivos SQL/Profesores.sql";
-  if Path::new(TEMP_DB_PATH).exists() {
-    fs::remove_file(TEMP_DB_PATH)?;
-  }
-  let connection = sqlite::open(TEMP_DB_PATH)?;
-  let query_profesores = preprocess_sql_file(fs::read_to_string(profesores_sql_export_path)?);
-  let query_materias = preprocess_sql_file(fs::read_to_string(materias_sql_export_path)?);
+fn import_temporary_database<P1: AsRef<Path>, P2: AsRef<Path>>(
+  materias_sql_path: P1,
+  profesores_sql_path: P2,
+) -> anyhow::Result<sqlite::Connection> {
+  let temp_db_file = tempfile::NamedTempFile::new()?;
+  let temp_db_path = temp_db_file.into_temp_path();
+  let temp_db_path = temp_db_path.keep()?;
+  let connection = sqlite::open(temp_db_path)?;
+  let query_profesores = preprocess_sql_file(fs::read_to_string(profesores_sql_path)?);
+  let query_materias = preprocess_sql_file(fs::read_to_string(materias_sql_path)?);
   connection.execute(query_materias)?;
   connection.execute(query_profesores)?;
-  Ok(())
+  Ok(connection)
 }
 
 #[derive(PartialEq, Eq, Hash, Clone)]
@@ -63,8 +66,7 @@ struct Professor {
   rfc: String,
 }
 
-pub(crate) fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
-  let connection = sqlite::open(TEMP_DB_PATH)?;
+fn parse_database_data(connection: sqlite::Connection) -> anyhow::Result<SchoolSchedule> {
   let mut schedule: SchoolSchedule = Default::default();
   let query = "SELECT * FROM Materias";
 
@@ -182,4 +184,25 @@ pub(crate) fn parse_database_data() -> anyhow::Result<SchoolSchedule> {
   }
 
   Ok(schedule)
+}
+
+pub struct ImportSchedulePaths<P1: AsRef<Path>, P2: AsRef<Path>> {
+  pub materias_sql_path: P1,
+  pub profesores_sql_path: P2,
+}
+
+impl Default for ImportSchedulePaths<PathBuf, PathBuf> {
+  fn default() -> Self {
+    Self {
+      materias_sql_path: PathBuf::from_iter(&["Archivos SQL", "Materias.sql"]),
+      profesores_sql_path: PathBuf::from_iter(&["Archivos SQL", "Profesores.sql"]),
+    }
+  }
+}
+
+pub(crate) fn import_schedule<P1: AsRef<Path>, P2: AsRef<Path>>(
+  paths: ImportSchedulePaths<P1, P2>,
+) -> anyhow::Result<SchoolSchedule> {
+  let connection = import_temporary_database(paths.materias_sql_path, paths.profesores_sql_path)?;
+  parse_database_data(connection)
 }

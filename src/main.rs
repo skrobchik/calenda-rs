@@ -35,8 +35,7 @@ pub(crate) fn load_results<P: AsRef<std::path::Path>>(
 
 #[allow(dead_code)]
 fn run_app() {
-  database_importer::import_temporary_database().expect("Error");
-  let schedule = database_importer::parse_database_data().expect("Failed to import");
+  let schedule = database_importer::import_schedule(Default::default()).expect("Failed to import");
 
   // let simulation_output = load_results("results3.json").into_iter().nth(20).unwrap();
   // println!("Num Steps: {}", simulation_output.best_schedule_run_report.num_steps);
@@ -61,8 +60,7 @@ fn run_app() {
 
 #[allow(dead_code)]
 fn run_experiment_1() {
-  database_importer::import_temporary_database().expect("Error");
-  let schedule = database_importer::parse_database_data().expect("Failed to import");
+  let schedule = database_importer::import_schedule(Default::default()).expect("Failed to import");
 
   let max_step_limit = 60 * 28000;
   let steps_vec = (0..u32::MAX).map_while(|p| {
@@ -99,8 +97,7 @@ fn run_experiment_1() {
 
 #[allow(dead_code)]
 fn run_experiment_2() {
-  database_importer::import_temporary_database().expect("Error");
-  let schedule = database_importer::parse_database_data().expect("Failed to import");
+  let schedule = database_importer::import_schedule(Default::default()).expect("Failed to import");
 
   let total_steps = 1_000_000;
   let temperature_functions = vec![
@@ -135,8 +132,7 @@ fn run_experiment_2() {
 
 #[allow(dead_code)]
 fn run_experiment_3() {
-  database_importer::import_temporary_database().expect("Error");
-  let schedule = database_importer::parse_database_data().expect("Failed to import");
+  let schedule = database_importer::import_schedule(Default::default()).expect("Failed to import");
 
   let total_steps = 2_000_000;
 
@@ -179,8 +175,7 @@ fn run_experiment_3() {
 
 #[allow(dead_code)]
 fn run_experiment_4() {
-  database_importer::import_temporary_database().expect("Error");
-  let schedule = database_importer::parse_database_data().expect("Failed to import");
+  let schedule = database_importer::import_schedule(Default::default()).expect("Failed to import");
 
   let simulation_options: Vec<SimulationOptions> = vec![SimulationOptions {
     simulation_constraints: schedule.get_simulation_constraints().clone(),
