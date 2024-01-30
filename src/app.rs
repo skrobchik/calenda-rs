@@ -50,10 +50,10 @@ impl MyApp {
         if ui.button("Exportar").clicked() {
           if let Some(path) = FileDialog::new()
             .set_title("Exportar Calendario")
-            .add_filter("ical", &["ical"])
+            .add_filter("ics", &["ics"])
             .save_file()
           {
-            self.school_schedule.export_ical(path);
+            self.school_schedule.export_ics(path);
           }
         }
       });

@@ -470,7 +470,7 @@ dependencies = [
  "egui",
  "egui_extras",
  "enum-iterator",
- "ical",
+ "icalendar",
  "indicatif",
  "itertools",
  "itertools-num",
@@ -1254,8 +1254,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c85e1d9ab2eadba7e5040d4e09cbd6d072b76a557ad64e797c2cb9d4da21d7e4"
 dependencies = [
  "cfg-if",
+ "js-sys",
  "libc",
  "wasi",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -1451,12 +1453,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "ical"
-version = "0.9.0"
+name = "icalendar"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "26393c372d4c4d51616084afe36c0b44e4467febaa6f91f11f789094b4863bf9"
+checksum = "aa4ffbcf3325ae94554c5259ce0b8907d37133c066cb3d424a2fa96aa1f10088"
 dependencies = [
- "thiserror",
+ "chrono",
+ "chrono-tz",
+ "iso8601",
+ "nom",
+ "uuid",
 ]
 
 [[package]]
@@ -1537,6 +1543,15 @@ dependencies = [
  "hermit-abi",
  "libc",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "iso8601"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "924e5d73ea28f59011fec52a0d12185d496a9b075d360657aed2a5707f701153"
+dependencies = [
+ "nom",
 ]
 
 [[package]]
@@ -2901,6 +2916,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e395fcf16a7a3d8127ec99782007af141946b4795001f876d54fb0d55978560"
 dependencies = [
  "getrandom",
+ "wasm-bindgen",
 ]
 
 [[package]]

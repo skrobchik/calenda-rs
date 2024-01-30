@@ -1,7 +1,7 @@
-use chrono::{Datelike, Days, TimeZone, Timelike};
+use chrono::{Datelike, Days, TimeZone, Timelike, Utc};
 use egui::Color32;
 
-use ical::{generator::*, *};
+use icalendar::{Component, EventLike};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
@@ -257,24 +257,21 @@ impl SchoolSchedule {
     Ok(())
   }
 
-  pub(crate) fn export_ical<P: AsRef<std::path::Path>>(&self, export_path: P) {
-    let semester_start = chrono_tz::Mexico::BajaNorte
+  pub(crate) fn export_ics<P: AsRef<std::path::Path>>(&self, export_path: P) {
+    // let school_timezone = chrono_tz::Mexico::BajaNorte;
+    let school_timezone = chrono_tz::Europe::Dublin;
+    let semester_start = school_timezone
       .with_ymd_and_hms(2022, 8, 8, 0, 0, 0)
       .unwrap();
-    let _semester_end = chrono_tz::Mexico::BajaNorte
+    let _semester_end = school_timezone
       .with_ymd_and_hms(2023, 5, 27, 0, 0, 0)
       .unwrap();
     assert_eq!(semester_start.weekday().num_days_from_monday(), 0);
     assert_eq!(semester_start.hour(), 0);
     assert_eq!(semester_start.minute(), 0);
     assert_eq!(semester_start.second(), 0);
-    let current_time = chrono::Local::now();
 
-    let mut cal = IcalCalendarBuilder::version("2.0")
-      .gregorian()
-      .prodid("https://github.com/skrobchik/calenda-rs/")
-      .build();
-    let timestamp_format = "%Y%m%dT%H%M%S";
+    let mut cal = icalendar::Calendar::new();
     struct ClassRange {
       class_id: usize,
       day: usize,
@@ -313,32 +310,28 @@ impl SchoolSchedule {
       }
     }
     for class_range in class_ranges {
-      let event = IcalEventBuilder::tzid(chrono_tz::Mexico::BajaNorte.name())
-        .uid(uuid::Uuid::new_v4())
-        .changed(current_time.format(timestamp_format).to_string())
-        .start(
-          semester_start
-            .checked_add_days(Days::new(class_range.day as u64))
-            .unwrap()
-            .with_hour(crate::timeslot::timeslot_to_hour(
-              class_range.start_timeslot,
-            ))
-            .unwrap()
-            .format(timestamp_format)
-            .to_string(),
-        )
-        .duration(format!(
-          "PT{}H",
-          (class_range.end_timeslot - class_range.start_timeslot) + 1
+      let mut event = icalendar::Event::new();
+      let start_time = semester_start
+        .checked_add_days(Days::new(class_range.day as u64))
+        .unwrap()
+        .with_hour(crate::timeslot::timeslot_to_hour(
+          class_range.start_timeslot,
         ))
-        .set(ical_property!(
-          "SUMMARY",
-          &self.get_class_metadata(class_range.class_id).unwrap().name
-        ))
-        .build();
-      cal.events.push(event);
+        .unwrap()
+        .with_timezone(&Utc);
+      let end_time = semester_start
+        .checked_add_days(Days::new(class_range.day as u64))
+        .unwrap()
+        .with_hour(crate::timeslot::timeslot_to_hour(class_range.end_timeslot) + 1) // +1 because end_timeslot is inclusive
+        .unwrap()
+        .with_timezone(&Utc);
+      event.starts(start_time);
+      event.ends(end_time);
+      event.summary(&self.get_class_metadata(class_range.class_id).unwrap().name);
+
+      cal.push(event);
     }
-    std::fs::write(export_path, cal.generate()).unwrap();
+    std::fs::write(export_path, cal.to_string()).unwrap();
   }
 }
 

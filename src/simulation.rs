@@ -290,6 +290,6 @@ fn cost(state: &ClassCalendar, constraints: &SimulationConstraints) -> f64 {
     + 10.0 * heuristics::same_timeslot_classes_count_per_professor(state, constraints)
     + 3.0 * heuristics::count_not_available(state, constraints)
     + 1.0 * heuristics::count_available_if_needed(state, constraints)
-    + 1.0 * heuristics::count_outside_session_length(state, 2, 4)
+    + 1.0 * heuristics::count_outside_session_length(state, 1, 3)
     + 1.0 * heuristics::count_inconsistent_class_timeslots(state)
 }
