@@ -37,6 +37,7 @@ pub(crate) struct MyApp {
   schedule_widget_filter: ClassFilter,
   #[serde(skip)]
   current_simulation: Option<CurrentSimulation>,
+  pub(crate) developer_mode: bool,
 }
 
 impl MyApp {
@@ -160,6 +161,10 @@ impl eframe::App for MyApp {
 
   fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
     egui::CentralPanel::default().show(ctx, |ui| {
+      if self.developer_mode {
+        ui.label("DEVELOPER MODE");
+      }
+
       self.draw_menu_bar(ui);
 
       SimpleScheduleWidget::new(&self.school_schedule, self.schedule_widget_filter.clone())
@@ -263,6 +268,7 @@ impl Default for MyApp {
       schedule_widget_filter: ClassFilter::None,
       class_editor: Default::default(),
       optimization_widget: Default::default(),
+      developer_mode: false,
     }
   }
 }

@@ -20,6 +20,7 @@ use std::time::Duration;
 use crate::app::MyApp;
 
 use indicatif::{MultiProgress, ProgressStyle};
+use itertools::Itertools;
 use simulation_options::{SimulationOptions, TemperatureFunction};
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
@@ -34,7 +35,7 @@ pub(crate) fn load_results<P: AsRef<std::path::Path>>(
 }
 
 #[allow(dead_code)]
-fn run_app() {
+fn run_app(developer_mode: bool) {
   // let simulation_output = load_results("results3.json").into_iter().nth(20).unwrap();
   // println!("Num Steps: {}", simulation_output.best_schedule_run_report.num_steps);
   // println!("Cost: {}", simulation_output.best_schedule_cost);
@@ -42,8 +43,16 @@ fn run_app() {
   // schedule.replace_class_calendar(class_calendar).unwrap();
 
   let options = eframe::NativeOptions::default();
-  eframe::run_native("my_app", options, Box::new(|cc| Box::new(MyApp::new(cc))))
-    .expect("Something went wrong!");
+  eframe::run_native(
+    "my_app",
+    options,
+    Box::new(move |cc| {
+      let mut x = Box::new(MyApp::new(cc));
+      x.developer_mode = developer_mode;
+      x
+    }),
+  )
+  .expect("Something went wrong!");
 }
 
 #[allow(dead_code)]
@@ -184,6 +193,9 @@ fn run_experiment_4() {
 }
 
 fn main() {
+  let args: Vec<String> = std::env::args().collect();
+  let developer_mode: bool = args.iter().any(|x| x == "-d");
+
   let subscriber = FmtSubscriber::builder()
     .with_max_level(Level::DEBUG)
     .finish();
@@ -193,5 +205,5 @@ fn main() {
   // run_experiment_2()
   // run_experiment_3()
   // run_experiment_4()
-  run_app()
+  run_app(developer_mode)
 }
