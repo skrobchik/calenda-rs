@@ -2,12 +2,11 @@ use std::thread::JoinHandle;
 
 use crate::{
   class_editor::ClassEditor,
-  class_filter::ClassFilter,
   database_importer,
   optimization_widget::OptimizationWidget,
   professor_editor::ProfessorEditor,
   professor_schedule_widget::ProfessorScheduleWidget,
-  school_schedule::{SchoolSchedule, Semester},
+  school_schedule::SchoolSchedule,
   simple_schedule_widget::SimpleScheduleWidget,
   simulation::{self, SimulationOutput},
   simulation_options::{self, SimulationOptions},
@@ -27,14 +26,13 @@ struct CurrentSimulation {
 #[serde(default)]
 pub(crate) struct MyApp {
   pub(crate) school_schedule: SchoolSchedule,
-  schedule_widget_open: bool,
+  schedule_widget: SimpleScheduleWidget,
   professor_editor_widget_open: bool,
   class_editor_widget_open: bool,
   class_editor: ClassEditor,
   optimization_widget: OptimizationWidget,
   availability_editor_professor_id: Option<usize>,
   availability_editor_widget_open: bool,
-  schedule_widget_filter: ClassFilter,
   #[serde(skip)]
   current_simulation: Option<CurrentSimulation>,
   pub(crate) developer_mode: bool,
@@ -96,38 +94,11 @@ impl MyApp {
         if ui.button("Editor de Clases").clicked() {
           self.class_editor_widget_open = !self.class_editor_widget_open;
         }
-      });
-      ui.menu_button("Filtro", |ui| {
-        for (semester, semester_name) in [
-          Semester::S1,
-          Semester::S2,
-          Semester::S3,
-          Semester::S4,
-          Semester::S5,
-          Semester::S6,
-          Semester::S7,
-          Semester::S8,
-        ]
-        .iter()
-        .zip(
-          [
-            "Semestre 1",
-            "Semestre 2",
-            "Semestre 3",
-            "Semestre 4",
-            "Semestre 5",
-            "Semestre 6",
-            "Semestre 7",
-            "Semestre 8",
-          ]
-          .iter(),
-        ) {
-          if ui.button(semester_name.to_string()).clicked() {
-            self.schedule_widget_filter = ClassFilter::Semester(*semester);
-          }
-        }
-        if ui.button("Todos").clicked() {
-          self.schedule_widget_filter = ClassFilter::None;
+        if ui.button("Calendario").clicked() {
+          self
+            .schedule_widget
+            .open
+            .replace(!(self.schedule_widget.open.get()));
         }
       });
       ui.menu_button("Load results3.json", |ui| {
@@ -164,11 +135,15 @@ impl eframe::App for MyApp {
       if self.developer_mode {
         ui.label("DEVELOPER MODE");
       }
+      if ui.button("DEV Clear Context Data").clicked() {
+        ctx.memory_mut(|mem| {
+          *mem = Default::default();
+        });
+      }
 
       self.draw_menu_bar(ui);
 
-      SimpleScheduleWidget::new(&self.school_schedule, self.schedule_widget_filter.clone())
-        .show(ctx, &mut self.schedule_widget_open);
+      self.schedule_widget.show(ctx, &self.school_schedule);
 
       self.class_editor.show(ctx, &mut self.school_schedule);
 
@@ -258,17 +233,16 @@ impl eframe::App for MyApp {
 impl Default for MyApp {
   fn default() -> Self {
     Self {
-      schedule_widget_open: true,
       class_editor_widget_open: true,
       professor_editor_widget_open: true,
       school_schedule: Default::default(),
       availability_editor_professor_id: None,
       availability_editor_widget_open: true,
       current_simulation: None,
-      schedule_widget_filter: ClassFilter::None,
       class_editor: Default::default(),
       optimization_widget: Default::default(),
       developer_mode: false,
+      schedule_widget: Default::default(),
     }
   }
 }

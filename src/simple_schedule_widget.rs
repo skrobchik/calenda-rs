@@ -1,44 +1,39 @@
+use std::cell::Cell;
+
 use egui::{Align2, Color32, FontId, Rect, Rounding, Sense, Stroke};
+use serde::{Deserialize, Serialize};
 
 use crate::class_filter::ClassFilter;
-use crate::school_schedule::SchoolSchedule;
+use crate::school_schedule::{SchoolSchedule, Semester};
 use crate::timeslot;
 
-pub(crate) struct SimpleScheduleWidget<'a> {
-  state: &'a SchoolSchedule,
-  class_filter: ClassFilter,
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub(crate) struct SimpleScheduleWidget {
+  pub class_filter: ClassFilter,
+  pub open: Cell<bool>,
 }
 
-impl<'a> SimpleScheduleWidget<'a> {
-  pub(crate) fn new(
-    state: &'a SchoolSchedule,
-    class_filter: ClassFilter,
-  ) -> SimpleScheduleWidget<'a> {
-    SimpleScheduleWidget {
-      state,
-      class_filter,
-    }
-  }
-  pub(crate) fn show(&self, ctx: &egui::Context, open: &mut bool) {
+impl SimpleScheduleWidget {
+  pub(crate) fn show(&mut self, ctx: &egui::Context, state: &SchoolSchedule) {
+    let mut local_open = self.open.clone();
     egui::Window::new("Schedule")
-      .open(open)
+      .open(local_open.get_mut())
       .vscroll(false)
       .resizable(true)
       .default_height(500.0)
       .show(ctx, |ui| {
-        self.ui(ui);
+        self.ui(ui, state);
       });
   }
-  fn ui(&self, ui: &mut egui::Ui) {
-    let (response, painter) = ui.allocate_painter(ui.available_size(), Sense::hover());
+  fn ui_calendar(&self, ui: &mut egui::Ui, state: &SchoolSchedule) {
+    let (response, painter) = ui.allocate_painter(ui.available_size_before_wrap(), Sense::hover());
     let total_width = response.rect.width();
     let total_height = response.rect.height();
     let w = total_width / timeslot::DAY_COUNT as f32;
     let h: f32 = total_height / timeslot::TIMESLOT_COUNT as f32;
     for day_idx in timeslot::DAY_RANGE {
       for timeslot_idx in timeslot::TIMESLOT_RANGE {
-        let timeslot: Vec<u8> = self
-          .state
+        let timeslot: Vec<u8> = state
           .get_class_calendar()
           .get_timeslot(day_idx, timeslot_idx)
           .iter()
@@ -46,7 +41,7 @@ impl<'a> SimpleScheduleWidget<'a> {
           .map(|(class_id, count)| {
             if self
               .class_filter
-              .filter(class_id, self.state.get_simulation_constraints())
+              .filter(class_id, state.get_simulation_constraints())
             {
               *count
             } else {
@@ -69,7 +64,7 @@ impl<'a> SimpleScheduleWidget<'a> {
         );
 
         for (class_id, class_count) in timeslot.iter().enumerate() {
-          let class_metadata = self.state.get_class_metadata(class_id).unwrap();
+          let class_metadata = state.get_class_metadata(class_id).unwrap();
           for _ in 0..*class_count {
             let botright: egui::Pos2 = topleft + (class_width, h).into();
             let class_color = class_metadata.color;
@@ -79,8 +74,8 @@ impl<'a> SimpleScheduleWidget<'a> {
               class_color,
               Stroke::new(1.0, Color32::from_gray(100)),
             );
-            let semester = self.state.get_class(class_id).unwrap().get_semester();
-            let group = self.state.get_class(class_id).unwrap().get_group();
+            let semester = state.get_class(class_id).unwrap().get_semester();
+            let group = state.get_class(class_id).unwrap().get_group();
             let class_code = format!("{}{}", semester, group);
             painter.text(
               topleft,
@@ -94,5 +89,79 @@ impl<'a> SimpleScheduleWidget<'a> {
         }
       }
     }
+  }
+  fn ui_control(&mut self, ui: &mut egui::Ui, state: &SchoolSchedule) {
+    ui.label("Filtro de clases:");
+
+    if ui
+      .radio(matches!(self.class_filter, ClassFilter::None), "Todo")
+      .clicked()
+    {
+      self.class_filter = ClassFilter::None;
+    }
+
+    ui.horizontal(|ui| {
+      if ui
+        .radio(
+          matches!(self.class_filter, ClassFilter::Semester(_)),
+          "Semestre",
+        )
+        .clicked()
+        && !matches!(self.class_filter, ClassFilter::Semester(_))
+      {
+        self.class_filter = ClassFilter::Semester(Semester::S1);
+      }
+      if let ClassFilter::Semester(semester) = &mut self.class_filter {
+        egui::ComboBox::new("schedule_widget_combo_box_1", "")
+          .selected_text(semester.to_string())
+          .show_ui(ui, |ui| {
+            ui.selectable_value(semester, Semester::S1, Semester::S1.to_string());
+            ui.selectable_value(semester, Semester::S2, Semester::S2.to_string());
+            ui.selectable_value(semester, Semester::S3, Semester::S3.to_string());
+            ui.selectable_value(semester, Semester::S4, Semester::S4.to_string());
+            ui.selectable_value(semester, Semester::S5, Semester::S5.to_string());
+            ui.selectable_value(semester, Semester::S6, Semester::S6.to_string());
+            ui.selectable_value(semester, Semester::S7, Semester::S7.to_string());
+            ui.selectable_value(semester, Semester::S8, Semester::S8.to_string());
+          });
+      }
+    });
+
+    ui.horizontal(|ui| {
+      if ui
+        .radio(
+          matches!(self.class_filter, ClassFilter::ProfessorId(_)),
+          "Profesor",
+        )
+        .clicked()
+        && !matches!(self.class_filter, ClassFilter::ProfessorId(_))
+      {
+        self.class_filter = ClassFilter::ProfessorId(0);
+      }
+      if let ClassFilter::ProfessorId(professor_id) = &mut self.class_filter {
+        egui::ComboBox::new("schedule_widget_combo_box_2", "")
+          .selected_text(
+            state
+              .get_professor_metadata(*professor_id)
+              .map(|professor| professor.name.clone())
+              .unwrap_or("Profesor Inexistente".to_string()),
+          )
+          .show_ui(ui, |ui| {
+            for i in 0..state.get_num_professors() {
+              ui.selectable_value(
+                professor_id,
+                i,
+                state.get_professor_metadata(i).unwrap().name.clone(),
+              );
+            }
+          });
+      }
+    });
+  }
+
+  fn ui(&mut self, ui: &mut egui::Ui, state: &SchoolSchedule) {
+    self.ui_control(ui, state);
+    ui.separator();
+    self.ui_calendar(ui, state);
   }
 }

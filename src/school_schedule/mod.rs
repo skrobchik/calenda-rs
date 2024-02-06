@@ -156,10 +156,7 @@ impl SchoolSchedule {
     self.simulation_constraints.professors.get_mut(professor_id)
   }
 
-  pub(crate) fn get_professor_metadata(
-    &mut self,
-    professor_id: usize,
-  ) -> Option<&ProfessorMetadata> {
+  pub(crate) fn get_professor_metadata(&self, professor_id: usize) -> Option<&ProfessorMetadata> {
     self.metadata.professors.get(professor_id)
   }
 

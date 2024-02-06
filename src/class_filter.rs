@@ -2,8 +2,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::school_schedule::{Semester, SimulationConstraints};
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub(crate) enum ClassFilter {
+  #[default]
   None,
   Semester(Semester),
   ProfessorId(usize),
