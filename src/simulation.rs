@@ -137,7 +137,7 @@ fn simulated_annealing<R: Rng>(options: SimulationOptions, mut rng: R) -> Simula
     let x = match stop_condition {
       StopCondition::Steps(total_steps) => ((step_idx + 1) as f64) / (*total_steps as f64),
       StopCondition::Time(total_time) => {
-        (start_instant.elapsed().as_nanos() / total_time.as_nanos()).min(1) as f64
+        (start_instant.elapsed().as_nanos() / total_time.as_nanos()).max(1) as f64
       }
     };
     stats.log_stat("x", x).unwrap();
@@ -287,9 +287,9 @@ fn revert_change(state: &mut ClassCalendar, delta: &ClassEntryDelta) {
 fn cost(state: &ClassCalendar, constraints: &SimulationConstraints) -> f64 {
   0.0
     + 5.0 * heuristics::same_timeslot_classes_count_per_semester(state, constraints)
-    + 10.0 * heuristics::same_timeslot_classes_count_per_professor(state, constraints)
+    // + 10.0 * heuristics::same_timeslot_classes_count_per_professor(state, constraints)
     + 3.0 * heuristics::count_not_available(state, constraints)
     + 1.0 * heuristics::count_available_if_needed(state, constraints)
     + 1.0 * heuristics::count_outside_session_length(state, 1, 3)
-    + 1.0 * heuristics::count_inconsistent_class_timeslots(state)
+    // + 1.0 * heuristics::count_inconsistent_class_timeslots(state)
 }
