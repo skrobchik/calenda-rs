@@ -90,9 +90,18 @@ impl SimpleScheduleWidget {
       }
     }
   }
-  fn ui_control(&mut self, ui: &mut egui::Ui, state: &SchoolSchedule) {
-    ui.label("Filtro de clases:");
-
+  fn ui_control_export(&mut self, ui: &mut egui::Ui, state: &SchoolSchedule) {
+    if ui.button("Exportar").clicked() {
+      if let Some(path) = rfd::FileDialog::new()
+        .set_title("Exportar Calendario")
+        .add_filter("ics", &["ics"])
+        .save_file()
+      {
+        std::fs::write(path, state.export_ics(&self.class_filter).to_string()).unwrap();
+      }
+    }
+  }
+  fn ui_control_filters(&mut self, ui: &mut egui::Ui, state: &SchoolSchedule) {
     if ui
       .radio(matches!(self.class_filter, ClassFilter::None), "Todo")
       .clicked()
@@ -156,6 +165,16 @@ impl SimpleScheduleWidget {
             }
           });
       }
+    });
+  }
+  fn ui_control(&mut self, ui: &mut egui::Ui, state: &SchoolSchedule) {
+    ui.horizontal(|ui| {
+      ui.vertical(|ui| {
+        self.ui_control_filters(ui, state);
+      });
+      ui.vertical(|ui| {
+        self.ui_control_export(ui, state);
+      })
     });
   }
 

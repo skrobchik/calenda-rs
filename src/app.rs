@@ -51,15 +51,6 @@ impl MyApp {
         if ui.button("Restaurar Valores Predeterminados").clicked() {
           *self = MyApp::default();
         }
-        if ui.button("Exportar").clicked() {
-          if let Some(path) = FileDialog::new()
-            .set_title("Exportar Calendario")
-            .add_filter("ics", &["ics"])
-            .save_file()
-          {
-            std::fs::write(path, self.school_schedule.export_ics().to_string()).unwrap();
-          }
-        }
         if ui.button("Guardar").clicked() {
           if let Some(path) = FileDialog::new()
             .set_title("Guardar Horario Escolar")

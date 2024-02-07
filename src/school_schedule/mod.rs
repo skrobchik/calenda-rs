@@ -13,6 +13,7 @@ pub(crate) mod metadata_types;
 pub(crate) use metadata_types::*;
 
 use crate::{
+  class_filter::ClassFilter,
   timeslot::{self, DAY_RANGE, TIMESLOT_RANGE},
   week_calendar::WeekCalendar,
 };
@@ -254,7 +255,7 @@ impl SchoolSchedule {
     Ok(())
   }
 
-  pub(crate) fn export_ics(&self) -> icalendar::Calendar {
+  pub(crate) fn export_ics(&self, class_filter: &ClassFilter) -> icalendar::Calendar {
     // let school_timezone = chrono_tz::Mexico::BajaNorte;
     let school_timezone = chrono_tz::Europe::Dublin;
     let semester_start = school_timezone
@@ -281,6 +282,9 @@ impl SchoolSchedule {
       for timeslot in TIMESLOT_RANGE {
         let classes = self.class_calendar.get_timeslot(day, timeslot);
         for (class_id, &count) in classes.iter().enumerate().filter(|(_, c)| **c > 0) {
+          if !class_filter.filter(class_id, &self.simulation_constraints) {
+            continue;
+          }
           for _ in 0..count {
             let new_range = ClassRange {
               class_id,
