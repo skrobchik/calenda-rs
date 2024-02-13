@@ -14,10 +14,7 @@ pub(crate) enum ProgressOption {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub(crate) enum TemperatureFunction {
-  T001,
-  T002,
-  T003,
-  T004,
+  Linear,
 }
 
 const _: () = {
@@ -32,12 +29,15 @@ const _: () = {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub(crate) struct AdvancedSimulationOptions {
   pub(crate) progress_bar_update_interval: usize,
+  #[serde(skip)]
+  pub(crate) live_update: Option<LiveUpdate>,
 }
 
 impl Default for AdvancedSimulationOptions {
   fn default() -> Self {
     Self {
       progress_bar_update_interval: 100,
+      live_update: None,
     }
   }
 }
@@ -52,6 +52,12 @@ impl Default for StopCondition {
   fn default() -> Self {
     StopCondition::Steps(0)
   }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct LiveUpdate {
+  pub(crate) channel: std::sync::mpsc::Sender<ClassCalendar>,
+  pub(crate) live_update_interval: usize,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

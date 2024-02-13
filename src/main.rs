@@ -15,13 +15,11 @@ pub mod stats_tracker;
 pub mod timeslot;
 pub mod week_calendar;
 
-use std::time::Duration;
-
 use crate::app::MyApp;
 
-use indicatif::{MultiProgress, ProgressStyle};
+use indicatif::MultiProgress;
 use itertools::Itertools;
-use simulation_options::{SimulationOptions, TemperatureFunction};
+use simulation_options::SimulationOptions;
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
 
@@ -78,110 +76,10 @@ fn run_experiment_1() {
       stop_condition: simulation_options::StopCondition::Steps(total_steps as usize),
       initial_state: None,
       progress: simulation_options::ProgressOption::MultiProgress(mp.clone()),
-      temperature_function: simulation_options::TemperatureFunction::T001,
+      temperature_function: simulation_options::TemperatureFunction::Linear,
       advanced_options: Default::default(),
     })
     .collect();
-
-  let results = simulation::generate_schedule(simulation_options, None)
-    .join()
-    .unwrap();
-
-  let file = std::fs::File::create("results.json").unwrap();
-  let writer = std::io::BufWriter::new(file);
-  serde_json::ser::to_writer(writer, &results).unwrap()
-}
-
-#[allow(dead_code)]
-fn run_experiment_2() {
-  let schedule = database_importer::import_schedule(Default::default()).expect("Failed to import");
-
-  let total_steps = 1_000_000;
-  let temperature_functions = vec![
-    TemperatureFunction::T001,
-    TemperatureFunction::T002,
-    TemperatureFunction::T003,
-  ];
-
-  // TODO: Refactor
-  let mp = MultiProgress::new();
-
-  let simulation_options: Vec<SimulationOptions> = temperature_functions
-    .into_iter()
-    .map(|temperature_function| SimulationOptions {
-      simulation_constraints: schedule.get_simulation_constraints().clone(),
-      stop_condition: simulation_options::StopCondition::Steps(total_steps),
-      initial_state: None,
-      progress: simulation_options::ProgressOption::MultiProgress(mp.clone()),
-      temperature_function,
-      advanced_options: Default::default(),
-    })
-    .collect();
-
-  let results = simulation::generate_schedule(simulation_options, None)
-    .join()
-    .unwrap();
-
-  let file = std::fs::File::create("results.json").unwrap();
-  let writer = std::io::BufWriter::new(file);
-  serde_json::ser::to_writer(writer, &results).unwrap()
-}
-
-#[allow(dead_code)]
-fn run_experiment_3() {
-  let schedule = database_importer::import_schedule(Default::default()).expect("Failed to import");
-
-  let total_steps = 2_000_000;
-
-  let progress_bar_update_interval_list = vec![1, 2, 10, 100, 1000, 20_000];
-
-  let mp = MultiProgress::new();
-
-  let simulation_options: Vec<SimulationOptions> = progress_bar_update_interval_list
-    .into_iter()
-    .map(|progress_bar_update_interval| {
-      let progress_bar_style = ProgressStyle::with_template(
-        "{prefix} progress_bar_update_interval {spinner:.green} [{elapsed_precise}] [{bar:.cyan/blue}] {human_pos}/{human_len} ({percent} %) ({eta}) ({per_sec})",
-      )
-      .unwrap()
-      .progress_chars("#>-");
-
-      let pb = indicatif::ProgressBar::new(total_steps as u64).with_style(progress_bar_style);
-      let pb = mp.add(pb);
-      pb.set_prefix(progress_bar_update_interval.to_string());
-
-      SimulationOptions {
-        simulation_constraints: schedule.get_simulation_constraints().clone(),
-        stop_condition: simulation_options::StopCondition::Steps(total_steps),
-        initial_state: None,
-        progress: simulation_options::ProgressOption::ProgressBar(pb.clone()),
-        temperature_function: simulation_options::TemperatureFunction::T001,
-        advanced_options: simulation_options::AdvancedSimulationOptions { progress_bar_update_interval },
-      }
-    })
-    .collect();
-
-  let results = simulation::generate_schedule(simulation_options, None)
-    .join()
-    .unwrap();
-
-  let file = std::fs::File::create("results.json").unwrap();
-  let writer = std::io::BufWriter::new(file);
-  serde_json::ser::to_writer(writer, &results).unwrap()
-}
-
-#[allow(dead_code)]
-fn run_experiment_4() {
-  let schedule = database_importer::import_schedule(Default::default()).expect("Failed to import");
-
-  let simulation_options: Vec<SimulationOptions> = vec![SimulationOptions {
-    simulation_constraints: schedule.get_simulation_constraints().clone(),
-    stop_condition: simulation_options::StopCondition::Time(Duration::from_secs(60 * 60)),
-    initial_state: None,
-    progress: simulation_options::ProgressOption::MultiProgress(MultiProgress::new()),
-    temperature_function: simulation_options::TemperatureFunction::T001,
-    advanced_options: Default::default(),
-  }];
 
   let results = simulation::generate_schedule(simulation_options, None)
     .join()
@@ -201,9 +99,6 @@ fn main() {
     .finish();
   tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 
-  // run_experiment_1()
-  // run_experiment_2()
-  // run_experiment_3()
-  // run_experiment_4()
   run_app(developer_mode)
+  // run_experiment_1()
 }

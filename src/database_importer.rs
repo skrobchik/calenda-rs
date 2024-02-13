@@ -129,8 +129,7 @@ fn parse_database_data(connection: sqlite::Connection) -> anyhow::Result<SchoolS
     .iter()
     .filter(|c| c.ciclo == "2023-1")
     .filter(|c| {
-      c.grupo.starts_with("01")
-      // || c.grupo.starts_with("03")
+      c.grupo.starts_with("01") || c.grupo.starts_with("03")
       // || c.grupo.starts_with("05")
       // || c.grupo.starts_with("07")
     })

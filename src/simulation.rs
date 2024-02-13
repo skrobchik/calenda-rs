@@ -142,7 +142,8 @@ fn simulated_annealing<R: Rng>(options: SimulationOptions, mut rng: R) -> Simula
     };
     stats.log_stat("x", x).unwrap();
 
-    let t = temperature(x, temperature_function);
+    let t_amplitude = 10.0;
+    let t = temperature(x, temperature_function, t_amplitude);
     stats.log_stat("temperature", t).unwrap();
 
     let old_cost = state_cost;
@@ -178,6 +179,11 @@ fn simulated_annealing<R: Rng>(options: SimulationOptions, mut rng: R) -> Simula
         _ => (),
       };
     }
+    if let Some(live_update) = options.advanced_options.live_update.as_ref() {
+      if step_idx % live_update.live_update_interval == 0 {
+        if let Ok(()) = live_update.channel.send(state.clone()) {}
+      }
+    }
     step_idx += 1;
   }
 
@@ -211,53 +217,12 @@ fn acceptance_probability(old_cost: f64, new_cost: f64, temperature: f64) -> f64
   }
 }
 
-fn temperature(x: f64, temperature_function_variant: &TemperatureFunction) -> f64 {
-  // 10.0 - 10.0 * x
-
-  // if x <= 0.9 {
-  //   9.0 - 10.0 * x
-  // } else {
-  //   0.0
-  // }
-  match temperature_function_variant {
-    TemperatureFunction::T001 => {
-      if x <= 0.8 {
-        4.0 - 5.0 * x
-      } else {
-        0.0
-      }
-    }
-    TemperatureFunction::T002 => {
-      if x <= 0.9 {
-        7.5
-          * (0.5 * (1.1 * 7.0 * std::f64::consts::PI * x + std::f64::consts::FRAC_2_PI).sin() + 0.5)
-      } else {
-        0.0
-      }
-    }
-    TemperatureFunction::T003 => {
-      if x <= 0.9 {
-        (1.0 - x)
-          * 10.0
-          * (0.5 * (1.1 * 7.0 * std::f64::consts::PI * x + std::f64::consts::FRAC_2_PI).sin() + 0.5)
-      } else {
-        0.0
-      }
-    }
-    TemperatureFunction::T004 => {
-      if x <= 0.9 {
-        (1.0 - x)
-          * 5.0
-          * (0.5 * (1.1 * 7.0 * std::f64::consts::PI * x + std::f64::consts::FRAC_2_PI).sin() + 0.5)
-      } else {
-        0.0
-      }
-    }
-  }
-
-  // 0.0
-  // 7.5*(0.5*(5.0*std::f64::consts::PI*x+std::f64::consts::FRAC_2_PI).sin()+0.5)
-  // if x <= 0.9 { 7.5*(0.5*(1.1*7.0*std::f64::consts::PI*x+std::f64::consts::FRAC_2_PI).sin()+0.5) } else { 0.0 }
+fn temperature(x: f64, temperature_function_variant: &TemperatureFunction, amplitude: f64) -> f64 {
+  (match temperature_function_variant {
+    TemperatureFunction::Linear => 1.0 - x,
+  })
+  .clamp(0.0, 1.0)
+    * amplitude
 }
 
 fn random_init<R: Rng>(constraints: &SimulationConstraints, rng: &mut R) -> ClassCalendar {
@@ -287,9 +252,10 @@ fn revert_change(state: &mut ClassCalendar, delta: &ClassEntryDelta) {
 fn cost(state: &ClassCalendar, constraints: &SimulationConstraints) -> f64 {
   0.0
     + 5.0 * heuristics::same_timeslot_classes_count_per_semester(state, constraints)
-    // + 10.0 * heuristics::same_timeslot_classes_count_per_professor(state, constraints)
+    + 10.0 * heuristics::same_timeslot_classes_count_per_professor(state, constraints)
     + 3.0 * heuristics::count_not_available(state, constraints)
     + 1.0 * heuristics::count_available_if_needed(state, constraints)
-    + 1.0 * heuristics::count_outside_session_length(state, 1, 3)
-    // + 1.0 * heuristics::count_inconsistent_class_timeslots(state)
+    + 2.0 * heuristics::count_outside_session_length(state, 1, 3)
+    + 1.0 * heuristics::count_outside_session_length(state, 2, 2)
+    + 1.0 * heuristics::count_inconsistent_class_timeslots(state)
 }

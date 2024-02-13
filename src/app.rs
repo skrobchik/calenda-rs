@@ -1,4 +1,7 @@
-use std::thread::JoinHandle;
+use std::{
+  sync::mpsc::{Receiver, Sender},
+  thread::JoinHandle,
+};
 
 use crate::{
   class_editor::ClassEditor,
@@ -6,10 +9,10 @@ use crate::{
   optimization_widget::OptimizationWidget,
   professor_editor::ProfessorEditor,
   professor_schedule_widget::ProfessorScheduleWidget,
-  school_schedule::SchoolSchedule,
+  school_schedule::{class_calendar::ClassCalendar, SchoolSchedule},
   simple_schedule_widget::SimpleScheduleWidget,
   simulation::{self, SimulationOutput},
-  simulation_options::{self, SimulationOptions},
+  simulation_options::{self, AdvancedSimulationOptions, LiveUpdate, SimulationOptions},
 };
 use eframe::egui;
 use egui::Ui;
@@ -19,6 +22,7 @@ use tracing::info;
 
 struct CurrentSimulation {
   progress_bar: indicatif::ProgressBar,
+  live_update: std::sync::mpsc::Receiver<ClassCalendar>,
   join_handle: JoinHandle<Vec<SimulationOutput>>,
 }
 
@@ -134,6 +138,18 @@ impl eframe::App for MyApp {
 
       self.draw_menu_bar(ui);
 
+      if let Some(current_simulation) = self.current_simulation.as_ref() {
+        let mut latest_result = None;
+        while let Ok(result) = current_simulation.live_update.try_recv() {
+          latest_result = Some(result);
+        }
+        if let Some(latest_result) = latest_result {
+          self
+            .school_schedule
+            .replace_class_calendar(latest_result)
+            .unwrap();
+        }
+      }
       self.schedule_widget.show(ctx, &self.school_schedule);
 
       self.class_editor.show(ctx, &mut self.school_schedule);
@@ -157,44 +173,72 @@ impl eframe::App for MyApp {
         self.current_simulation.as_ref().map(|x| &x.progress_bar),
       ) {
         self.current_simulation = {
+          let (live_update_simulation_tx, live_update_proxy_rx): (
+            Sender<ClassCalendar>,
+            Receiver<ClassCalendar>,
+          ) = std::sync::mpsc::channel();
+          let (live_update_proxy_tx, live_update_app_rx): (
+            Sender<ClassCalendar>,
+            Receiver<ClassCalendar>,
+          ) = std::sync::mpsc::channel();
+          let advanced_options = AdvancedSimulationOptions {
+            live_update: Some(LiveUpdate {
+              channel: live_update_simulation_tx,
+              live_update_interval: 5_000,
+            }),
+            ..Default::default()
+          };
           let progress_bar = indicatif::ProgressBar::hidden();
-          let local_progress_bar = progress_bar.clone();
+          let pb = progress_bar.clone();
           let local_simulation_constraints =
             self.school_schedule.get_simulation_constraints().clone();
           let local_ctx = ctx.clone();
           let join_handle = std::thread::spawn(move || {
-            let local_progress_bar2 = local_progress_bar.clone();
-            let local_ctx2 = local_ctx.clone();
-            let h2 = std::thread::spawn(move || {
-              let mut p = local_progress_bar2.position();
-              local_ctx2.request_repaint();
+            let pb2 = pb.clone();
+            let pb_ctx = local_ctx.clone();
+            let pb_thread = std::thread::spawn(move || {
+              let mut p = pb2.position();
+              pb_ctx.request_repaint();
               loop {
-                if local_progress_bar2.position() != p {
-                  p = local_progress_bar2.position();
-                  local_ctx2.request_repaint();
+                if pb2.position() != p {
+                  p = pb2.position();
+                  pb_ctx.request_repaint();
                 }
                 std::thread::sleep(std::time::Duration::from_millis(100));
               }
             });
-            let h1: JoinHandle<Vec<SimulationOutput>> = simulation::generate_schedule(
-              vec![SimulationOptions {
-                simulation_constraints: local_simulation_constraints,
-                stop_condition,
-                initial_state: None,
-                temperature_function: simulation_options::TemperatureFunction::T001,
-                progress: simulation_options::ProgressOption::ProgressBar(local_progress_bar),
-                advanced_options: Default::default(),
-              }],
-              None,
-            );
-            let r = h1.join().unwrap();
-            drop(h2);
+            let live_update_ctx = local_ctx.clone();
+            let live_update_proxy_thread = std::thread::spawn(move || {
+              while let Ok(val) = live_update_proxy_rx.recv() {
+                match live_update_proxy_tx.send(val) {
+                  Ok(_) => live_update_ctx.request_repaint(), // live update sent succesfully, issue repaint
+                  Err(_) => break, // app thread channel no longer active, exit thread
+                }
+              }
+              // simulation thread channel no longer active, exit thread
+            });
+            let simulation_thread: JoinHandle<Vec<SimulationOutput>> =
+              simulation::generate_schedule(
+                vec![SimulationOptions {
+                  simulation_constraints: local_simulation_constraints,
+                  stop_condition,
+                  initial_state: None,
+                  temperature_function: simulation_options::TemperatureFunction::Linear,
+                  progress: simulation_options::ProgressOption::ProgressBar(pb),
+                  advanced_options,
+                }],
+                None,
+              );
+            let r = simulation_thread.join().unwrap();
+            drop(pb_thread);
+            drop(live_update_proxy_thread);
             local_ctx.request_repaint();
             r
           });
           Some(CurrentSimulation {
             progress_bar,
             join_handle,
+            live_update: live_update_app_rx,
           })
         };
       }
