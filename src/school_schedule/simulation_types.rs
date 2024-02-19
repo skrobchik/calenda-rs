@@ -55,23 +55,6 @@ pub(crate) struct Professor {
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy, Sequence, PartialEq, Eq, Debug)]
-pub(crate) enum ClassroomType {
-  Single,
-  Double,
-  Lab,
-}
-
-impl Display for ClassroomType {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match self {
-      ClassroomType::Single => f.write_str("Simple"),
-      ClassroomType::Double => f.write_str("Doble"),
-      ClassroomType::Lab => f.write_str("Laboratorio"),
-    }
-  }
-}
-
-#[derive(Serialize, Deserialize, Clone, Copy, Sequence, PartialEq, Eq, Debug)]
 pub(crate) enum Semester {
   S1,
   S2,
@@ -176,4 +159,52 @@ pub(crate) enum Availability {
   AvailableIfNeeded,
   #[default]
   NotAvailable,
+}
+
+#[derive(Serialize, Deserialize, Clone, Copy, Sequence, PartialEq, Eq, Debug)]
+pub(crate) enum ClassroomType {
+  AulaSimple,
+  AulaDoble,
+  LabQuimica,
+  LabFisica,
+  AulaComputo,
+}
+
+impl Display for ClassroomType {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.write_str(match self {
+      ClassroomType::AulaSimple => "Aula Simple",
+      ClassroomType::AulaDoble => "Aula Doble",
+      ClassroomType::LabQuimica => "Lab Quimica",
+      ClassroomType::LabFisica => "Lab Fisica",
+      ClassroomType::AulaComputo => "Aula Computo",
+    })
+  }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub(crate) enum Classroom {
+  Aula1,
+  Aula2_3,
+  Aula4,
+  Aula5_6,
+  SalaSeminarios,
+  SalaComputo,
+  LabFisica,
+  LabQuimica,
+}
+
+impl Classroom {
+  pub(crate) fn get_type(self) -> ClassroomType {
+    match self {
+      Classroom::Aula1 => ClassroomType::AulaSimple,
+      Classroom::Aula2_3 => ClassroomType::AulaDoble,
+      Classroom::Aula4 => ClassroomType::AulaSimple,
+      Classroom::Aula5_6 => ClassroomType::AulaDoble,
+      Classroom::SalaSeminarios => ClassroomType::AulaDoble,
+      Classroom::SalaComputo => ClassroomType::AulaComputo,
+      Classroom::LabFisica => ClassroomType::LabFisica,
+      Classroom::LabQuimica => ClassroomType::LabQuimica,
+    }
+  }
 }

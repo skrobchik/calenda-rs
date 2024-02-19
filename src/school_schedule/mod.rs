@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use chrono::{Datelike, Days, TimeZone, Timelike, Utc};
 use egui::Color32;
 
@@ -118,11 +120,19 @@ impl<'a> ClassEntry<'a> {
   }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) struct ClassroomAssignmentKey {
+  day_idx: usize,
+  timeslot_idx: usize,
+  class_id: usize,
+}
+
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub(crate) struct SchoolSchedule {
   metadata: ScheduleMetadata,
   simulation_constraints: SimulationConstraints,
   class_calendar: ClassCalendar,
+  classroom_assignments: BTreeMap<ClassroomAssignmentKey, Classroom>,
 }
 
 impl SchoolSchedule {
@@ -212,7 +222,7 @@ impl SchoolSchedule {
 
     class_list.push(Class {
       professor_id: 0,
-      classroom_type: ClassroomType::Single,
+      classroom_type: ClassroomType::AulaSimple,
       class_hours: 2,
       semester: Semester::S1,
       group: Group::G1,
