@@ -142,7 +142,7 @@ fn simulated_annealing<R: Rng>(options: SimulationOptions, mut rng: R) -> Simula
     };
     stats.log_stat("x", x).unwrap();
 
-    let t_amplitude = 10.0;
+    let t_amplitude = 1.0;
     let t = temperature(x, temperature_function, t_amplitude);
     stats.log_stat("temperature", t).unwrap();
 
@@ -256,6 +256,6 @@ fn cost(state: &ClassCalendar, constraints: &SimulationConstraints) -> f64 {
     + 3.0 * heuristics::count_not_available(state, constraints)
     + 1.0 * heuristics::count_available_if_needed(state, constraints)
     + 2.0 * heuristics::count_outside_session_length(state, 1, 3)
-    + 1.0 * heuristics::count_outside_session_length(state, 2, 2)
+    + 1.5 * heuristics::count_outside_session_length(state, 2, 2)
     + 1.0 * heuristics::count_inconsistent_class_timeslots(state)
 }
