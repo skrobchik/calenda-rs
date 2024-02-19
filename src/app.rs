@@ -129,11 +129,11 @@ impl eframe::App for MyApp {
     egui::CentralPanel::default().show(ctx, |ui| {
       if self.developer_mode {
         ui.label("DEVELOPER MODE");
-      }
-      if ui.button("DEV Clear Context Data").clicked() {
-        ctx.memory_mut(|mem| {
-          *mem = Default::default();
-        });
+        if ui.button("DEV Clear Context Data").clicked() {
+          ctx.memory_mut(|mem| {
+            *mem = Default::default();
+          });
+        }
       }
 
       self.draw_menu_bar(ui);
