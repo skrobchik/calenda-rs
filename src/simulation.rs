@@ -295,7 +295,12 @@ fn assign_classrooms(
   for day_idx in DAY_RANGE {
     for timeslot_idx in TIMESLOT_RANGE {
       let mut timeslot_available_classrooms = available_classrooms.clone();
-      for (class_id, _count) in state.get_timeslot(day_idx, timeslot_idx).iter().enumerate() {
+      for (class_id, count) in state.get_timeslot(day_idx, timeslot_idx).iter().enumerate() {
+        if *count == 0 {
+          continue;
+        }
+        // if class is repeating (`count` >= 2) it will be assigned the same classroom, but at this point
+        // the schedule is really not very good so it doesn't matter
         let required_classroom_type = *constraints.get_classes()[class_id].get_classroom_type();
         if timeslot_available_classrooms[required_classroom_type as usize]
           .last()
@@ -343,17 +348,19 @@ fn count_classroom_assignment_collisions(
   for day_idx in DAY_RANGE {
     for timeslot_idx in TIMESLOT_RANGE {
       let mut timeslot_available_classrooms = available_classrooms.clone();
-      for (class_id, _count) in state.get_timeslot(day_idx, timeslot_idx).iter().enumerate() {
-        let required_classroom_type = *constraints.get_classes()[class_id].get_classroom_type();
-        if timeslot_available_classrooms[required_classroom_type as usize]
-          .last()
-          .is_some()
-        {
-          timeslot_available_classrooms[required_classroom_type as usize]
-            .pop()
-            .unwrap();
-        } else {
-          num_classroom_assignment_collisions += 1;
+      for (class_id, count) in state.get_timeslot(day_idx, timeslot_idx).iter().enumerate() {
+        for _ in 0..*count {
+          let required_classroom_type = *constraints.get_classes()[class_id].get_classroom_type();
+          if timeslot_available_classrooms[required_classroom_type as usize]
+            .last()
+            .is_some()
+          {
+            timeslot_available_classrooms[required_classroom_type as usize]
+              .pop()
+              .unwrap();
+          } else {
+            num_classroom_assignment_collisions += 1;
+          }
         }
       }
     }
