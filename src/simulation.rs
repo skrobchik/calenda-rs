@@ -259,7 +259,8 @@ fn revert_change(state: &mut ClassCalendar, delta: &ClassEntryDelta) {
 fn cost(state: &ClassCalendar, constraints: &SimulationConstraints) -> f64 {
   0.0
     + 5.0 * heuristics::same_timeslot_classes_count_per_semester(state, constraints)
-    + 10.0 * heuristics::same_timeslot_classes_count_per_professor(state, constraints)
+    + 9.0 * heuristics::same_timeslot_classes_count_per_professor(state, constraints)
+    + 10.0 * (count_classroom_assignment_collisions(state, constraints) as f64)
     + 3.0 * heuristics::count_not_available(state, constraints)
     + 1.0 * heuristics::count_available_if_needed(state, constraints)
     + 2.0 * heuristics::count_outside_session_length(state, 1, 3)
@@ -294,7 +295,6 @@ fn assign_classrooms(
   for day_idx in DAY_RANGE {
     for timeslot_idx in TIMESLOT_RANGE {
       let mut timeslot_available_classrooms = available_classrooms.clone();
-      let mut timeslot_has_classroom_collisions = false;
       for (class_id, _count) in state.get_timeslot(day_idx, timeslot_idx).iter().enumerate() {
         let required_classroom_type = *constraints.get_classes()[class_id].get_classroom_type();
         if timeslot_available_classrooms[required_classroom_type as usize]
@@ -312,7 +312,6 @@ fn assign_classrooms(
               .unwrap(),
           );
         } else {
-          timeslot_has_classroom_collisions = true;
           classroom_assignment.insert(
             ClassroomAssignmentKey {
               day_idx,
@@ -326,4 +325,38 @@ fn assign_classrooms(
     }
   }
   classroom_assignment
+}
+
+fn count_classroom_assignment_collisions(
+  state: &ClassCalendar,
+  constraints: &SimulationConstraints,
+) -> u32 {
+  let available_classrooms: [Vec<Classroom>; enum_iterator::cardinality::<ClassroomType>()] = {
+    const EMPTY_VEC: Vec<Classroom> = Vec::new();
+    let mut available_classrooms = [EMPTY_VEC; enum_iterator::cardinality::<ClassroomType>()];
+    for classroom in enum_iterator::all::<Classroom>() {
+      available_classrooms[classroom.get_type() as usize].push(classroom);
+    }
+    available_classrooms
+  };
+  let mut num_classroom_assignment_collisions = 0;
+  for day_idx in DAY_RANGE {
+    for timeslot_idx in TIMESLOT_RANGE {
+      let mut timeslot_available_classrooms = available_classrooms.clone();
+      for (class_id, _count) in state.get_timeslot(day_idx, timeslot_idx).iter().enumerate() {
+        let required_classroom_type = *constraints.get_classes()[class_id].get_classroom_type();
+        if timeslot_available_classrooms[required_classroom_type as usize]
+          .last()
+          .is_some()
+        {
+          timeslot_available_classrooms[required_classroom_type as usize]
+            .pop()
+            .unwrap();
+        } else {
+          num_classroom_assignment_collisions += 1;
+        }
+      }
+    }
+  }
+  num_classroom_assignment_collisions
 }
