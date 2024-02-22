@@ -122,9 +122,9 @@ impl<'a> ClassEntry<'a> {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct ClassroomAssignmentKey {
-  day_idx: usize,
-  timeslot_idx: usize,
-  class_id: usize,
+  pub(crate) day_idx: usize,
+  pub(crate) timeslot_idx: usize,
+  pub(crate) class_id: usize,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]

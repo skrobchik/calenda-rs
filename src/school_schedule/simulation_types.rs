@@ -161,7 +161,7 @@ pub(crate) enum Availability {
   NotAvailable,
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, Sequence, PartialEq, Eq, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy, Sequence, PartialEq, Eq, Debug, PartialOrd, Ord)]
 pub(crate) enum ClassroomType {
   AulaSimple,
   AulaDoble,
@@ -182,7 +182,7 @@ impl Display for ClassroomType {
   }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Sequence, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum Classroom {
   Aula1,
   Aula2_3,
@@ -195,7 +195,7 @@ pub(crate) enum Classroom {
 }
 
 impl Classroom {
-  pub(crate) fn get_type(self) -> ClassroomType {
+  pub(crate) fn get_type(&self) -> ClassroomType {
     match self {
       Classroom::Aula1 => ClassroomType::AulaSimple,
       Classroom::Aula2_3 => ClassroomType::AulaDoble,

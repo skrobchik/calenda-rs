@@ -4,10 +4,13 @@ use std::{
 };
 
 use crate::{
+  school_schedule::{Classroom, ClassroomAssignmentKey, ClassroomType},
   simulation_options::{ProgressOption, SimulationOptions, StopCondition, TemperatureFunction},
   stats_tracker::StatsTracker,
+  timeslot::{DAY_RANGE, TIMESLOT_RANGE},
 };
 use indicatif::{HumanCount, HumanDuration, ProgressStyle};
+use itertools::Itertools;
 use rand::prelude::*;
 use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
@@ -36,6 +39,8 @@ pub(crate) struct SimulationOutput {
 
   /// Needed if stop condition is not number of steps
   pub(crate) total_steps: usize,
+
+  pub(crate) classroom_assignments: BTreeMap<ClassroomAssignmentKey, Classroom>,
 }
 
 pub(crate) fn generate_schedule(
@@ -190,6 +195,7 @@ fn simulated_annealing<R: Rng>(options: SimulationOptions, mut rng: R) -> Simula
   let end_time = std::time::SystemTime::now();
   let duration = start_instant.elapsed();
 
+  let classroom_assignments = assign_classrooms(&state, constraints);
   SimulationOutput {
     simulation_options: SimulationOptions {
       simulation_constraints: options.simulation_constraints,
@@ -206,6 +212,7 @@ fn simulated_annealing<R: Rng>(options: SimulationOptions, mut rng: R) -> Simula
     end_time,
     duration,
     stats: stats.into_stats(),
+    classroom_assignments,
   }
 }
 
@@ -258,4 +265,65 @@ fn cost(state: &ClassCalendar, constraints: &SimulationConstraints) -> f64 {
     + 2.0 * heuristics::count_outside_session_length(state, 1, 3)
     + 1.5 * heuristics::count_outside_session_length(state, 2, 2)
     + 1.0 * heuristics::count_inconsistent_class_timeslots(state)
+}
+
+fn assign_classrooms(
+  state: &ClassCalendar,
+  constraints: &SimulationConstraints,
+) -> BTreeMap<ClassroomAssignmentKey, Classroom> {
+  let available_classrooms: [Vec<Classroom>; enum_iterator::cardinality::<ClassroomType>()] = {
+    const EMPTY_VEC: Vec<Classroom> = Vec::new();
+    let mut available_classrooms = [EMPTY_VEC; enum_iterator::cardinality::<ClassroomType>()];
+    for classroom in enum_iterator::all::<Classroom>() {
+      available_classrooms[classroom.get_type() as usize].push(classroom);
+    }
+    available_classrooms
+  };
+  let default_classroom: [Classroom; enum_iterator::cardinality::<ClassroomType>()] =
+    available_classrooms
+      .iter()
+      .map(|v| {
+        v.get(0)
+          .expect("A classroom type doesn't have a classroom")
+          .clone()
+      })
+      .collect_vec()
+      .try_into()
+      .unwrap();
+  let mut classroom_assignment: BTreeMap<ClassroomAssignmentKey, Classroom> = BTreeMap::new();
+  for day_idx in DAY_RANGE {
+    for timeslot_idx in TIMESLOT_RANGE {
+      let mut timeslot_available_classrooms = available_classrooms.clone();
+      let mut timeslot_has_classroom_collisions = false;
+      for (class_id, _count) in state.get_timeslot(day_idx, timeslot_idx).iter().enumerate() {
+        let required_classroom_type = *constraints.get_classes()[class_id].get_classroom_type();
+        if timeslot_available_classrooms[required_classroom_type as usize]
+          .last()
+          .is_some()
+        {
+          classroom_assignment.insert(
+            ClassroomAssignmentKey {
+              day_idx,
+              timeslot_idx,
+              class_id,
+            },
+            timeslot_available_classrooms[required_classroom_type as usize]
+              .pop()
+              .unwrap(),
+          );
+        } else {
+          timeslot_has_classroom_collisions = true;
+          classroom_assignment.insert(
+            ClassroomAssignmentKey {
+              day_idx,
+              timeslot_idx,
+              class_id,
+            },
+            default_classroom[required_classroom_type as usize].clone(),
+          );
+        }
+      }
+    }
+  }
+  classroom_assignment
 }
