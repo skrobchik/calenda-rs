@@ -57,8 +57,8 @@ pub(crate) fn same_timeslot_classes_count_per_semester(
 
 pub(crate) fn same_timeslot_classes_count(
   state: &ClassCalendar,
-  class_filter: &ClassFilter,
   simulation_constraints: &SimulationConstraints,
+  class_filter: &ClassFilter,
 ) -> f64 {
   let mut same_timeslot_classes_count: u32 = 0;
   for classes in state.get_matrix().iter() {
