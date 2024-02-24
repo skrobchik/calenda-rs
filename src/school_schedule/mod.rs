@@ -309,12 +309,12 @@ impl SchoolSchedule {
             if let Some(prev_range) = class_ranges.iter_mut().find(|r| {
               r.class_id == new_range.class_id
                 && r.day == new_range.day
-                && <timeslot::Timeslot as Into<usize>>::into(r.end_timeslot)
-                  .checked_add(1_usize)
-                  .map_or(false, |prev_range_end_timeslot_plus_one| {
-                    prev_range_end_timeslot_plus_one
-                      == <timeslot::Timeslot as Into<usize>>::into(new_range.start_timeslot)
-                  })
+                && usize::from(r.end_timeslot).checked_add(1_usize).map_or(
+                  false,
+                  |prev_range_end_timeslot_plus_one| {
+                    prev_range_end_timeslot_plus_one == usize::from(new_range.start_timeslot)
+                  },
+                )
             }) {
               prev_range.end_timeslot = new_range.end_timeslot;
             } else {
@@ -327,9 +327,7 @@ impl SchoolSchedule {
     for class_range in class_ranges {
       let mut event = icalendar::Event::new();
       let start_time = semester_start
-        .checked_add_days(Days::new(
-          <timeslot::Day as Into<usize>>::into(class_range.day) as u64,
-        ))
+        .checked_add_days(Days::new(usize::from(class_range.day) as u64))
         .unwrap()
         .with_hour(crate::timeslot::timeslot_to_hour(
           class_range.start_timeslot,
@@ -337,9 +335,7 @@ impl SchoolSchedule {
         .unwrap()
         .with_timezone(&Utc);
       let end_time = semester_start
-        .checked_add_days(Days::new(
-          <timeslot::Day as Into<usize>>::into(class_range.day) as u64,
-        ))
+        .checked_add_days(Days::new(usize::from(class_range.day) as u64))
         .unwrap()
         .with_hour(crate::timeslot::timeslot_to_hour(class_range.end_timeslot) + 1) // +1 because end_timeslot is inclusive
         .unwrap()

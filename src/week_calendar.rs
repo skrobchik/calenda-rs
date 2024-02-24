@@ -10,16 +10,13 @@ pub(crate) struct WeekCalendar<T> {
 impl<T: Default + Clone> Default for WeekCalendar<T> {
   fn default() -> Self {
     Self {
-      data: std::iter::repeat(Default::default())
-        .take(timeslot::TIMESLOT_COUNT * timeslot::DAY_COUNT)
-        .collect(),
+      data: vec![Default::default(); timeslot::TIMESLOT_COUNT * timeslot::DAY_COUNT],
     }
   }
 }
 
 fn get_index(day: timeslot::Day, timeslot: timeslot::Timeslot) -> usize {
-  <timeslot::Day as Into<usize>>::into(day) * timeslot::TIMESLOT_COUNT
-    + <timeslot::Timeslot as Into<usize>>::into(timeslot)
+  usize::from(day) * timeslot::TIMESLOT_COUNT + usize::from(timeslot)
 }
 
 impl<T> WeekCalendar<T> {

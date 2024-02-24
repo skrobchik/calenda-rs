@@ -56,8 +56,8 @@ impl SimpleScheduleWidget {
 
         let mut topleft: egui::Pos2 = response.rect.left_top()
           + (
-            w * <timeslot::Day as Into<usize>>::into(day_idx) as f32,
-            h * <timeslot::Timeslot as Into<usize>>::into(timeslot_idx) as f32,
+            w * usize::from(day_idx) as f32,
+            h * usize::from(timeslot_idx) as f32,
           )
             .into();
 
