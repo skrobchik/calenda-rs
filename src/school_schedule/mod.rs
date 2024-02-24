@@ -17,7 +17,7 @@ pub(crate) use metadata_types::*;
 
 use crate::{class_filter::ClassFilter, week_calendar::WeekCalendar};
 
-use self::class_calendar::ClassCalendar;
+use self::class_calendar::{ClassCalendar, ClassId};
 
 #[derive(thiserror::Error, Debug)]
 #[error("Class hours in calendars do not match.")]
@@ -39,7 +39,7 @@ pub(crate) fn parse_semester_group(s: &str) -> Option<(Semester, Group)> {
 #[derive(Debug)]
 pub(crate) struct ClassEntry<'a> {
   school_schedule: &'a mut SchoolSchedule,
-  class_id: usize,
+  class_id: ClassId,
 }
 
 impl<'a> ClassEntry<'a> {
@@ -48,7 +48,7 @@ impl<'a> ClassEntry<'a> {
       .school_schedule
       .simulation_constraints
       .classes
-      .get_mut(self.class_id)
+      .get_mut(usize::from(self.class_id))
       .unwrap();
     let curr_class_hours = class.class_hours;
     match class_hours.cmp(&curr_class_hours) {
@@ -82,7 +82,7 @@ impl<'a> ClassEntry<'a> {
       .school_schedule
       .simulation_constraints
       .classes
-      .get_mut(self.class_id)
+      .get_mut(usize::from(self.class_id))
       .unwrap();
     class.professor_id = professor_id;
   }
@@ -92,7 +92,7 @@ impl<'a> ClassEntry<'a> {
       .school_schedule
       .simulation_constraints
       .classes
-      .get_mut(self.class_id)
+      .get_mut(usize::from(self.class_id))
       .unwrap();
     class.group = group;
   }
@@ -102,7 +102,7 @@ impl<'a> ClassEntry<'a> {
       .school_schedule
       .simulation_constraints
       .classes
-      .get_mut(self.class_id)
+      .get_mut(usize::from(self.class_id))
       .unwrap();
     class.semester = semester;
   }
@@ -112,7 +112,7 @@ impl<'a> ClassEntry<'a> {
       .school_schedule
       .simulation_constraints
       .classes
-      .get_mut(self.class_id)
+      .get_mut(usize::from(self.class_id))
       .unwrap();
     class.classroom_type = classroom_type;
   }
@@ -122,7 +122,7 @@ impl<'a> ClassEntry<'a> {
 pub(crate) struct ClassroomAssignmentKey {
   pub(crate) day: week_calendar::Day,
   pub(crate) timeslot: week_calendar::Timeslot,
-  pub(crate) class_id: usize,
+  pub(crate) class_id: ClassId,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
@@ -138,23 +138,26 @@ impl SchoolSchedule {
     &self.simulation_constraints
   }
 
-  pub(crate) fn get_class(&self, class_id: usize) -> Option<&Class> {
-    self.simulation_constraints.classes.get(class_id)
+  pub(crate) fn get_class(&self, class_id: ClassId) -> Option<&Class> {
+    self
+      .simulation_constraints
+      .classes
+      .get(usize::from(class_id))
   }
 
-  pub(crate) fn get_class_entry_mut(&mut self, class_id: usize) -> Option<ClassEntry> {
+  pub(crate) fn get_class_entry_mut(&mut self, class_id: ClassId) -> Option<ClassEntry> {
     Some(ClassEntry {
       school_schedule: self,
       class_id,
     })
   }
 
-  pub(crate) fn get_class_metadata(&self, class_id: usize) -> Option<&ClassMetadata> {
-    self.metadata.classes.get(class_id)
+  pub(crate) fn get_class_metadata(&self, class_id: ClassId) -> Option<&ClassMetadata> {
+    self.metadata.classes.get(usize::from(class_id))
   }
 
-  pub(crate) fn get_class_metadata_mut(&mut self, class_id: usize) -> Option<&mut ClassMetadata> {
-    self.metadata.classes.get_mut(class_id)
+  pub(crate) fn get_class_metadata_mut(&mut self, class_id: ClassId) -> Option<&mut ClassMetadata> {
+    self.metadata.classes.get_mut(usize::from(class_id))
   }
 
   pub(crate) fn get_professor_mut(&mut self, professor_id: usize) -> Option<&mut Professor> {
@@ -205,7 +208,7 @@ impl SchoolSchedule {
     professors.len() - 1
   }
 
-  pub(crate) fn add_new_class(&mut self) -> usize {
+  pub(crate) fn add_new_class(&mut self) -> ClassId {
     let class_metadata_list: &mut Vec<ClassMetadata> = &mut self.metadata.classes;
     let class_list = &mut self.simulation_constraints.classes;
 
@@ -221,7 +224,7 @@ impl SchoolSchedule {
       semester: Semester::S1,
       group: Group::G1,
     });
-    let class_id = class_list.len() - 1;
+    let class_id: ClassId = (class_list.len() - 1).try_into().unwrap();
     self.class_calendar.add_one_class(
       4.try_into().unwrap(),
       week_calendar::TIMESLOT_18_00.try_into().unwrap(),
@@ -243,7 +246,7 @@ impl SchoolSchedule {
         week_calendar::TIMESLOT_19_00.try_into().unwrap(),
         class_id
       ),
-      class_list[class_id].class_hours
+      class_list[usize::from(class_id)].class_hours
     );
     assert_eq!(class_list.len(), class_metadata_list.len());
     class_id
@@ -282,43 +285,38 @@ impl SchoolSchedule {
 
     let mut cal = icalendar::Calendar::new();
     struct ClassRange {
-      class_id: usize,
+      class_id: ClassId,
       day: week_calendar::Day,
       start_timeslot: week_calendar::Timeslot,
       /// inclusive
       end_timeslot: week_calendar::Timeslot,
     }
     let mut class_ranges: Vec<ClassRange> = Vec::new();
-    for day in week_calendar::Day::all() {
-      for timeslot in week_calendar::Timeslot::all() {
-        let classes = self.class_calendar.get_timeslot(day, timeslot);
-        for (class_id, &count) in classes.iter().enumerate().filter(|(_, c)| **c > 0) {
-          if !class_filter.filter(class_id, &self.simulation_constraints) {
-            continue;
-          }
-          for _ in 0..count {
-            let new_range = ClassRange {
-              class_id,
-              day,
-              start_timeslot: timeslot,
-              end_timeslot: timeslot,
-            };
-            if let Some(prev_range) = class_ranges.iter_mut().find(|r| {
-              r.class_id == new_range.class_id
-                && r.day == new_range.day
-                && usize::from(r.end_timeslot).checked_add(1_usize).map_or(
-                  false,
-                  |prev_range_end_timeslot_plus_one| {
-                    prev_range_end_timeslot_plus_one == usize::from(new_range.start_timeslot)
-                  },
-                )
-            }) {
-              prev_range.end_timeslot = new_range.end_timeslot;
-            } else {
-              class_ranges.push(new_range);
-            }
-          }
-        }
+    for class_entry in self
+      .class_calendar
+      .get_entries()
+      .iter()
+      .filter(|entry| class_filter.filter(entry.class_id, &self.simulation_constraints))
+    {
+      let new_range = ClassRange {
+        class_id: class_entry.class_id,
+        day: class_entry.day_idx,
+        start_timeslot: class_entry.timeslot_idx,
+        end_timeslot: class_entry.timeslot_idx,
+      };
+      if let Some(prev_range) = class_ranges.iter_mut().find(|r| {
+        r.class_id == new_range.class_id
+          && r.day == new_range.day
+          && usize::from(r.end_timeslot).checked_add(1_usize).map_or(
+            false,
+            |prev_range_end_timeslot_plus_one| {
+              prev_range_end_timeslot_plus_one == usize::from(new_range.start_timeslot)
+            },
+          )
+      }) {
+        prev_range.end_timeslot = new_range.end_timeslot;
+      } else {
+        class_ranges.push(new_range);
       }
     }
     for class_range in class_ranges {

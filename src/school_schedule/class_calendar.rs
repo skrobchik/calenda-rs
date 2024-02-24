@@ -5,34 +5,77 @@ use crate::week_calendar::WeekCalendar;
 use serde::Deserialize;
 use serde::Serialize;
 
-pub const MAX_CLASS_ID: usize = 256;
+pub const NUM_CLASS_IDS: usize = 256;
+const CLASS_ID_VALUE_RANGE: std::ops::Range<usize> = 0..NUM_CLASS_IDS;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+pub(crate) struct ClassId(usize);
+
+#[derive(thiserror::Error, Debug)]
+#[error("Class id value is greater than maximum")]
+pub(crate) struct ClassIdOutOfRangeError {}
+
+impl TryFrom<usize> for ClassId {
+  type Error = ClassIdOutOfRangeError;
+
+  fn try_from(value: usize) -> Result<Self, Self::Error> {
+    if CLASS_ID_VALUE_RANGE.contains(&value) {
+      Ok(Self(value))
+    } else {
+      Err(Self::Error {})
+    }
+  }
+}
+
+impl From<ClassId> for usize {
+  fn from(value: ClassId) -> Self {
+    value.0
+  }
+}
 
 #[derive(PartialEq, Eq, Debug, Clone, Serialize, Deserialize)]
-struct SingleClassEntry {
-  day_idx: week_calendar::Day,
-  timeslot_idx: week_calendar::Timeslot,
-  class_id: usize,
+pub(crate) struct SingleClassEntry {
+  pub(crate) day_idx: week_calendar::Day,
+  pub(crate) timeslot_idx: week_calendar::Timeslot,
+  pub(crate) class_id: ClassId,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct ClassEntryDelta {
-  pub(crate) class_id: usize,
+  pub(crate) class_id: ClassId,
   pub(crate) src_day_idx: week_calendar::Day,
   pub(crate) src_timeslot_idx: week_calendar::Timeslot,
   pub(crate) dst_day_idx: week_calendar::Day,
   pub(crate) dst_timeslot_idx: week_calendar::Timeslot,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct ClassCalendar {
   data: WeekCalendar<Vec<u8>>,
   class_entries: Vec<SingleClassEntry>,
+}
+
+impl Default for ClassCalendar {
+  fn default() -> Self {
+    Self {
+      data: WeekCalendar::try_from(vec![
+        vec![0_u8; NUM_CLASS_IDS];
+        week_calendar::DAY_COUNT * week_calendar::TIMESLOT_COUNT
+      ])
+      .unwrap(),
+      class_entries: Default::default(),
+    }
+  }
 }
 
 impl ClassCalendar {
   pub(crate) fn iter_timeslots(&self) -> impl Iterator<Item = &Vec<u8>> {
     week_calendar::Day::all()
       .flat_map(move |d| week_calendar::Timeslot::all().map(move |t| self.data.get(d, t)))
+  }
+
+  pub(crate) fn get_entries(&self) -> &Vec<SingleClassEntry> {
+    &self.class_entries
   }
 
   pub(crate) fn get_timeslot(
@@ -47,11 +90,13 @@ impl ClassCalendar {
     &self,
     day: week_calendar::Day,
     timeslot: week_calendar::Timeslot,
-    class_id: usize,
+    class_id: ClassId,
   ) -> u8 {
-    assert!(class_id <= MAX_CLASS_ID);
-    let timeslot = self.data.get(day, timeslot);
-    timeslot.get(class_id).copied().unwrap_or(0_u8)
+    *self
+      .data
+      .get(day, timeslot)
+      .get(usize::from(class_id))
+      .unwrap()
   }
 
   pub(crate) fn move_one_class_random<R: rand::Rng>(&mut self, rng: &mut R) -> ClassEntryDelta {
@@ -66,15 +111,13 @@ impl ClassCalendar {
     entry.timeslot_idx = dst_timeslot;
     {
       let src_timeslot = self.data.get_mut(src_day, src_timeslot);
-      assert!(src_timeslot[class_id] >= 1);
-      src_timeslot[class_id] -= 1;
+      assert!(src_timeslot[usize::from(class_id)] >= 1);
+      src_timeslot[usize::from(class_id)] -= 1;
     }
     {
       let dst_timeslot = self.data.get_mut(dst_day, dst_timeslot);
-      if class_id >= dst_timeslot.len() {
-        dst_timeslot.resize(class_id + 1, 0);
-      }
-      dst_timeslot[class_id] = dst_timeslot[class_id].checked_add(1).unwrap();
+      dst_timeslot[usize::from(class_id)] =
+        dst_timeslot[usize::from(class_id)].checked_add(1).unwrap();
     }
     ClassEntryDelta {
       class_id,
@@ -91,7 +134,7 @@ impl ClassCalendar {
     source_timeslot_idx: week_calendar::Timeslot,
     target_day_idx: week_calendar::Day,
     target_timeslot_idx: week_calendar::Timeslot,
-    class_id: usize,
+    class_id: ClassId,
   ) {
     self.remove_one_class(source_day_idx, source_timeslot_idx, class_id);
     self.add_one_class(target_day_idx, target_timeslot_idx, class_id);
@@ -101,14 +144,10 @@ impl ClassCalendar {
     &mut self,
     day_idx: week_calendar::Day,
     timeslot_idx: week_calendar::Timeslot,
-    class_id: usize,
+    class_id: ClassId,
   ) {
-    assert!(class_id <= MAX_CLASS_ID);
     let timeslot = self.data.get_mut(day_idx, timeslot_idx);
-    if class_id >= timeslot.len() {
-      timeslot.resize(class_id + 1, 0_u8);
-    }
-    timeslot[class_id] = timeslot[class_id].checked_add(1).unwrap();
+    timeslot[usize::from(class_id)] = timeslot[usize::from(class_id)].checked_add(1).unwrap();
     self.class_entries.push(SingleClassEntry {
       day_idx,
       timeslot_idx,
@@ -120,14 +159,10 @@ impl ClassCalendar {
     &mut self,
     day: week_calendar::Day,
     timeslot_idx: week_calendar::Timeslot,
-    class_id: usize,
+    class_id: ClassId,
   ) {
-    assert!(class_id <= MAX_CLASS_ID);
-
     let timeslot = self.data.get_mut(day, timeslot_idx);
-    assert!(timeslot.len() > class_id);
-
-    timeslot[class_id] = timeslot[class_id].checked_sub(1).unwrap();
+    timeslot[usize::from(class_id)] = timeslot[usize::from(class_id)].checked_sub(1).unwrap();
 
     let entry_idx = self
       .class_entries
@@ -145,7 +180,7 @@ impl ClassCalendar {
     self.class_entries.swap_remove(entry_idx);
   }
 
-  pub(super) fn remove_one_class_anywhere(&mut self, class_id: usize) {
+  pub(super) fn remove_one_class_anywhere(&mut self, class_id: ClassId) {
     let (entry_idx, entry) = self
       .class_entries
       .iter()
@@ -157,7 +192,7 @@ impl ClassCalendar {
 
     let timeslot = self.data.get_mut(day_idx, timeslot_idx);
 
-    timeslot[class_id] = timeslot[class_id].checked_sub(1).unwrap();
+    timeslot[usize::from(class_id)] = timeslot[usize::from(class_id)].checked_sub(1).unwrap();
 
     self.class_entries.swap_remove(entry_idx);
   }
@@ -170,50 +205,114 @@ mod test {
   #[test]
   fn class_calendar_test() {
     let mut class_calendar = ClassCalendar::default();
-    class_calendar.add_one_class(0.try_into().unwrap(), 1.try_into().unwrap(), 4);
-    class_calendar.add_one_class(0.try_into().unwrap(), 1.try_into().unwrap(), 4);
+    class_calendar.add_one_class(
+      0.try_into().unwrap(),
+      1.try_into().unwrap(),
+      4.try_into().unwrap(),
+    );
+    class_calendar.add_one_class(
+      0.try_into().unwrap(),
+      1.try_into().unwrap(),
+      4.try_into().unwrap(),
+    );
     assert_eq!(
-      class_calendar.get_count(0.try_into().unwrap(), 1.try_into().unwrap(), 3),
+      class_calendar.get_count(
+        0.try_into().unwrap(),
+        1.try_into().unwrap(),
+        3.try_into().unwrap()
+      ),
       0
     );
     assert_eq!(
-      class_calendar.get_count(0.try_into().unwrap(), 1.try_into().unwrap(), 4),
+      class_calendar.get_count(
+        0.try_into().unwrap(),
+        1.try_into().unwrap(),
+        4.try_into().unwrap()
+      ),
       2
     );
     assert_eq!(
-      class_calendar.get_count(0.try_into().unwrap(), 1.try_into().unwrap(), 5),
+      class_calendar.get_count(
+        0.try_into().unwrap(),
+        1.try_into().unwrap(),
+        5.try_into().unwrap()
+      ),
       0
     );
-    class_calendar.remove_one_class_anywhere(4);
+    class_calendar.remove_one_class_anywhere(4.try_into().unwrap());
     assert_eq!(
-      class_calendar.get_count(0.try_into().unwrap(), 1.try_into().unwrap(), 4),
+      class_calendar.get_count(
+        0.try_into().unwrap(),
+        1.try_into().unwrap(),
+        4.try_into().unwrap()
+      ),
       1
     );
-    class_calendar.add_one_class(0.try_into().unwrap(), 1.try_into().unwrap(), 4);
-    class_calendar.add_one_class(0.try_into().unwrap(), 1.try_into().unwrap(), 4);
-    class_calendar.add_one_class(0.try_into().unwrap(), 1.try_into().unwrap(), 4);
-    class_calendar.add_one_class(0.try_into().unwrap(), 1.try_into().unwrap(), 4);
-    class_calendar.add_one_class(0.try_into().unwrap(), 1.try_into().unwrap(), 4);
+    class_calendar.add_one_class(
+      0.try_into().unwrap(),
+      1.try_into().unwrap(),
+      4.try_into().unwrap(),
+    );
+    class_calendar.add_one_class(
+      0.try_into().unwrap(),
+      1.try_into().unwrap(),
+      4.try_into().unwrap(),
+    );
+    class_calendar.add_one_class(
+      0.try_into().unwrap(),
+      1.try_into().unwrap(),
+      4.try_into().unwrap(),
+    );
+    class_calendar.add_one_class(
+      0.try_into().unwrap(),
+      1.try_into().unwrap(),
+      4.try_into().unwrap(),
+    );
+    class_calendar.add_one_class(
+      0.try_into().unwrap(),
+      1.try_into().unwrap(),
+      4.try_into().unwrap(),
+    );
     assert_eq!(
-      class_calendar.get_count(0.try_into().unwrap(), 1.try_into().unwrap(), 4),
+      class_calendar.get_count(
+        0.try_into().unwrap(),
+        1.try_into().unwrap(),
+        4.try_into().unwrap()
+      ),
       6
     );
-    class_calendar.remove_one_class_anywhere(4);
-    class_calendar.remove_one_class_anywhere(4);
-    class_calendar.remove_one_class_anywhere(4);
-    class_calendar.remove_one_class_anywhere(4);
+    class_calendar.remove_one_class_anywhere(4.try_into().unwrap());
+    class_calendar.remove_one_class_anywhere(4.try_into().unwrap());
+    class_calendar.remove_one_class_anywhere(4.try_into().unwrap());
+    class_calendar.remove_one_class_anywhere(4.try_into().unwrap());
     assert_eq!(
-      class_calendar.get_count(0.try_into().unwrap(), 1.try_into().unwrap(), 4),
+      class_calendar.get_count(
+        0.try_into().unwrap(),
+        1.try_into().unwrap(),
+        4.try_into().unwrap()
+      ),
       2
     );
-    class_calendar.remove_one_class(0.try_into().unwrap(), 1.try_into().unwrap(), 4);
+    class_calendar.remove_one_class(
+      0.try_into().unwrap(),
+      1.try_into().unwrap(),
+      4.try_into().unwrap(),
+    );
     assert_eq!(
-      class_calendar.get_count(0.try_into().unwrap(), 1.try_into().unwrap(), 4),
+      class_calendar.get_count(
+        0.try_into().unwrap(),
+        1.try_into().unwrap(),
+        4.try_into().unwrap()
+      ),
       1
     );
-    class_calendar.remove_one_class_anywhere(4);
+    class_calendar.remove_one_class_anywhere(4.try_into().unwrap());
     assert_eq!(
-      class_calendar.get_count(0.try_into().unwrap(), 1.try_into().unwrap(), 4),
+      class_calendar.get_count(
+        0.try_into().unwrap(),
+        1.try_into().unwrap(),
+        4.try_into().unwrap()
+      ),
       0
     );
   }

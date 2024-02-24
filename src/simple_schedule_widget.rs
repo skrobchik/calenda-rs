@@ -39,10 +39,10 @@ impl SimpleScheduleWidget {
           .iter()
           .enumerate()
           .map(|(class_id, count)| {
-            if self
-              .class_filter
-              .filter(class_id, state.get_simulation_constraints())
-            {
+            if self.class_filter.filter(
+              class_id.try_into().unwrap(),
+              state.get_simulation_constraints(),
+            ) {
               *count
             } else {
               0
@@ -68,7 +68,9 @@ impl SimpleScheduleWidget {
         );
 
         for (class_id, class_count) in timeslot.iter().enumerate() {
-          let class_metadata = state.get_class_metadata(class_id).unwrap();
+          let class_metadata = state
+            .get_class_metadata(class_id.try_into().unwrap())
+            .unwrap();
           for _ in 0..*class_count {
             let botright: egui::Pos2 = topleft + (class_width, h).into();
             let class_color = class_metadata.color;
@@ -78,8 +80,14 @@ impl SimpleScheduleWidget {
               class_color,
               Stroke::new(1.0, Color32::from_gray(100)),
             );
-            let semester = state.get_class(class_id).unwrap().get_semester();
-            let group = state.get_class(class_id).unwrap().get_group();
+            let semester = state
+              .get_class(class_id.try_into().unwrap())
+              .unwrap()
+              .get_semester();
+            let group = state
+              .get_class(class_id.try_into().unwrap())
+              .unwrap()
+              .get_group();
             let class_code = format!("{}{}", semester, group);
             painter.text(
               topleft,

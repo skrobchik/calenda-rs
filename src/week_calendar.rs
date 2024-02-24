@@ -4,6 +4,7 @@ use std::ops::Range;
 
 pub(crate) const TIMESLOT_COUNT: usize = 12;
 pub(crate) const DAY_COUNT: usize = 5;
+const DATA_LEN: usize = TIMESLOT_COUNT * DAY_COUNT;
 
 const DAY_VALUE_RANGE: Range<usize> = std::ops::Range {
   start: 0,
@@ -122,7 +123,7 @@ pub(crate) struct WeekCalendar<T> {
 impl<T: Default + Clone> Default for WeekCalendar<T> {
   fn default() -> Self {
     Self {
-      data: vec![Default::default(); TIMESLOT_COUNT * DAY_COUNT],
+      data: vec![Default::default(); DATA_LEN],
     }
   }
 }
@@ -138,5 +139,20 @@ impl<T> WeekCalendar<T> {
 
   pub(crate) fn get_mut(&mut self, day: Day, timeslot: Timeslot) -> &mut T {
     &mut self.data[get_index(day, timeslot)]
+  }
+}
+
+#[derive(thiserror::Error, Debug)]
+#[error("Provided data length is incorrect")]
+pub(crate) struct IncorrectDataLenError {}
+impl<T> TryFrom<Vec<T>> for WeekCalendar<T> {
+  type Error = IncorrectDataLenError;
+
+  fn try_from(data: Vec<T>) -> Result<Self, Self::Error> {
+    if data.len() == DATA_LEN {
+      Ok(Self { data })
+    } else {
+      Err(IncorrectDataLenError {})
+    }
   }
 }

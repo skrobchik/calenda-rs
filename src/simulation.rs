@@ -239,7 +239,7 @@ fn random_init<R: Rng>(constraints: &SimulationConstraints, rng: &mut R) -> Clas
     for _ in 0..*class.get_class_hours() {
       let timeslot_idx = Timeslot::new_random(rng);
       let day_idx = Day::new_random(rng);
-      state.add_one_class(day_idx, timeslot_idx, class_id)
+      state.add_one_class(day_idx, timeslot_idx, class_id.try_into().unwrap())
     }
   }
 
@@ -311,7 +311,7 @@ fn assign_classrooms(
             ClassroomAssignmentKey {
               day: day_idx,
               timeslot: timeslot_idx,
-              class_id,
+              class_id: class_id.try_into().unwrap(),
             },
             timeslot_available_classrooms[required_classroom_type as usize]
               .pop()
@@ -322,7 +322,7 @@ fn assign_classrooms(
             ClassroomAssignmentKey {
               day: day_idx,
               timeslot: timeslot_idx,
-              class_id,
+              class_id: class_id.try_into().unwrap(),
             },
             default_classroom[required_classroom_type as usize].clone(),
           );

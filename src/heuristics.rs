@@ -65,7 +65,9 @@ pub(crate) fn same_timeslot_classes_count(
     let x: u32 = classes
       .iter()
       .enumerate()
-      .filter(|(class_id, _count)| class_filter.filter(*class_id, simulation_constraints))
+      .filter(|(class_id, _count)| {
+        class_filter.filter((*class_id).try_into().unwrap(), simulation_constraints)
+      })
       .map(|(_class_id, count)| *count as u32)
       .sum();
     if x >= 2 {
@@ -198,31 +200,31 @@ mod test {
     state.add_one_class(
       0.try_into().unwrap(),
       week_calendar::TIMESLOT_15_00.try_into().unwrap(),
-      0,
+      0.try_into().unwrap(),
     );
     assert_eq!(count_outside_session_length(&state, 2, 4), 1.0);
     state.add_one_class(
       0.try_into().unwrap(),
       week_calendar::TIMESLOT_16_00.try_into().unwrap(),
-      0,
+      0.try_into().unwrap(),
     );
     assert_eq!(count_outside_session_length(&state, 2, 4), 0.0);
     state.add_one_class(
       0.try_into().unwrap(),
       week_calendar::TIMESLOT_17_00.try_into().unwrap(),
-      0,
+      0.try_into().unwrap(),
     );
     assert_eq!(count_outside_session_length(&state, 2, 4), 0.0);
     state.add_one_class(
       0.try_into().unwrap(),
       week_calendar::TIMESLOT_18_00.try_into().unwrap(),
-      0,
+      0.try_into().unwrap(),
     );
     assert_eq!(count_outside_session_length(&state, 2, 4), 0.0);
     state.add_one_class(
       0.try_into().unwrap(),
       week_calendar::TIMESLOT_19_00.try_into().unwrap(),
-      0,
+      0.try_into().unwrap(),
     );
     assert_eq!(count_outside_session_length(&state, 2, 4), 1.0);
   }
@@ -234,37 +236,37 @@ mod test {
     state.add_one_class(
       0.try_into().unwrap(),
       week_calendar::TIMESLOT_18_00.try_into().unwrap(),
-      7,
+      7.try_into().unwrap(),
     );
     assert_eq!(count_inconsistent_class_timeslots(&state), 1.0);
     state.add_one_class(
       4.try_into().unwrap(),
       week_calendar::TIMESLOT_18_00.try_into().unwrap(),
-      6,
+      6.try_into().unwrap(),
     );
     assert_eq!(count_inconsistent_class_timeslots(&state), 2.0);
     state.add_one_class(
       4.try_into().unwrap(),
       week_calendar::TIMESLOT_18_00.try_into().unwrap(),
-      7,
+      7.try_into().unwrap(),
     );
     assert_eq!(count_inconsistent_class_timeslots(&state), 1.0);
     state.add_one_class(
       3.try_into().unwrap(),
       week_calendar::TIMESLOT_19_00.try_into().unwrap(),
-      6,
+      6.try_into().unwrap(),
     );
     assert_eq!(count_inconsistent_class_timeslots(&state), 2.0);
     state.add_one_class(
       3.try_into().unwrap(),
       week_calendar::TIMESLOT_18_00.try_into().unwrap(),
-      6,
+      6.try_into().unwrap(),
     );
     assert_eq!(count_inconsistent_class_timeslots(&state), 1.0);
     state.add_one_class(
       0.try_into().unwrap(),
       week_calendar::TIMESLOT_19_00.try_into().unwrap(),
-      6,
+      6.try_into().unwrap(),
     );
     assert_eq!(count_inconsistent_class_timeslots(&state), 0.0);
   }
