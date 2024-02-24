@@ -8,7 +8,7 @@ use crate::{
   school_schedule::{Classroom, ClassroomAssignmentKey, ClassroomType},
   simulation_options::{ProgressOption, SimulationOptions, StopCondition, TemperatureFunction},
   stats_tracker::StatsTracker,
-  timeslot::{Day, Timeslot},
+  week_calendar::{self, Day, Timeslot},
 };
 use indicatif::{HumanCount, HumanDuration, ProgressStyle};
 use itertools::Itertools;
@@ -22,7 +22,6 @@ use crate::{
     class_calendar::{ClassCalendar, ClassEntryDelta},
     SimulationConstraints,
   },
-  timeslot,
 };
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -294,8 +293,8 @@ fn assign_classrooms(
       .try_into()
       .unwrap();
   let mut classroom_assignment: BTreeMap<ClassroomAssignmentKey, Classroom> = BTreeMap::new();
-  for day_idx in timeslot::Day::all() {
-    for timeslot_idx in timeslot::Timeslot::all() {
+  for day_idx in week_calendar::Day::all() {
+    for timeslot_idx in week_calendar::Timeslot::all() {
       let mut timeslot_available_classrooms = available_classrooms.clone();
       for (class_id, count) in state.get_timeslot(day_idx, timeslot_idx).iter().enumerate() {
         if *count == 0 {
@@ -347,8 +346,8 @@ fn count_classroom_assignment_collisions(
     available_classrooms
   };
   let mut num_classroom_assignment_collisions = 0;
-  for day_idx in timeslot::Day::all() {
-    for timeslot_idx in timeslot::Timeslot::all() {
+  for day_idx in week_calendar::Day::all() {
+    for timeslot_idx in week_calendar::Timeslot::all() {
       let mut timeslot_available_classrooms = available_classrooms.clone();
       for (class_id, count) in state.get_timeslot(day_idx, timeslot_idx).iter().enumerate() {
         for _ in 0..*count {

@@ -12,7 +12,6 @@ pub mod simple_schedule_widget;
 pub mod simulation;
 pub mod simulation_options;
 pub mod stats_tracker;
-pub mod timeslot;
 pub mod week_calendar;
 
 use crate::app::MyApp;

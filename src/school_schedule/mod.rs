@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use chrono::{Datelike, Days, TimeZone, Timelike, Utc};
 use egui::Color32;
 
+use crate::week_calendar;
 use icalendar::{Component, EventLike};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
@@ -14,7 +15,7 @@ pub(crate) mod class_calendar;
 pub(crate) mod metadata_types;
 pub(crate) use metadata_types::*;
 
-use crate::{class_filter::ClassFilter, timeslot, week_calendar::WeekCalendar};
+use crate::{class_filter::ClassFilter, week_calendar::WeekCalendar};
 
 use self::class_calendar::ClassCalendar;
 
@@ -119,8 +120,8 @@ impl<'a> ClassEntry<'a> {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct ClassroomAssignmentKey {
-  pub(crate) day: timeslot::Day,
-  pub(crate) timeslot: timeslot::Timeslot,
+  pub(crate) day: week_calendar::Day,
+  pub(crate) timeslot: week_calendar::Timeslot,
   pub(crate) class_id: usize,
 }
 
@@ -154,10 +155,6 @@ impl SchoolSchedule {
 
   pub(crate) fn get_class_metadata_mut(&mut self, class_id: usize) -> Option<&mut ClassMetadata> {
     self.metadata.classes.get_mut(class_id)
-  }
-
-  pub(crate) fn get_professor(&self, professor_id: usize) -> Option<&Professor> {
-    self.simulation_constraints.professors.get(professor_id)
   }
 
   pub(crate) fn get_professor_mut(&mut self, professor_id: usize) -> Option<&mut Professor> {
@@ -227,23 +224,23 @@ impl SchoolSchedule {
     let class_id = class_list.len() - 1;
     self.class_calendar.add_one_class(
       4.try_into().unwrap(),
-      timeslot::TIMESLOT_18_00.try_into().unwrap(),
+      week_calendar::TIMESLOT_18_00.try_into().unwrap(),
       class_id,
     );
     self.class_calendar.add_one_class(
       4.try_into().unwrap(),
-      timeslot::TIMESLOT_19_00.try_into().unwrap(),
+      week_calendar::TIMESLOT_19_00.try_into().unwrap(),
       class_id,
     );
 
     assert_eq!(
       self.class_calendar.get_count(
         4.try_into().unwrap(),
-        timeslot::TIMESLOT_18_00.try_into().unwrap(),
+        week_calendar::TIMESLOT_18_00.try_into().unwrap(),
         class_id
       ) + self.class_calendar.get_count(
         4.try_into().unwrap(),
-        timeslot::TIMESLOT_19_00.try_into().unwrap(),
+        week_calendar::TIMESLOT_19_00.try_into().unwrap(),
         class_id
       ),
       class_list[class_id].class_hours
@@ -286,14 +283,14 @@ impl SchoolSchedule {
     let mut cal = icalendar::Calendar::new();
     struct ClassRange {
       class_id: usize,
-      day: timeslot::Day,
-      start_timeslot: timeslot::Timeslot,
+      day: week_calendar::Day,
+      start_timeslot: week_calendar::Timeslot,
       /// inclusive
-      end_timeslot: timeslot::Timeslot,
+      end_timeslot: week_calendar::Timeslot,
     }
     let mut class_ranges: Vec<ClassRange> = Vec::new();
-    for day in timeslot::Day::all() {
-      for timeslot in timeslot::Timeslot::all() {
+    for day in week_calendar::Day::all() {
+      for timeslot in week_calendar::Timeslot::all() {
         let classes = self.class_calendar.get_timeslot(day, timeslot);
         for (class_id, &count) in classes.iter().enumerate().filter(|(_, c)| **c > 0) {
           if !class_filter.filter(class_id, &self.simulation_constraints) {
@@ -329,7 +326,7 @@ impl SchoolSchedule {
       let start_time = semester_start
         .checked_add_days(Days::new(usize::from(class_range.day) as u64))
         .unwrap()
-        .with_hour(crate::timeslot::timeslot_to_hour(
+        .with_hour(crate::week_calendar::timeslot_to_hour(
           class_range.start_timeslot,
         ))
         .unwrap()
@@ -337,7 +334,7 @@ impl SchoolSchedule {
       let end_time = semester_start
         .checked_add_days(Days::new(usize::from(class_range.day) as u64))
         .unwrap()
-        .with_hour(crate::timeslot::timeslot_to_hour(class_range.end_timeslot) + 1) // +1 because end_timeslot is inclusive
+        .with_hour(crate::week_calendar::timeslot_to_hour(class_range.end_timeslot) + 1) // +1 because end_timeslot is inclusive
         .unwrap()
         .with_timezone(&Utc);
       event.starts(start_time);

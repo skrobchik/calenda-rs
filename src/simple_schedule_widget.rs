@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::class_filter::ClassFilter;
 use crate::school_schedule::{SchoolSchedule, Semester};
-use crate::timeslot;
+use crate::week_calendar;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub(crate) struct SimpleScheduleWidget {
@@ -29,10 +29,10 @@ impl SimpleScheduleWidget {
     let (response, painter) = ui.allocate_painter(ui.available_size_before_wrap(), Sense::hover());
     let total_width = response.rect.width();
     let total_height = response.rect.height();
-    let w = total_width / timeslot::DAY_COUNT as f32;
-    let h: f32 = total_height / timeslot::TIMESLOT_COUNT as f32;
-    for day_idx in timeslot::Day::all() {
-      for timeslot_idx in timeslot::Timeslot::all() {
+    let w = total_width / week_calendar::DAY_COUNT as f32;
+    let h: f32 = total_height / week_calendar::TIMESLOT_COUNT as f32;
+    for day_idx in week_calendar::Day::all() {
+      for timeslot_idx in week_calendar::Timeslot::all() {
         let timeslot: Vec<u8> = state
           .get_class_calendar()
           .get_timeslot(day_idx, timeslot_idx)

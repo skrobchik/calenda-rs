@@ -1,7 +1,7 @@
 use crate::{
   class_filter::ClassFilter,
   school_schedule::{class_calendar::ClassCalendar, Availability, SimulationConstraints},
-  timeslot,
+  week_calendar,
 };
 
 pub(crate) fn same_timeslot_classes_count_per_professor(
@@ -80,8 +80,8 @@ pub(crate) fn count_not_available(
   constraints: &SimulationConstraints,
 ) -> f64 {
   let mut not_available_count: f64 = 0.0;
-  for day in timeslot::Day::all() {
-    for timeslot in timeslot::Timeslot::all() {
+  for day in week_calendar::Day::all() {
+    for timeslot in week_calendar::Timeslot::all() {
       let classes = state.get_timeslot(day, timeslot);
       for (class_id, _count) in classes.iter().enumerate().filter(|(_, c)| **c > 0) {
         let professor_id = *constraints.get_classes()[class_id].get_professor_id();
@@ -102,8 +102,8 @@ pub(crate) fn count_available_if_needed(
   constraints: &SimulationConstraints,
 ) -> f64 {
   let mut available_if_needed_count: f64 = 0.0;
-  for day in timeslot::Day::all() {
-    for timeslot in timeslot::Timeslot::all() {
+  for day in week_calendar::Day::all() {
+    for timeslot in week_calendar::Timeslot::all() {
       let classes = state.get_timeslot(day, timeslot);
       for (class_id, _count) in classes.iter().enumerate().filter(|(_, c)| **c > 0) {
         let professor_id = *constraints.get_classes()[class_id].get_professor_id();
@@ -124,8 +124,8 @@ pub(crate) fn count_outside_session_length(
   max_session_length: u8,
 ) -> f64 {
   let mut outside_session_length_count: u64 = 0;
-  for day_idx in timeslot::Day::all() {
-    let max_class_id = timeslot::Timeslot::all()
+  for day_idx in week_calendar::Day::all() {
+    let max_class_id = week_calendar::Timeslot::all()
       .map(|timeslot_idx| {
         state
           .get_timeslot(day_idx, timeslot_idx)
@@ -136,7 +136,7 @@ pub(crate) fn count_outside_session_length(
       .max()
       .unwrap();
     let mut session_length: Vec<u8> = vec![0; max_class_id + 1];
-    for timeslot_idx in timeslot::Timeslot::all() {
+    for timeslot_idx in week_calendar::Timeslot::all() {
       let timeslot = state.get_timeslot(day_idx, timeslot_idx);
       for (class_id, class_session_length) in
         session_length.iter_mut().enumerate().take(max_class_id + 1)
@@ -172,9 +172,9 @@ pub(crate) fn count_inconsistent_class_timeslots(state: &ClassCalendar) -> f64 {
     .max()
     .unwrap();
   let mut class_count: Vec<Vec<u16>> =
-    vec![vec![0; max_class_id_plus_one]; timeslot::TIMESLOT_COUNT];
-  for day_idx in timeslot::Day::all() {
-    for timeslot_idx in timeslot::Timeslot::all() {
+    vec![vec![0; max_class_id_plus_one]; week_calendar::TIMESLOT_COUNT];
+  for day_idx in week_calendar::Day::all() {
+    for timeslot_idx in week_calendar::Timeslot::all() {
       class_count[Into::<usize>::into(timeslot_idx)]
         .iter_mut()
         .zip(state.get_timeslot(day_idx, timeslot_idx).iter())
@@ -197,31 +197,31 @@ mod test {
     assert_eq!(count_outside_session_length(&state, 2, 4), 0.0);
     state.add_one_class(
       0.try_into().unwrap(),
-      timeslot::TIMESLOT_15_00.try_into().unwrap(),
+      week_calendar::TIMESLOT_15_00.try_into().unwrap(),
       0,
     );
     assert_eq!(count_outside_session_length(&state, 2, 4), 1.0);
     state.add_one_class(
       0.try_into().unwrap(),
-      timeslot::TIMESLOT_16_00.try_into().unwrap(),
+      week_calendar::TIMESLOT_16_00.try_into().unwrap(),
       0,
     );
     assert_eq!(count_outside_session_length(&state, 2, 4), 0.0);
     state.add_one_class(
       0.try_into().unwrap(),
-      timeslot::TIMESLOT_17_00.try_into().unwrap(),
+      week_calendar::TIMESLOT_17_00.try_into().unwrap(),
       0,
     );
     assert_eq!(count_outside_session_length(&state, 2, 4), 0.0);
     state.add_one_class(
       0.try_into().unwrap(),
-      timeslot::TIMESLOT_18_00.try_into().unwrap(),
+      week_calendar::TIMESLOT_18_00.try_into().unwrap(),
       0,
     );
     assert_eq!(count_outside_session_length(&state, 2, 4), 0.0);
     state.add_one_class(
       0.try_into().unwrap(),
-      timeslot::TIMESLOT_19_00.try_into().unwrap(),
+      week_calendar::TIMESLOT_19_00.try_into().unwrap(),
       0,
     );
     assert_eq!(count_outside_session_length(&state, 2, 4), 1.0);
@@ -233,37 +233,37 @@ mod test {
     assert_eq!(count_inconsistent_class_timeslots(&state), 0.0);
     state.add_one_class(
       0.try_into().unwrap(),
-      timeslot::TIMESLOT_18_00.try_into().unwrap(),
+      week_calendar::TIMESLOT_18_00.try_into().unwrap(),
       7,
     );
     assert_eq!(count_inconsistent_class_timeslots(&state), 1.0);
     state.add_one_class(
       4.try_into().unwrap(),
-      timeslot::TIMESLOT_18_00.try_into().unwrap(),
+      week_calendar::TIMESLOT_18_00.try_into().unwrap(),
       6,
     );
     assert_eq!(count_inconsistent_class_timeslots(&state), 2.0);
     state.add_one_class(
       4.try_into().unwrap(),
-      timeslot::TIMESLOT_18_00.try_into().unwrap(),
+      week_calendar::TIMESLOT_18_00.try_into().unwrap(),
       7,
     );
     assert_eq!(count_inconsistent_class_timeslots(&state), 1.0);
     state.add_one_class(
       3.try_into().unwrap(),
-      timeslot::TIMESLOT_19_00.try_into().unwrap(),
+      week_calendar::TIMESLOT_19_00.try_into().unwrap(),
       6,
     );
     assert_eq!(count_inconsistent_class_timeslots(&state), 2.0);
     state.add_one_class(
       3.try_into().unwrap(),
-      timeslot::TIMESLOT_18_00.try_into().unwrap(),
+      week_calendar::TIMESLOT_18_00.try_into().unwrap(),
       6,
     );
     assert_eq!(count_inconsistent_class_timeslots(&state), 1.0);
     state.add_one_class(
       0.try_into().unwrap(),
-      timeslot::TIMESLOT_19_00.try_into().unwrap(),
+      week_calendar::TIMESLOT_19_00.try_into().unwrap(),
       6,
     );
     assert_eq!(count_inconsistent_class_timeslots(&state), 0.0);

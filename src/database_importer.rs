@@ -1,6 +1,6 @@
 use crate::{
   school_schedule::{parse_semester_group, Availability, SchoolSchedule},
-  timeslot,
+  week_calendar,
 };
 
 use egui::Color32;
@@ -118,8 +118,8 @@ fn parse_database_data(connection: sqlite::Connection) -> anyhow::Result<SchoolS
     professor_metadata.name = my_professor.name.clone();
     let professor = schedule.get_professor_mut(professor_id).unwrap();
     professor_ids.insert(my_professor.rfc.clone(), professor_id);
-    for day in timeslot::Day::all() {
-      for timeslot in timeslot::TIMESLOT_09_00..timeslot::TIMESLOT_17_00 {
+    for day in week_calendar::Day::all() {
+      for timeslot in week_calendar::TIMESLOT_09_00..week_calendar::TIMESLOT_17_00 {
         *professor
           .availability
           .get_mut(day, timeslot.try_into().unwrap()) = Availability::AvailableIfNeeded;
