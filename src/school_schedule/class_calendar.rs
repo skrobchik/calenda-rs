@@ -217,6 +217,9 @@ mod test {
   #[test]
   fn classes_iter_size_test() {
     let class_calendar = ClassCalendar::default();
-    assert_eq!(class_calendar.iter_timeslots().count(), timeslot::DAY_COUNT * timeslot::TIMESLOT_COUNT);
+    assert_eq!(
+      class_calendar.iter_timeslots().count(),
+      timeslot::DAY_COUNT * timeslot::TIMESLOT_COUNT
+    );
   }
 }

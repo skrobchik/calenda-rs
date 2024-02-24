@@ -1,6 +1,5 @@
 use std::ops::Range;
 
-use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 
 pub(crate) const TIMESLOT_COUNT: usize = 12;
@@ -22,18 +21,18 @@ pub(crate) struct Timeslot(usize);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub(crate) struct Day(usize);
 
+#[derive(thiserror::Error, Debug)]
+#[error("Timeslot value is outside of range")]
+pub(crate) struct TimeslotValueOutOfRangeError {}
+
 impl TryFrom<usize> for Timeslot {
-  type Error = anyhow::Error;
+  type Error = TimeslotValueOutOfRangeError;
 
   fn try_from(value: usize) -> Result<Self, Self::Error> {
     if TIMESLOT_VALUE_RANGE.contains(&value) {
       Ok(Timeslot(value))
     } else {
-      Err(anyhow!(
-        "value `{:?}` outside timeslot range `{:?}`",
-        value,
-        TIMESLOT_VALUE_RANGE
-      ))
+      Err(TimeslotValueOutOfRangeError {})
     }
   }
 }
@@ -44,18 +43,18 @@ impl From<Timeslot> for usize {
   }
 }
 
+#[derive(thiserror::Error, Debug)]
+#[error("Day value is outside of range")]
+pub(crate) struct DayValueOutOfRangeError {}
+
 impl TryFrom<usize> for Day {
-  type Error = anyhow::Error;
+  type Error = DayValueOutOfRangeError;
 
   fn try_from(value: usize) -> Result<Self, Self::Error> {
     if DAY_VALUE_RANGE.contains(&value) {
       Ok(Day(value))
     } else {
-      Err(anyhow!(
-        "value `{:?}` outside day range `{:?}`",
-        value,
-        DAY_VALUE_RANGE
-      ))
+      Err(DayValueOutOfRangeError {})
     }
   }
 }
