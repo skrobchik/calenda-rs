@@ -19,20 +19,18 @@ impl ClassFilter {
     match self {
       ClassFilter::None => true,
       ClassFilter::Semester(s) => {
-        simulation_constraints
-          .get_classes()
-          .get(usize::from(class_id))
-          .unwrap()
-          .get_semester()
-          == s
+        if let Some(class) = simulation_constraints.get_class(class_id) {
+          class.get_semester() == s
+        } else {
+          false
+        }
       }
       ClassFilter::ProfessorId(p) => {
-        simulation_constraints
-          .get_classes()
-          .get(usize::from(class_id))
-          .unwrap()
-          .get_professor_id()
-          == p
+        if let Some(class) = simulation_constraints.get_class(class_id) {
+          class.get_professor_id() == p
+        } else {
+          false
+        }
       }
     }
   }

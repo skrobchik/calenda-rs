@@ -7,6 +7,8 @@ use crate::week_calendar::WeekCalendar;
 
 use anyhow::anyhow;
 
+use super::class_calendar::ClassId;
+
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub(crate) struct SimulationConstraints {
   pub(super) classes: Vec<Class>,
@@ -14,8 +16,15 @@ pub(crate) struct SimulationConstraints {
 }
 
 impl SimulationConstraints {
-  pub(crate) fn get_classes(&self) -> &Vec<Class> {
-    &self.classes
+  pub(crate) fn get_class(&self, class_id: ClassId) -> Option<&Class> {
+    self.classes.get(usize::from(class_id))
+  }
+  pub(crate) fn iter_classes_with_id(&self) -> impl Iterator<Item = (ClassId, &Class)> {
+    self
+      .classes
+      .iter()
+      .enumerate()
+      .map(|(i, c)| (i.try_into().unwrap(), c))
   }
   pub(crate) fn get_professors(&self) -> &Vec<Professor> {
     &self.professors

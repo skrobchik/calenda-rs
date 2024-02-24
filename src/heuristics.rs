@@ -14,12 +14,10 @@ pub(crate) fn same_timeslot_classes_count_per_professor(
   for classes in state.iter_timeslots() {
     professor_class_counter.fill(0);
     for (class_id, count) in classes.iter().enumerate() {
-      let professor_id = simulation_constraints
-        .get_classes()
-        .get(class_id)
-        .unwrap()
-        .get_professor_id();
-      professor_class_counter[*professor_id] += *count as u32;
+      if let Some(class) = simulation_constraints.get_class(class_id.try_into().unwrap()) {
+        let professor_id = class.get_professor_id();
+        professor_class_counter[*professor_id] += *count as u32;
+      }
     }
     same_timeslot_classes_count += professor_class_counter
       .iter()
@@ -39,13 +37,11 @@ pub(crate) fn same_timeslot_classes_count_per_semester(
   for classes in state.iter_timeslots() {
     semester_class_counter.fill(0);
     for (class_id, count) in classes.iter().enumerate() {
-      let semester = simulation_constraints
-        .get_classes()
-        .get(class_id)
-        .unwrap()
-        .get_semester();
-      let semester: u32 = semester.into();
-      semester_class_counter[semester as usize] += *count as u32;
+      if let Some(class) = simulation_constraints.get_class(class_id.try_into().unwrap()) {
+        let semester = class.get_semester();
+        let semester: u32 = semester.into();
+        semester_class_counter[semester as usize] += *count as u32;
+      }
     }
     same_timeslot_classes_count += semester_class_counter
       .iter()
@@ -86,7 +82,10 @@ pub(crate) fn count_not_available(
     for timeslot in week_calendar::Timeslot::all() {
       let classes = state.get_timeslot(day, timeslot);
       for (class_id, _count) in classes.iter().enumerate().filter(|(_, c)| **c > 0) {
-        let professor_id = *constraints.get_classes()[class_id].get_professor_id();
+        let professor_id = *constraints
+          .get_class(class_id.try_into().unwrap())
+          .unwrap()
+          .get_professor_id();
         let professor = &constraints.get_professors()[professor_id];
         let availability = professor.availability.get(day, timeslot);
         if *availability == Availability::NotAvailable {
@@ -108,7 +107,10 @@ pub(crate) fn count_available_if_needed(
     for timeslot in week_calendar::Timeslot::all() {
       let classes = state.get_timeslot(day, timeslot);
       for (class_id, _count) in classes.iter().enumerate().filter(|(_, c)| **c > 0) {
-        let professor_id = *constraints.get_classes()[class_id].get_professor_id();
+        let professor_id = *constraints
+          .get_class(class_id.try_into().unwrap())
+          .unwrap()
+          .get_professor_id();
         let professor = &constraints.get_professors()[professor_id];
         let availability = professor.availability.get(day, timeslot);
         if *availability == Availability::AvailableIfNeeded {

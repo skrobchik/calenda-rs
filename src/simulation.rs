@@ -235,11 +235,11 @@ fn temperature(x: f64, temperature_function_variant: &TemperatureFunction, ampli
 fn random_init<R: Rng>(constraints: &SimulationConstraints, rng: &mut R) -> ClassCalendar {
   let mut state: ClassCalendar = Default::default();
 
-  for (class_id, class) in constraints.get_classes().iter().enumerate() {
+  for (class_id, class) in constraints.iter_classes_with_id() {
     for _ in 0..*class.get_class_hours() {
       let timeslot_idx = Timeslot::new_random(rng);
       let day_idx = Day::new_random(rng);
-      state.add_one_class(day_idx, timeslot_idx, class_id.try_into().unwrap())
+      state.add_one_class(day_idx, timeslot_idx, class_id)
     }
   }
 
@@ -302,7 +302,10 @@ fn assign_classrooms(
         }
         // if class is repeating (`count` >= 2) it will be assigned the same classroom, but at this point
         // the schedule is really not very good so it doesn't matter
-        let required_classroom_type = *constraints.get_classes()[class_id].get_classroom_type();
+        let required_classroom_type = *constraints
+          .get_class(class_id.try_into().unwrap())
+          .unwrap()
+          .get_classroom_type();
         if timeslot_available_classrooms[required_classroom_type as usize]
           .last()
           .is_some()
@@ -351,7 +354,10 @@ fn count_classroom_assignment_collisions(
       let mut timeslot_available_classrooms = available_classrooms.clone();
       for (class_id, count) in state.get_timeslot(day_idx, timeslot_idx).iter().enumerate() {
         for _ in 0..*count {
-          let required_classroom_type = *constraints.get_classes()[class_id].get_classroom_type();
+          let required_classroom_type = *constraints
+            .get_class(class_id.try_into().unwrap())
+            .unwrap()
+            .get_classroom_type();
           if timeslot_available_classrooms[required_classroom_type as usize]
             .last()
             .is_some()
