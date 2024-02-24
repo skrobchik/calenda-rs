@@ -8,7 +8,7 @@ use crate::{
   school_schedule::{Classroom, ClassroomAssignmentKey, ClassroomType},
   simulation_options::{ProgressOption, SimulationOptions, StopCondition, TemperatureFunction},
   stats_tracker::StatsTracker,
-  timeslot::{DAY_RANGE, TIMESLOT_RANGE},
+  timeslot::{Day, Timeslot},
 };
 use indicatif::{HumanCount, HumanDuration, ProgressStyle};
 use itertools::Itertools;
@@ -238,8 +238,8 @@ fn random_init<R: Rng>(constraints: &SimulationConstraints, rng: &mut R) -> Clas
 
   for (class_id, class) in constraints.get_classes().iter().enumerate() {
     for _ in 0..*class.get_class_hours() {
-      let timeslot_idx = rng.gen_range(timeslot::TIMESLOT_RANGE);
-      let day_idx = rng.gen_range(timeslot::DAY_RANGE);
+      let timeslot_idx = Timeslot::new_random(rng);
+      let day_idx = Day::new_random(rng);
       state.add_one_class(day_idx, timeslot_idx, class_id)
     }
   }
@@ -294,8 +294,8 @@ fn assign_classrooms(
       .try_into()
       .unwrap();
   let mut classroom_assignment: BTreeMap<ClassroomAssignmentKey, Classroom> = BTreeMap::new();
-  for day_idx in DAY_RANGE {
-    for timeslot_idx in TIMESLOT_RANGE {
+  for day_idx in timeslot::Day::all() {
+    for timeslot_idx in timeslot::Timeslot::all() {
       let mut timeslot_available_classrooms = available_classrooms.clone();
       for (class_id, count) in state.get_timeslot(day_idx, timeslot_idx).iter().enumerate() {
         if *count == 0 {
@@ -310,8 +310,8 @@ fn assign_classrooms(
         {
           classroom_assignment.insert(
             ClassroomAssignmentKey {
-              day_idx,
-              timeslot_idx,
+              day: day_idx,
+              timeslot: timeslot_idx,
               class_id,
             },
             timeslot_available_classrooms[required_classroom_type as usize]
@@ -321,8 +321,8 @@ fn assign_classrooms(
         } else {
           classroom_assignment.insert(
             ClassroomAssignmentKey {
-              day_idx,
-              timeslot_idx,
+              day: day_idx,
+              timeslot: timeslot_idx,
               class_id,
             },
             default_classroom[required_classroom_type as usize].clone(),
@@ -347,8 +347,8 @@ fn count_classroom_assignment_collisions(
     available_classrooms
   };
   let mut num_classroom_assignment_collisions = 0;
-  for day_idx in DAY_RANGE {
-    for timeslot_idx in TIMESLOT_RANGE {
+  for day_idx in timeslot::Day::all() {
+    for timeslot_idx in timeslot::Timeslot::all() {
       let mut timeslot_available_classrooms = available_classrooms.clone();
       for (class_id, count) in state.get_timeslot(day_idx, timeslot_idx).iter().enumerate() {
         for _ in 0..*count {

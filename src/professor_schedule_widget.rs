@@ -23,9 +23,9 @@ impl<'a> ProfessorScheduleWidget<'a> {
   }
   fn ui(&mut self, ui: &mut egui::Ui) {
     egui::Grid::new("my_grid").show(ui, |ui| {
-      for j in timeslot::TIMESLOT_RANGE {
-        for i in timeslot::DAY_RANGE {
-          let av = (self.state.availability).get_mut(i, j).unwrap();
+      for j in timeslot::Timeslot::all() {
+        for i in timeslot::Day::all() {
+          let av = (self.state.availability).get_mut(i, j);
           let text = match av {
             Availability::Available => "1",
             Availability::AvailableIfNeeded => "2",

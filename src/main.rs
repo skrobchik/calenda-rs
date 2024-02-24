@@ -18,7 +18,6 @@ pub mod week_calendar;
 use crate::app::MyApp;
 
 use indicatif::MultiProgress;
-use itertools::Itertools;
 use simulation_options::SimulationOptions;
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;

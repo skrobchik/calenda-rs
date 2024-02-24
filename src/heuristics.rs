@@ -11,7 +11,7 @@ pub(crate) fn same_timeslot_classes_count_per_professor(
   let mut same_timeslot_classes_count: u32 = 0;
   let num_professors = simulation_constraints.get_professors().len();
   let mut professor_class_counter = vec![0_u32; num_professors];
-  for classes in state.get_matrix().iter() {
+  for classes in state.iter_timeslots() {
     professor_class_counter.fill(0);
     for (class_id, count) in classes.iter().enumerate() {
       let professor_id = simulation_constraints
@@ -36,7 +36,7 @@ pub(crate) fn same_timeslot_classes_count_per_semester(
   let mut same_timeslot_classes_count: u32 = 0;
   const NUM_SEMESTERS: usize = 8;
   let mut semester_class_counter = [0_u32; NUM_SEMESTERS];
-  for classes in state.get_matrix().iter() {
+  for classes in state.iter_timeslots() {
     semester_class_counter.fill(0);
     for (class_id, count) in classes.iter().enumerate() {
       let semester = simulation_constraints
@@ -61,7 +61,7 @@ pub(crate) fn same_timeslot_classes_count(
   class_filter: &ClassFilter,
 ) -> f64 {
   let mut same_timeslot_classes_count: u32 = 0;
-  for classes in state.get_matrix().iter() {
+  for classes in state.iter_timeslots() {
     let x: u32 = classes
       .iter()
       .enumerate()
@@ -80,13 +80,13 @@ pub(crate) fn count_not_available(
   constraints: &SimulationConstraints,
 ) -> f64 {
   let mut not_available_count: f64 = 0.0;
-  for day in timeslot::DAY_RANGE {
-    for timeslot in timeslot::TIMESLOT_RANGE {
+  for day in timeslot::Day::all() {
+    for timeslot in timeslot::Timeslot::all() {
       let classes = state.get_timeslot(day, timeslot);
       for (class_id, _count) in classes.iter().enumerate().filter(|(_, c)| **c > 0) {
         let professor_id = *constraints.get_classes()[class_id].get_professor_id();
         let professor = &constraints.get_professors()[professor_id];
-        let availability = professor.availability.get(day, timeslot).unwrap();
+        let availability = professor.availability.get(day, timeslot);
         if *availability == Availability::NotAvailable {
           not_available_count += 1.0;
         }
@@ -102,13 +102,13 @@ pub(crate) fn count_available_if_needed(
   constraints: &SimulationConstraints,
 ) -> f64 {
   let mut available_if_needed_count: f64 = 0.0;
-  for day in timeslot::DAY_RANGE {
-    for timeslot in timeslot::TIMESLOT_RANGE {
+  for day in timeslot::Day::all() {
+    for timeslot in timeslot::Timeslot::all() {
       let classes = state.get_timeslot(day, timeslot);
       for (class_id, _count) in classes.iter().enumerate().filter(|(_, c)| **c > 0) {
         let professor_id = *constraints.get_classes()[class_id].get_professor_id();
         let professor = &constraints.get_professors()[professor_id];
-        let availability = professor.availability.get(day, timeslot).unwrap();
+        let availability = professor.availability.get(day, timeslot);
         if *availability == Availability::AvailableIfNeeded {
           available_if_needed_count += 1.0;
         }
@@ -124,8 +124,8 @@ pub(crate) fn count_outside_session_length(
   max_session_length: u8,
 ) -> f64 {
   let mut outside_session_length_count: u64 = 0;
-  for day_idx in timeslot::DAY_RANGE {
-    let max_class_id = timeslot::TIMESLOT_RANGE
+  for day_idx in timeslot::Day::all() {
+    let max_class_id = timeslot::Timeslot::all()
       .map(|timeslot_idx| {
         state
           .get_timeslot(day_idx, timeslot_idx)
@@ -136,7 +136,7 @@ pub(crate) fn count_outside_session_length(
       .max()
       .unwrap();
     let mut session_length: Vec<u8> = vec![0; max_class_id + 1];
-    for timeslot_idx in timeslot::TIMESLOT_RANGE {
+    for timeslot_idx in timeslot::Timeslot::all() {
       let timeslot = state.get_timeslot(day_idx, timeslot_idx);
       for (class_id, class_session_length) in
         session_length.iter_mut().enumerate().take(max_class_id + 1)
@@ -167,16 +167,15 @@ pub(crate) fn count_outside_session_length(
 
 pub(crate) fn count_inconsistent_class_timeslots(state: &ClassCalendar) -> f64 {
   let max_class_id_plus_one = state
-    .get_matrix()
-    .iter()
+    .iter_timeslots()
     .map(|timeslot| timeslot.len())
     .max()
     .unwrap();
   let mut class_count: Vec<Vec<u16>> =
     vec![vec![0; max_class_id_plus_one]; timeslot::TIMESLOT_COUNT];
-  for day_idx in timeslot::DAY_RANGE {
-    for timeslot_idx in timeslot::TIMESLOT_RANGE {
-      class_count[timeslot_idx]
+  for day_idx in timeslot::Day::all() {
+    for timeslot_idx in timeslot::Timeslot::all() {
+      class_count[Into::<usize>::into(timeslot_idx)]
         .iter_mut()
         .zip(state.get_timeslot(day_idx, timeslot_idx).iter())
         .for_each(|(x, c)| {
@@ -194,35 +193,79 @@ mod test {
 
   #[test]
   fn count_outside_session_length_test() {
-    let mut state = ClassCalendar::new();
+    let mut state = ClassCalendar::default();
     assert_eq!(count_outside_session_length(&state, 2, 4), 0.0);
-    state.add_one_class(0, timeslot::TIMESLOT_15_00, 0);
+    state.add_one_class(
+      0.try_into().unwrap(),
+      timeslot::TIMESLOT_15_00.try_into().unwrap(),
+      0,
+    );
     assert_eq!(count_outside_session_length(&state, 2, 4), 1.0);
-    state.add_one_class(0, timeslot::TIMESLOT_16_00, 0);
+    state.add_one_class(
+      0.try_into().unwrap(),
+      timeslot::TIMESLOT_16_00.try_into().unwrap(),
+      0,
+    );
     assert_eq!(count_outside_session_length(&state, 2, 4), 0.0);
-    state.add_one_class(0, timeslot::TIMESLOT_17_00, 0);
+    state.add_one_class(
+      0.try_into().unwrap(),
+      timeslot::TIMESLOT_17_00.try_into().unwrap(),
+      0,
+    );
     assert_eq!(count_outside_session_length(&state, 2, 4), 0.0);
-    state.add_one_class(0, timeslot::TIMESLOT_18_00, 0);
+    state.add_one_class(
+      0.try_into().unwrap(),
+      timeslot::TIMESLOT_18_00.try_into().unwrap(),
+      0,
+    );
     assert_eq!(count_outside_session_length(&state, 2, 4), 0.0);
-    state.add_one_class(0, timeslot::TIMESLOT_19_00, 0);
+    state.add_one_class(
+      0.try_into().unwrap(),
+      timeslot::TIMESLOT_19_00.try_into().unwrap(),
+      0,
+    );
     assert_eq!(count_outside_session_length(&state, 2, 4), 1.0);
   }
 
   #[test]
   fn count_inconsistent_class_timeslots_test() {
-    let mut state = ClassCalendar::new();
+    let mut state = ClassCalendar::default();
     assert_eq!(count_inconsistent_class_timeslots(&state), 0.0);
-    state.add_one_class(0, timeslot::TIMESLOT_18_00, 7);
+    state.add_one_class(
+      0.try_into().unwrap(),
+      timeslot::TIMESLOT_18_00.try_into().unwrap(),
+      7,
+    );
     assert_eq!(count_inconsistent_class_timeslots(&state), 1.0);
-    state.add_one_class(4, timeslot::TIMESLOT_18_00, 6);
+    state.add_one_class(
+      4.try_into().unwrap(),
+      timeslot::TIMESLOT_18_00.try_into().unwrap(),
+      6,
+    );
     assert_eq!(count_inconsistent_class_timeslots(&state), 2.0);
-    state.add_one_class(4, timeslot::TIMESLOT_18_00, 7);
+    state.add_one_class(
+      4.try_into().unwrap(),
+      timeslot::TIMESLOT_18_00.try_into().unwrap(),
+      7,
+    );
     assert_eq!(count_inconsistent_class_timeslots(&state), 1.0);
-    state.add_one_class(3, timeslot::TIMESLOT_19_00, 6);
+    state.add_one_class(
+      3.try_into().unwrap(),
+      timeslot::TIMESLOT_19_00.try_into().unwrap(),
+      6,
+    );
     assert_eq!(count_inconsistent_class_timeslots(&state), 2.0);
-    state.add_one_class(3, timeslot::TIMESLOT_18_00, 6);
+    state.add_one_class(
+      3.try_into().unwrap(),
+      timeslot::TIMESLOT_18_00.try_into().unwrap(),
+      6,
+    );
     assert_eq!(count_inconsistent_class_timeslots(&state), 1.0);
-    state.add_one_class(0, timeslot::TIMESLOT_19_00, 6);
+    state.add_one_class(
+      0.try_into().unwrap(),
+      timeslot::TIMESLOT_19_00.try_into().unwrap(),
+      6,
+    );
     assert_eq!(count_inconsistent_class_timeslots(&state), 0.0);
   }
 }

@@ -1,6 +1,7 @@
 use itertools::Itertools;
 
-use crate::timeslot::{self, DAY_RANGE, TIMESLOT_RANGE};
+use crate::timeslot;
+use crate::week_calendar::WeekCalendar;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -15,57 +16,37 @@ struct SingleClassEntry {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct ClassEntryDelta {
-  pub class_id: usize,
-  pub src_day_idx: timeslot::Day,
-  pub src_timeslot_idx: timeslot::Timeslot,
-  pub dst_day_idx: timeslot::Day,
-  pub dst_timeslot_idx: timeslot::Timeslot,
+  pub(crate) class_id: usize,
+  pub(crate) src_day_idx: timeslot::Day,
+  pub(crate) src_timeslot_idx: timeslot::Timeslot,
+  pub(crate) dst_day_idx: timeslot::Day,
+  pub(crate) dst_timeslot_idx: timeslot::Timeslot,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub(crate) struct ClassCalendar {
-  matrix: Vec<Vec<u8>>,
+  data: WeekCalendar<Vec<u8>>,
   class_entries: Vec<SingleClassEntry>,
 }
 
 impl ClassCalendar {
-  pub(crate) fn new() -> Self {
-    Self {
-      matrix: vec![Vec::new(); timeslot::TIMESLOT_COUNT * timeslot::DAY_COUNT],
-      class_entries: Vec::new(),
-    }
+  pub(crate) fn iter_timeslots(&self) -> impl Iterator<Item = &Vec<u8>> {
+    timeslot::Day::all()
+      .flat_map(move |d| timeslot::Timeslot::all().map(move |t| self.data.get(d, t)))
   }
 
-  pub(crate) fn get_matrix(&self) -> &Vec<Vec<u8>> {
-    &self.matrix
-  }
-
-  pub(crate) fn get_timeslot(
-    &self,
-    day_idx: timeslot::Day,
-    timeslot_idx: timeslot::Timeslot,
-  ) -> &Vec<u8> {
-    &self.matrix[day_idx * timeslot::TIMESLOT_COUNT + timeslot_idx]
-  }
-
-  fn get_timeslot_mut(
-    &mut self,
-    day_idx: timeslot::Day,
-    timeslot_idx: timeslot::Timeslot,
-  ) -> &mut Vec<u8> {
-    &mut self.matrix[day_idx * timeslot::TIMESLOT_COUNT + timeslot_idx]
+  pub(crate) fn get_timeslot(&self, day: timeslot::Day, timeslot: timeslot::Timeslot) -> &Vec<u8> {
+    self.data.get(day, timeslot)
   }
 
   pub(crate) fn get_count(
     &self,
-    day_idx: timeslot::Day,
-    timeslot_idx: timeslot::Timeslot,
+    day: timeslot::Day,
+    timeslot: timeslot::Timeslot,
     class_id: usize,
   ) -> u8 {
-    assert!(timeslot::DAY_RANGE.contains(&day_idx));
-    assert!(timeslot::TIMESLOT_RANGE.contains(&timeslot_idx));
     assert!(class_id <= MAX_CLASS_ID);
-    let timeslot = self.get_timeslot(day_idx, timeslot_idx);
+    let timeslot = self.data.get(day, timeslot);
     timeslot.get(class_id).copied().unwrap_or(0_u8)
   }
 
@@ -73,19 +54,19 @@ impl ClassCalendar {
     let entry_idx = rng.gen_range(0..self.class_entries.len());
     let entry = self.class_entries.get_mut(entry_idx).unwrap();
     let class_id = entry.class_id;
-    let src_day_idx = entry.day_idx;
-    let src_timeslot_idx = entry.timeslot_idx;
-    let dst_day_idx = rng.gen_range(timeslot::DAY_RANGE);
-    let dst_timeslot_idx = rng.gen_range(timeslot::TIMESLOT_RANGE);
-    entry.day_idx = dst_day_idx;
-    entry.timeslot_idx = dst_timeslot_idx;
+    let src_day = entry.day_idx;
+    let src_timeslot = entry.timeslot_idx;
+    let dst_day = timeslot::Day::new_random(rng);
+    let dst_timeslot = timeslot::Timeslot::new_random(rng);
+    entry.day_idx = dst_day;
+    entry.timeslot_idx = dst_timeslot;
     {
-      let src_timeslot = self.get_timeslot_mut(src_day_idx, src_timeslot_idx);
+      let src_timeslot = self.data.get_mut(src_day, src_timeslot);
       assert!(src_timeslot[class_id] >= 1);
       src_timeslot[class_id] -= 1;
     }
     {
-      let dst_timeslot = self.get_timeslot_mut(dst_day_idx, dst_timeslot_idx);
+      let dst_timeslot = self.data.get_mut(dst_day, dst_timeslot);
       if class_id >= dst_timeslot.len() {
         dst_timeslot.resize(class_id + 1, 0);
       }
@@ -93,10 +74,10 @@ impl ClassCalendar {
     }
     ClassEntryDelta {
       class_id,
-      src_day_idx,
-      src_timeslot_idx,
-      dst_day_idx,
-      dst_timeslot_idx,
+      src_day_idx: src_day,
+      src_timeslot_idx: src_timeslot,
+      dst_day_idx: dst_day,
+      dst_timeslot_idx: dst_timeslot,
     }
   }
 
@@ -118,10 +99,8 @@ impl ClassCalendar {
     timeslot_idx: timeslot::Timeslot,
     class_id: usize,
   ) {
-    assert!(timeslot::DAY_RANGE.contains(&day_idx));
-    assert!(timeslot::TIMESLOT_RANGE.contains(&timeslot_idx));
     assert!(class_id <= MAX_CLASS_ID);
-    let timeslot = self.get_timeslot_mut(day_idx, timeslot_idx);
+    let timeslot = self.data.get_mut(day_idx, timeslot_idx);
     if class_id >= timeslot.len() {
       timeslot.resize(class_id + 1, 0_u8);
     }
@@ -135,15 +114,13 @@ impl ClassCalendar {
 
   pub(crate) fn remove_one_class(
     &mut self,
-    day_idx: timeslot::Day,
+    day: timeslot::Day,
     timeslot_idx: timeslot::Timeslot,
     class_id: usize,
   ) {
     assert!(class_id <= MAX_CLASS_ID);
-    assert!(DAY_RANGE.contains(&day_idx));
-    assert!(TIMESLOT_RANGE.contains(&timeslot_idx));
 
-    let timeslot = self.get_timeslot_mut(day_idx, timeslot_idx);
+    let timeslot = self.data.get_mut(day, timeslot_idx);
     assert!(timeslot.len() > class_id);
 
     timeslot[class_id] = timeslot[class_id].checked_sub(1).unwrap();
@@ -154,7 +131,7 @@ impl ClassCalendar {
       .find_position(|x| {
         **x
           == SingleClassEntry {
-            day_idx,
+            day_idx: day,
             timeslot_idx,
             class_id,
           }
@@ -174,50 +151,72 @@ impl ClassCalendar {
     let timeslot_idx = entry.timeslot_idx;
     let day_idx = entry.day_idx;
 
-    let timeslot = self.get_timeslot_mut(day_idx, timeslot_idx);
+    let timeslot = self.data.get_mut(day_idx, timeslot_idx);
 
     timeslot[class_id] = timeslot[class_id].checked_sub(1).unwrap();
 
     self.class_entries.swap_remove(entry_idx);
   }
-
-  /// O(1)
-  pub(crate) fn get_total_class_count(&self) -> usize {
-    self.class_entries.len()
-  }
 }
 
+#[cfg(test)]
 mod test {
+  use super::*;
+
   #[test]
   fn class_calendar_test() {
-    let mut class_calendar = super::ClassCalendar::new();
-    class_calendar.add_one_class(0, 1, 4);
-    class_calendar.add_one_class(0, 1, 4);
-    assert_eq!(class_calendar.get_count(0, 1, 3), 0);
-    assert_eq!(class_calendar.get_count(0, 1, 4), 2);
-    assert_eq!(class_calendar.get_count(0, 1, 5), 0);
+    let mut class_calendar = ClassCalendar::default();
+    class_calendar.add_one_class(0.try_into().unwrap(), 1.try_into().unwrap(), 4);
+    class_calendar.add_one_class(0.try_into().unwrap(), 1.try_into().unwrap(), 4);
+    assert_eq!(
+      class_calendar.get_count(0.try_into().unwrap(), 1.try_into().unwrap(), 3),
+      0
+    );
+    assert_eq!(
+      class_calendar.get_count(0.try_into().unwrap(), 1.try_into().unwrap(), 4),
+      2
+    );
+    assert_eq!(
+      class_calendar.get_count(0.try_into().unwrap(), 1.try_into().unwrap(), 5),
+      0
+    );
     class_calendar.remove_one_class_anywhere(4);
-    assert_eq!(class_calendar.get_count(0, 1, 4), 1);
-    class_calendar.add_one_class(0, 1, 4);
-    class_calendar.add_one_class(0, 1, 4);
-    class_calendar.add_one_class(0, 1, 4);
-    class_calendar.add_one_class(0, 1, 4);
-    class_calendar.add_one_class(0, 1, 4);
-    assert_eq!(class_calendar.get_count(0, 1, 4), 6);
+    assert_eq!(
+      class_calendar.get_count(0.try_into().unwrap(), 1.try_into().unwrap(), 4),
+      1
+    );
+    class_calendar.add_one_class(0.try_into().unwrap(), 1.try_into().unwrap(), 4);
+    class_calendar.add_one_class(0.try_into().unwrap(), 1.try_into().unwrap(), 4);
+    class_calendar.add_one_class(0.try_into().unwrap(), 1.try_into().unwrap(), 4);
+    class_calendar.add_one_class(0.try_into().unwrap(), 1.try_into().unwrap(), 4);
+    class_calendar.add_one_class(0.try_into().unwrap(), 1.try_into().unwrap(), 4);
+    assert_eq!(
+      class_calendar.get_count(0.try_into().unwrap(), 1.try_into().unwrap(), 4),
+      6
+    );
     class_calendar.remove_one_class_anywhere(4);
     class_calendar.remove_one_class_anywhere(4);
     class_calendar.remove_one_class_anywhere(4);
     class_calendar.remove_one_class_anywhere(4);
-    assert_eq!(class_calendar.get_count(0, 1, 4), 2);
-    class_calendar.remove_one_class(0, 1, 4);
-    assert_eq!(class_calendar.get_count(0, 1, 4), 1);
+    assert_eq!(
+      class_calendar.get_count(0.try_into().unwrap(), 1.try_into().unwrap(), 4),
+      2
+    );
+    class_calendar.remove_one_class(0.try_into().unwrap(), 1.try_into().unwrap(), 4);
+    assert_eq!(
+      class_calendar.get_count(0.try_into().unwrap(), 1.try_into().unwrap(), 4),
+      1
+    );
     class_calendar.remove_one_class_anywhere(4);
-    assert_eq!(class_calendar.get_count(0, 1, 4), 0);
+    assert_eq!(
+      class_calendar.get_count(0.try_into().unwrap(), 1.try_into().unwrap(), 4),
+      0
+    );
   }
-}
 
-impl Default for ClassCalendar {
-  fn default() -> Self {
-    Self::new()
+  #[test]
+  fn classes_iter_size_test() {
+    let class_calendar = ClassCalendar::default();
+    assert_eq!(class_calendar.iter_timeslots().count(), timeslot::DAY_COUNT * timeslot::TIMESLOT_COUNT);
   }
 }

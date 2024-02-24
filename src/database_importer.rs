@@ -118,9 +118,11 @@ fn parse_database_data(connection: sqlite::Connection) -> anyhow::Result<SchoolS
     professor_metadata.name = my_professor.name.clone();
     let professor = schedule.get_professor_mut(professor_id).unwrap();
     professor_ids.insert(my_professor.rfc.clone(), professor_id);
-    for day in timeslot::DAY_RANGE {
+    for day in timeslot::Day::all() {
       for timeslot in timeslot::TIMESLOT_09_00..timeslot::TIMESLOT_17_00 {
-        *professor.availability.get_mut(day, timeslot).unwrap() = Availability::AvailableIfNeeded;
+        *professor
+          .availability
+          .get_mut(day, timeslot.try_into().unwrap()) = Availability::AvailableIfNeeded;
       }
     }
   }

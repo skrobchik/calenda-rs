@@ -1,16 +1,93 @@
 use std::ops::Range;
 
+use anyhow::anyhow;
+use serde::{Deserialize, Serialize};
+
 pub(crate) const TIMESLOT_COUNT: usize = 12;
 pub(crate) const DAY_COUNT: usize = 5;
 
-pub(crate) const TIMESLOT_RANGE: Range<usize> = 0..TIMESLOT_COUNT;
-pub(crate) const DAY_RANGE: Range<usize> = 0..DAY_COUNT;
+const DAY_VALUE_RANGE: Range<usize> = std::ops::Range {
+  start: 0,
+  end: DAY_COUNT,
+};
 
-pub(crate) type Timeslot = usize;
-pub(crate) type Day = usize;
+const TIMESLOT_VALUE_RANGE: Range<usize> = std::ops::Range {
+  start: 0,
+  end: TIMESLOT_COUNT,
+};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+pub(crate) struct Timeslot(usize);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+pub(crate) struct Day(usize);
+
+impl TryFrom<usize> for Timeslot {
+  type Error = anyhow::Error;
+
+  fn try_from(value: usize) -> Result<Self, Self::Error> {
+    if TIMESLOT_VALUE_RANGE.contains(&value) {
+      Ok(Timeslot(value))
+    } else {
+      Err(anyhow!(
+        "value `{:?}` outside timeslot range `{:?}`",
+        value,
+        TIMESLOT_VALUE_RANGE
+      ))
+    }
+  }
+}
+
+impl From<Timeslot> for usize {
+  fn from(val: Timeslot) -> Self {
+    val.0
+  }
+}
+
+impl TryFrom<usize> for Day {
+  type Error = anyhow::Error;
+
+  fn try_from(value: usize) -> Result<Self, Self::Error> {
+    if DAY_VALUE_RANGE.contains(&value) {
+      Ok(Day(value))
+    } else {
+      Err(anyhow!(
+        "value `{:?}` outside day range `{:?}`",
+        value,
+        DAY_VALUE_RANGE
+      ))
+    }
+  }
+}
+
+impl Timeslot {
+  pub(crate) fn new_random<R: rand::Rng>(rng: &mut R) -> Self {
+    Self(rng.gen_range(TIMESLOT_VALUE_RANGE))
+  }
+
+  pub(crate) fn all() -> impl ExactSizeIterator<Item = Self> {
+    TIMESLOT_VALUE_RANGE.map(Timeslot)
+  }
+}
+
+impl Day {
+  pub(crate) fn new_random<R: rand::Rng>(rng: &mut R) -> Self {
+    Self(rng.gen_range(DAY_VALUE_RANGE))
+  }
+
+  pub(crate) fn all() -> impl ExactSizeIterator<Item = Self> {
+    DAY_VALUE_RANGE.map(Day)
+  }
+}
+
+impl From<Day> for usize {
+  fn from(val: Day) -> Self {
+    val.0
+  }
+}
 
 pub(crate) fn timeslot_to_hour(timeslot: Timeslot) -> u32 {
-  (timeslot as u32) + 8
+  (timeslot.0 as u32) + 8
 }
 
 #[allow(unused)]

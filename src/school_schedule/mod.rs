@@ -14,11 +14,7 @@ pub(crate) mod class_calendar;
 pub(crate) mod metadata_types;
 pub(crate) use metadata_types::*;
 
-use crate::{
-  class_filter::ClassFilter,
-  timeslot::{self, DAY_RANGE, TIMESLOT_RANGE},
-  week_calendar::WeekCalendar,
-};
+use crate::{class_filter::ClassFilter, timeslot, week_calendar::WeekCalendar};
 
 use self::class_calendar::ClassCalendar;
 
@@ -69,10 +65,11 @@ impl<'a> ClassEntry<'a> {
       std::cmp::Ordering::Greater => {
         let positive_delta = class_hours - curr_class_hours;
         for _ in 0..positive_delta {
-          self
-            .school_schedule
-            .class_calendar
-            .add_one_class(0, 0, self.class_id);
+          self.school_schedule.class_calendar.add_one_class(
+            0.try_into().unwrap(),
+            0.try_into().unwrap(),
+            self.class_id,
+          );
         }
         class.class_hours = class_hours;
       }
@@ -122,8 +119,8 @@ impl<'a> ClassEntry<'a> {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct ClassroomAssignmentKey {
-  pub(crate) day_idx: usize,
-  pub(crate) timeslot_idx: usize,
+  pub(crate) day: timeslot::Day,
+  pub(crate) timeslot: timeslot::Timeslot,
   pub(crate) class_id: usize,
 }
 
@@ -228,20 +225,27 @@ impl SchoolSchedule {
       group: Group::G1,
     });
     let class_id = class_list.len() - 1;
-    self
-      .class_calendar
-      .add_one_class(4, timeslot::TIMESLOT_18_00, class_id);
-    self
-      .class_calendar
-      .add_one_class(4, timeslot::TIMESLOT_19_00, class_id);
+    self.class_calendar.add_one_class(
+      4.try_into().unwrap(),
+      timeslot::TIMESLOT_18_00.try_into().unwrap(),
+      class_id,
+    );
+    self.class_calendar.add_one_class(
+      4.try_into().unwrap(),
+      timeslot::TIMESLOT_19_00.try_into().unwrap(),
+      class_id,
+    );
 
     assert_eq!(
-      self
-        .class_calendar
-        .get_count(4, timeslot::TIMESLOT_18_00, class_id)
-        + self
-          .class_calendar
-          .get_count(4, timeslot::TIMESLOT_19_00, class_id),
+      self.class_calendar.get_count(
+        4.try_into().unwrap(),
+        timeslot::TIMESLOT_18_00.try_into().unwrap(),
+        class_id
+      ) + self.class_calendar.get_count(
+        4.try_into().unwrap(),
+        timeslot::TIMESLOT_19_00.try_into().unwrap(),
+        class_id
+      ),
       class_list[class_id].class_hours
     );
     assert_eq!(class_list.len(), class_metadata_list.len());
@@ -282,14 +286,14 @@ impl SchoolSchedule {
     let mut cal = icalendar::Calendar::new();
     struct ClassRange {
       class_id: usize,
-      day: usize,
-      start_timeslot: usize,
+      day: timeslot::Day,
+      start_timeslot: timeslot::Timeslot,
       /// inclusive
-      end_timeslot: usize,
+      end_timeslot: timeslot::Timeslot,
     }
     let mut class_ranges: Vec<ClassRange> = Vec::new();
-    for day in DAY_RANGE {
-      for timeslot in TIMESLOT_RANGE {
+    for day in timeslot::Day::all() {
+      for timeslot in timeslot::Timeslot::all() {
         let classes = self.class_calendar.get_timeslot(day, timeslot);
         for (class_id, &count) in classes.iter().enumerate().filter(|(_, c)| **c > 0) {
           if !class_filter.filter(class_id, &self.simulation_constraints) {
@@ -305,11 +309,11 @@ impl SchoolSchedule {
             if let Some(prev_range) = class_ranges.iter_mut().find(|r| {
               r.class_id == new_range.class_id
                 && r.day == new_range.day
-                && r
-                  .end_timeslot
-                  .checked_add(1)
+                && <timeslot::Timeslot as Into<usize>>::into(r.end_timeslot)
+                  .checked_add(1_usize)
                   .map_or(false, |prev_range_end_timeslot_plus_one| {
-                    prev_range_end_timeslot_plus_one == new_range.start_timeslot
+                    prev_range_end_timeslot_plus_one
+                      == <timeslot::Timeslot as Into<usize>>::into(new_range.start_timeslot)
                   })
             }) {
               prev_range.end_timeslot = new_range.end_timeslot;
@@ -323,7 +327,9 @@ impl SchoolSchedule {
     for class_range in class_ranges {
       let mut event = icalendar::Event::new();
       let start_time = semester_start
-        .checked_add_days(Days::new(class_range.day as u64))
+        .checked_add_days(Days::new(
+          <timeslot::Day as Into<usize>>::into(class_range.day) as u64,
+        ))
         .unwrap()
         .with_hour(crate::timeslot::timeslot_to_hour(
           class_range.start_timeslot,
@@ -331,7 +337,9 @@ impl SchoolSchedule {
         .unwrap()
         .with_timezone(&Utc);
       let end_time = semester_start
-        .checked_add_days(Days::new(class_range.day as u64))
+        .checked_add_days(Days::new(
+          <timeslot::Day as Into<usize>>::into(class_range.day) as u64,
+        ))
         .unwrap()
         .with_hour(crate::timeslot::timeslot_to_hour(class_range.end_timeslot) + 1) // +1 because end_timeslot is inclusive
         .unwrap()
@@ -348,8 +356,7 @@ impl SchoolSchedule {
 
 fn count_class_hours(class_calendar: &ClassCalendar) -> Vec<u8> {
   let mut class_hour_count: Vec<u8> = Vec::new();
-  let matrix = class_calendar.get_matrix();
-  for timeslot in matrix.iter() {
+  for timeslot in class_calendar.iter_timeslots() {
     for (class_id, count) in timeslot.iter().enumerate() {
       if *count == 0 {
         continue;

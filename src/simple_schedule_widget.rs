@@ -31,8 +31,8 @@ impl SimpleScheduleWidget {
     let total_height = response.rect.height();
     let w = total_width / timeslot::DAY_COUNT as f32;
     let h: f32 = total_height / timeslot::TIMESLOT_COUNT as f32;
-    for day_idx in timeslot::DAY_RANGE {
-      for timeslot_idx in timeslot::TIMESLOT_RANGE {
+    for day_idx in timeslot::Day::all() {
+      for timeslot_idx in timeslot::Timeslot::all() {
         let timeslot: Vec<u8> = state
           .get_class_calendar()
           .get_timeslot(day_idx, timeslot_idx)
@@ -54,8 +54,12 @@ impl SimpleScheduleWidget {
 
         let class_width = w / num_sessions as f32;
 
-        let mut topleft: egui::Pos2 =
-          response.rect.left_top() + (w * day_idx as f32, h * timeslot_idx as f32).into();
+        let mut topleft: egui::Pos2 = response.rect.left_top()
+          + (
+            w * <timeslot::Day as Into<usize>>::into(day_idx) as f32,
+            h * <timeslot::Timeslot as Into<usize>>::into(timeslot_idx) as f32,
+          )
+            .into();
 
         painter.rect_stroke(
           Rect::from_two_pos(topleft, topleft + (w, h).into()),
