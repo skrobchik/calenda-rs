@@ -140,9 +140,12 @@ impl ClassEditor {
                   .name
                   .as_str(),
               )
-              .changed()
+              .clicked()
             {
-              // TODO Set selected professor.
+              state
+                .get_class_entry_mut(class_id)
+                .unwrap()
+                .set_professor_id(professor_id);
             }
           }
         })
