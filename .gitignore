@@ -6,3 +6,4 @@ stats.json
 stats*.json
 .idea/
 results*.json
+simulation_results_*.pickle
