@@ -116,6 +116,16 @@ impl<'a> ClassEntry<'a> {
       .unwrap();
     class.classroom_type = classroom_type;
   }
+
+  pub(crate) fn set_optative(&mut self, optative: bool) {
+    let class = self
+      .school_schedule
+      .simulation_constraints
+      .classes
+      .get_mut(usize::from(self.class_id))
+      .unwrap();
+    class.optative = optative;
+  }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -201,6 +211,7 @@ impl SchoolSchedule {
 
     professors.push(Professor {
       availability: WeekCalendar::default(),
+      priority: 0.0,
     });
 
     assert_eq!(professors.len(), professor_metadata.len());
@@ -215,6 +226,7 @@ impl SchoolSchedule {
     class_metadata_list.push(ClassMetadata {
       name: "New Class".to_string(),
       color: Color32::LIGHT_YELLOW,
+      class_code: "0000".to_string(),
     });
 
     class_list.push(Class {
@@ -223,6 +235,7 @@ impl SchoolSchedule {
       class_hours: 2,
       semester: Semester::S1,
       group: Group::G1,
+      optative: false,
     });
     let class_id: ClassId = (class_list.len() - 1).try_into().unwrap();
     self.class_calendar.add_one_class(

@@ -66,6 +66,10 @@ struct Professor {
   rfc: String,
 }
 
+fn is_optative(class_code: &str) -> bool {
+  class_code.starts_with("00")
+}
+
 fn parse_database_data(connection: sqlite::Connection) -> anyhow::Result<SchoolSchedule> {
   let mut schedule: SchoolSchedule = Default::default();
   let query = "SELECT * FROM Materias";
@@ -181,6 +185,7 @@ fn parse_database_data(connection: sqlite::Connection) -> anyhow::Result<SchoolS
     if let Some((semester, group)) = parse_semester_group(&my_class.grupo) {
       class_entry.set_group(group);
       class_entry.set_semester(semester);
+      class_entry.set_optative(is_optative(&my_class.asignatura));
     }
   }
 

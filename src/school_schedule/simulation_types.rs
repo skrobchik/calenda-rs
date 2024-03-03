@@ -38,6 +38,7 @@ pub(crate) struct Class {
   pub(super) class_hours: u8,
   pub(super) semester: Semester,
   pub(super) group: Group,
+  pub(super) optative: bool,
 }
 
 impl Class {
@@ -56,11 +57,15 @@ impl Class {
   pub(crate) fn get_group(&self) -> &Group {
     &self.group
   }
+  pub(crate) fn is_optative(&self) -> bool {
+    self.optative
+  }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub(crate) struct Professor {
   pub(crate) availability: WeekCalendar<Availability>,
+  pub(crate) priority: f32,
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy, Sequence, PartialEq, Eq, Debug)]

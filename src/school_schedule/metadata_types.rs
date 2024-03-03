@@ -16,4 +16,5 @@ pub(crate) struct ProfessorMetadata {
 pub(crate) struct ClassMetadata {
   pub(crate) name: String,
   pub(crate) color: Color32,
+  pub(crate) class_code: String,
 }
