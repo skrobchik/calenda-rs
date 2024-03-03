@@ -253,6 +253,7 @@ impl eframe::App for MyApp {
         if is_finished {
           let simulation_output = self.current_simulation.take();
           let simulation_output = simulation_output.unwrap().join_handle.join().unwrap();
+          save_latest_simulation_output(&simulation_output).unwrap();
           let new_class_calendar = simulation_output.into_iter().nth(0).unwrap().final_calendar;
           self
             .school_schedule
@@ -263,6 +264,21 @@ impl eframe::App for MyApp {
       }
     });
   }
+}
+
+fn save_latest_simulation_output(simulation_output: &Vec<SimulationOutput>) -> anyhow::Result<()> {
+  let cwd = std::env::current_dir()?;
+  let cwd = std::path::Path::new(&cwd);
+  let t = chrono::Local::now();
+  let file_path = cwd.join(format!(
+    "simulation_results_{}.pickle",
+    t.format("%FT%H%M%S")
+  ));
+  let file = std::fs::File::create(file_path)?;
+  let mut writer = std::io::BufWriter::new(file);
+  let ser_options = serde_pickle::SerOptions::default();
+  serde_pickle::to_writer(&mut writer, simulation_output, ser_options)?;
+  Ok(())
 }
 
 impl Default for MyApp {
