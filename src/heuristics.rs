@@ -2,7 +2,7 @@ use crate::{
   class_filter::ClassFilter,
   school_schedule::{
     class_calendar::{ClassCalendar, ClassId, NUM_CLASS_IDS},
-    Availability, SimulationConstraints,
+    Availability, ClassroomType, SimulationConstraints,
   },
   week_calendar,
 };
@@ -210,8 +210,46 @@ pub(crate) fn count_inconsistent_class_timeslots(state: &ClassCalendar) -> f64 {
   inconsistent_count as f64
 }
 
+pub(crate) fn count_labs_on_different_days(
+  state: &ClassCalendar,
+  constraints: &SimulationConstraints,
+) -> f64 {
+  let mut different_days_labs_count = 0;
+  for (class_id, class) in constraints.iter_classes_with_id() {
+    if match class.get_classroom_type() {
+      ClassroomType::AulaSimple => true,
+      ClassroomType::AulaDoble => true,
+      ClassroomType::LabQuimica => false,
+      ClassroomType::LabFisica => false,
+      ClassroomType::AulaComputo => false,
+    } {
+      continue;
+    }
+    let mut count: i32 = 0;
+    for day in week_calendar::Day::all() {
+      if week_calendar::Timeslot::all()
+        .map(|timeslot| state.get_count(day, timeslot, class_id))
+        .any(|c| c >= 1)
+      {
+        count += 1;
+      }
+    }
+    if count >= 2 {
+      different_days_labs_count += count - 1;
+    }
+  }
+  different_days_labs_count as f64
+}
+
 #[cfg(test)]
 mod test {
+  use crate::{
+    school_schedule::SchoolSchedule,
+    week_calendar::{TIMESLOT_09_00, TIMESLOT_11_00},
+  };
+
+  use self::week_calendar::TIMESLOT_08_00;
+
   use super::*;
 
   #[test]
@@ -290,5 +328,72 @@ mod test {
       6.try_into().unwrap(),
     );
     assert_eq!(count_inconsistent_class_timeslots(&state), 0.0);
+  }
+
+  #[test]
+  fn count_labs_on_different_days_test() {
+    let mut schedule = SchoolSchedule::default();
+    let class_id_0 = schedule.add_new_class();
+    let mut class_0 = schedule.get_class_entry_mut(class_id_0).unwrap();
+    class_0.set_hours(3);
+    class_0.set_classroom_type(ClassroomType::AulaSimple);
+    let class_id_1 = schedule.add_new_class();
+    let mut class_1 = schedule.get_class_entry_mut(class_id_1).unwrap();
+    class_1.set_classroom_type(ClassroomType::LabFisica);
+    class_1.set_hours(3);
+    let mut state = ClassCalendar::default();
+    state.add_one_class(
+      0.try_into().unwrap(),
+      TIMESLOT_08_00.try_into().unwrap(),
+      class_id_0,
+    );
+    state.add_one_class(
+      1.try_into().unwrap(),
+      TIMESLOT_08_00.try_into().unwrap(),
+      class_id_0,
+    );
+    state.add_one_class(
+      2.try_into().unwrap(),
+      TIMESLOT_08_00.try_into().unwrap(),
+      class_id_0,
+    );
+    state.add_one_class(
+      0.try_into().unwrap(),
+      TIMESLOT_08_00.try_into().unwrap(),
+      class_id_1,
+    );
+    state.add_one_class(
+      0.try_into().unwrap(),
+      TIMESLOT_09_00.try_into().unwrap(),
+      class_id_1,
+    );
+    state.add_one_class(
+      0.try_into().unwrap(),
+      TIMESLOT_11_00.try_into().unwrap(),
+      class_id_1,
+    );
+    schedule.replace_class_calendar(state.clone()).unwrap();
+    assert_eq!(
+      count_labs_on_different_days(
+        schedule.get_class_calendar(),
+        schedule.get_simulation_constraints()
+      ),
+      0.0
+    );
+    state.move_one_class(
+      0.try_into().unwrap(),
+      TIMESLOT_09_00.try_into().unwrap(),
+      1.try_into().unwrap(),
+      TIMESLOT_08_00.try_into().unwrap(),
+      class_id_1,
+    );
+    schedule.replace_class_calendar(state).unwrap();
+    assert_eq!(
+      count_labs_on_different_days(
+        schedule.get_class_calendar(),
+        schedule.get_simulation_constraints()
+      ),
+      1.0
+    );
   }
 }
