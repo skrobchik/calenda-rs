@@ -15,6 +15,12 @@ pub(crate) struct ClassId(usize);
 #[error("Class id value is greater than maximum")]
 pub(crate) struct ClassIdOutOfRangeError {}
 
+impl ClassId {
+  pub(crate) fn all() -> impl ExactSizeIterator<Item = Self> {
+    CLASS_ID_VALUE_RANGE.map(ClassId)
+  }
+}
+
 impl TryFrom<usize> for ClassId {
   type Error = ClassIdOutOfRangeError;
 

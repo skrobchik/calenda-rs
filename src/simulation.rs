@@ -40,6 +40,7 @@ pub(crate) struct SimulationOutput {
   /// Needed if stop condition is not number of steps
   pub(crate) total_steps: usize,
 
+  #[serde(skip)]
   pub(crate) classroom_assignments: BTreeMap<ClassroomAssignmentKey, Classroom>,
 }
 

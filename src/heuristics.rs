@@ -1,6 +1,9 @@
 use crate::{
   class_filter::ClassFilter,
-  school_schedule::{class_calendar::ClassCalendar, Availability, SimulationConstraints},
+  school_schedule::{
+    class_calendar::{ClassCalendar, ClassId, NUM_CLASS_IDS},
+    Availability, SimulationConstraints,
+  },
   week_calendar,
 };
 
@@ -170,25 +173,41 @@ pub(crate) fn count_outside_session_length(
 }
 
 pub(crate) fn count_inconsistent_class_timeslots(state: &ClassCalendar) -> f64 {
-  let max_class_id_plus_one = state
-    .iter_timeslots()
-    .map(|timeslot| timeslot.len())
-    .max()
-    .unwrap();
-  let mut class_count: Vec<Vec<u16>> =
-    vec![vec![0; max_class_id_plus_one]; week_calendar::TIMESLOT_COUNT];
-  for day_idx in week_calendar::Day::all() {
-    for timeslot_idx in week_calendar::Timeslot::all() {
-      class_count[Into::<usize>::into(timeslot_idx)]
-        .iter_mut()
-        .zip(state.get_timeslot(day_idx, timeslot_idx).iter())
-        .for_each(|(x, c)| {
-          *x += *c as u16;
-        });
+  let mut class_days: Vec<u8> = vec![0; NUM_CLASS_IDS]; // Counts the number of days in which the i-th class is present
+  for day in week_calendar::Day::all() {
+    for class_id in ClassId::all() {
+      let mut class_found: bool = false;
+      for timeslot in week_calendar::Timeslot::all() {
+        if state.get_count(day, timeslot, class_id) > 0 {
+          class_found = true;
+          break;
+        }
+      }
+      if class_found {
+        class_days[usize::from(class_id)] += 1;
+      }
     }
   }
-  let result = class_count.iter().flatten().filter(|x| **x == 1).count();
-  result as f64
+
+  let mut inconsistent_count = 0;
+  for class_id in ClassId::all() {
+    if class_days[usize::from(class_id)] < 2 {
+      continue;
+    }
+    for timeslot in week_calendar::Timeslot::all() {
+      let mut count = 0;
+      for day in week_calendar::Day::all() {
+        if state.get_count(day, timeslot, class_id) > 0 {
+          count += 1;
+        }
+      }
+      if count == 1 {
+        inconsistent_count += 1;
+      }
+    }
+  }
+
+  inconsistent_count as f64
 }
 
 #[cfg(test)]
@@ -240,19 +259,19 @@ mod test {
       week_calendar::TIMESLOT_18_00.try_into().unwrap(),
       7.try_into().unwrap(),
     );
-    assert_eq!(count_inconsistent_class_timeslots(&state), 1.0);
+    assert_eq!(count_inconsistent_class_timeslots(&state), 0.0);
     state.add_one_class(
       4.try_into().unwrap(),
       week_calendar::TIMESLOT_18_00.try_into().unwrap(),
       6.try_into().unwrap(),
     );
-    assert_eq!(count_inconsistent_class_timeslots(&state), 2.0);
+    assert_eq!(count_inconsistent_class_timeslots(&state), 0.0);
     state.add_one_class(
       4.try_into().unwrap(),
       week_calendar::TIMESLOT_18_00.try_into().unwrap(),
       7.try_into().unwrap(),
     );
-    assert_eq!(count_inconsistent_class_timeslots(&state), 1.0);
+    assert_eq!(count_inconsistent_class_timeslots(&state), 0.0);
     state.add_one_class(
       3.try_into().unwrap(),
       week_calendar::TIMESLOT_19_00.try_into().unwrap(),
