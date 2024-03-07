@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 use crate::{
   class_filter::ClassFilter,
   school_schedule::{
@@ -241,11 +243,33 @@ pub(crate) fn count_labs_on_different_days(
   different_days_labs_count as f64
 }
 
+pub(crate) fn count_incontinuous_classes(state: &ClassCalendar) -> f64 {
+  let mut count = 0;
+  for class_id in ClassId::all() {
+    for day in week_calendar::Day::all() {
+      let times = week_calendar::Timeslot::all()
+        .enumerate()
+        .map(|(i, t)| (i, state.get_count(day, t, class_id)))
+        .filter(|(_i, c)| *c >= 1)
+        .map(|(i, _c)| i);
+      if times.tuple_windows().any(|(i1, i2)| {
+        assert!(i1 < i2);
+        i1 + 1 < i2
+      }) {
+        count += 1;
+      }
+    }
+  }
+  count as f64
+}
+
 #[cfg(test)]
 mod test {
   use crate::{
-    school_schedule::SchoolSchedule,
-    week_calendar::{TIMESLOT_09_00, TIMESLOT_11_00},
+    school_schedule::{class_calendar, SchoolSchedule},
+    week_calendar::{
+      TIMESLOT_09_00, TIMESLOT_10_00, TIMESLOT_11_00, TIMESLOT_12_00, TIMESLOT_13_00,
+    },
   };
 
   use self::week_calendar::TIMESLOT_08_00;
@@ -395,5 +419,37 @@ mod test {
       ),
       1.0
     );
+  }
+
+  #[test]
+  fn test_count_incontinuous_classes() {
+    let mut state = ClassCalendar::default();
+    assert_eq!(count_incontinuous_classes(&state), 0.0);
+    let day_2: week_calendar::Day = 2.try_into().unwrap();
+    let day_3: week_calendar::Day = 3.try_into().unwrap();
+    let class_id_7: ClassId = 7.try_into().unwrap();
+    let class_id_9: ClassId = 9.try_into().unwrap();
+    state.add_one_class(day_2, TIMESLOT_08_00.try_into().unwrap(), class_id_9);
+    assert_eq!(count_incontinuous_classes(&state), 0.0);
+    state.add_one_class(day_2, TIMESLOT_09_00.try_into().unwrap(), class_id_9);
+    assert_eq!(count_incontinuous_classes(&state), 0.0);
+    state.add_one_class(day_2, TIMESLOT_11_00.try_into().unwrap(), class_id_9);
+    assert_eq!(count_incontinuous_classes(&state), 1.0);
+    state.add_one_class(day_2, TIMESLOT_13_00.try_into().unwrap(), class_id_9);
+    assert_eq!(count_incontinuous_classes(&state), 1.0);
+    state.add_one_class(day_3, TIMESLOT_13_00.try_into().unwrap(), class_id_9);
+    assert_eq!(count_incontinuous_classes(&state), 1.0);
+    state.add_one_class(day_3, TIMESLOT_11_00.try_into().unwrap(), class_id_9);
+    assert_eq!(count_incontinuous_classes(&state), 2.0);
+    state.add_one_class(day_2, TIMESLOT_10_00.try_into().unwrap(), class_id_9);
+    assert_eq!(count_incontinuous_classes(&state), 2.0);
+    state.add_one_class(day_2, TIMESLOT_12_00.try_into().unwrap(), class_id_9);
+    assert_eq!(count_incontinuous_classes(&state), 1.0);
+    state.add_one_class(day_2, TIMESLOT_10_00.try_into().unwrap(), class_id_7);
+    assert_eq!(count_incontinuous_classes(&state), 1.0);
+    state.add_one_class(day_3, TIMESLOT_11_00.try_into().unwrap(), class_id_7);
+    assert_eq!(count_incontinuous_classes(&state), 1.0);
+    state.add_one_class(day_3, TIMESLOT_09_00.try_into().unwrap(), class_id_7);
+    assert_eq!(count_incontinuous_classes(&state), 2.0);
   }
 }
