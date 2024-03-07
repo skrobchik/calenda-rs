@@ -259,15 +259,14 @@ fn revert_change(state: &mut ClassCalendar, delta: &ClassEntryDelta) {
 
 fn cost(state: &ClassCalendar, constraints: &SimulationConstraints) -> f64 {
   0.0
-    + 5.0 * heuristics::same_timeslot_classes_count_per_semester(state, constraints)
-    + 9.0 * heuristics::same_timeslot_classes_count_per_professor(state, constraints)
     + 10.0 * (count_classroom_assignment_collisions(state, constraints) as f64)
-    + 3.5 * heuristics::count_labs_on_different_days(state, constraints)
-    + 3.2 * heuristics::count_incontinuous_classes(state)
+    + 9.0 * heuristics::same_timeslot_classes_count_per_professor(state, constraints)
+    + 5.0 * heuristics::same_timeslot_classes_count_per_semester(state, constraints)
+    + 4.5 * heuristics::count_labs_on_different_days(state, constraints)
     + 3.0 * heuristics::count_not_available(state, constraints)
-    + 1.1 * heuristics::count_available_if_needed(state, constraints)
-    + 2.0 * heuristics::count_outside_session_length(state, 1, 3)
-    + 1.5 * heuristics::count_outside_session_length(state, 2, 2)
+    + 2.5 * heuristics::count_incontinuous_classes(state)
+    + 1.5 * heuristics::count_outside_session_length(state, 2, 4)
+    + 1.25 * heuristics::count_available_if_needed(state, constraints)
     + 1.0 * heuristics::count_inconsistent_class_timeslots(state)
     + 0.1 * heuristics::same_timeslot_classes_count(state, constraints, &ClassFilter::None)
 }
