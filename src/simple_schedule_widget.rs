@@ -78,15 +78,7 @@ impl SimpleScheduleWidget {
                 class_color,
                 Stroke::new(1.0, Color32::from_gray(100)),
               );
-              let semester = state
-                .get_class(class_id.try_into().unwrap())
-                .unwrap()
-                .get_semester();
-              let group = state
-                .get_class(class_id.try_into().unwrap())
-                .unwrap()
-                .get_group();
-              let class_code = format!("{}{}", semester, group);
+              let class_code = &class_metadata.class_code;
               painter.text(
                 topleft,
                 Align2::LEFT_TOP,

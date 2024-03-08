@@ -1,4 +1,4 @@
-use egui::{ComboBox, ScrollArea};
+use egui::{ComboBox, ScrollArea, TextEdit};
 use serde::{Deserialize, Serialize};
 
 use crate::school_schedule::{
@@ -43,8 +43,21 @@ impl ClassEditor {
 
     ui.horizontal(|ui| {
       ui.color_edit_button_srgba(&mut state.get_class_metadata_mut(class_id).unwrap().color);
+      TextEdit::singleline(&mut state.get_class_metadata_mut(class_id).unwrap().class_code)
+        .char_limit(4)
+        .desired_width(50.0)
+        .show(ui);
       ui.text_edit_singleline(&mut state.get_class_metadata_mut(class_id).unwrap().name);
     });
+
+    {
+      let mut optativa = state.get_class(class_id).unwrap().is_optative();
+      ui.checkbox(&mut optativa, "Optativa");
+      state
+        .get_class_entry_mut(class_id)
+        .unwrap()
+        .set_optative(optativa);
+    }
 
     ui.horizontal(|ui| {
       ui.label("Aula");
