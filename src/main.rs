@@ -32,12 +32,6 @@ pub(crate) fn load_results<P: AsRef<std::path::Path>>(
 
 #[allow(dead_code)]
 fn run_app(developer_mode: bool) {
-  // let simulation_output = load_results("results3.json").into_iter().nth(20).unwrap();
-  // println!("Num Steps: {}", simulation_output.best_schedule_run_report.num_steps);
-  // println!("Cost: {}", simulation_output.best_schedule_cost);
-  // let class_calendar = simulation_output.best_schedule;
-  // schedule.replace_class_calendar(class_calendar).unwrap();
-
   let options = eframe::NativeOptions::default();
   eframe::run_native(
     "my_app",
