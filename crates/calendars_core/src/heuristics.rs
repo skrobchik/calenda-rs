@@ -9,7 +9,7 @@ use crate::{
   week_calendar,
 };
 
-pub(crate) fn same_timeslot_classes_count_per_professor(
+pub fn same_timeslot_classes_count_per_professor(
   state: &ClassCalendar,
   simulation_constraints: &SimulationConstraints,
 ) -> f64 {
@@ -32,7 +32,7 @@ pub(crate) fn same_timeslot_classes_count_per_professor(
   same_timeslot_classes_count as f64
 }
 
-pub(crate) fn same_timeslot_classes_count_per_semester(
+pub fn same_timeslot_classes_count_per_semester(
   state: &ClassCalendar,
   simulation_constraints: &SimulationConstraints,
 ) -> f64 {
@@ -56,7 +56,7 @@ pub(crate) fn same_timeslot_classes_count_per_semester(
   same_timeslot_classes_count as f64
 }
 
-pub(crate) fn same_timeslot_classes_count(
+pub fn same_timeslot_classes_count(
   state: &ClassCalendar,
   simulation_constraints: &SimulationConstraints,
   class_filter: &ClassFilter,
@@ -78,10 +78,7 @@ pub(crate) fn same_timeslot_classes_count(
   same_timeslot_classes_count as f64
 }
 
-pub(crate) fn count_not_available(
-  state: &ClassCalendar,
-  constraints: &SimulationConstraints,
-) -> f64 {
+pub fn count_not_available(state: &ClassCalendar, constraints: &SimulationConstraints) -> f64 {
   let mut not_available_count: f64 = 0.0;
   for day in week_calendar::Day::all() {
     for timeslot in week_calendar::Timeslot::all() {
@@ -103,7 +100,7 @@ pub(crate) fn count_not_available(
   not_available_count
 }
 
-pub(crate) fn count_available_if_needed(
+pub fn count_available_if_needed(
   state: &ClassCalendar,
   constraints: &SimulationConstraints,
 ) -> f64 {
@@ -127,7 +124,7 @@ pub(crate) fn count_available_if_needed(
   available_if_needed_count
 }
 
-pub(crate) fn count_outside_session_length(
+pub fn count_outside_session_length(
   state: &ClassCalendar,
   min_session_length: u8,
   max_session_length: u8,
@@ -174,7 +171,7 @@ pub(crate) fn count_outside_session_length(
   outside_session_length_count as f64
 }
 
-pub(crate) fn count_inconsistent_class_timeslots(state: &ClassCalendar) -> f64 {
+pub fn count_inconsistent_class_timeslots(state: &ClassCalendar) -> f64 {
   let mut class_days: Vec<u8> = vec![0; NUM_CLASS_IDS]; // Counts the number of days in which the i-th class is present
   for day in week_calendar::Day::all() {
     for class_id in ClassId::all() {
@@ -212,7 +209,7 @@ pub(crate) fn count_inconsistent_class_timeslots(state: &ClassCalendar) -> f64 {
   inconsistent_count as f64
 }
 
-pub(crate) fn count_labs_on_different_days(
+pub fn count_labs_on_different_days(
   state: &ClassCalendar,
   constraints: &SimulationConstraints,
 ) -> f64 {
@@ -243,7 +240,7 @@ pub(crate) fn count_labs_on_different_days(
   different_days_labs_count as f64
 }
 
-pub(crate) fn count_incontinuous_classes(state: &ClassCalendar) -> f64 {
+pub fn count_incontinuous_classes(state: &ClassCalendar) -> f64 {
   let mut count = 0;
   for class_id in ClassId::all() {
     for day in week_calendar::Day::all() {

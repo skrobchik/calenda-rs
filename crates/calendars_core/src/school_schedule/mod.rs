@@ -5,15 +5,15 @@ use egui::Color32;
 
 use crate::week_calendar;
 use icalendar::{Component, EventLike};
-use itertools::Itertools;
+
 use serde::{Deserialize, Serialize};
 
-pub(crate) mod simulation_types;
-pub(crate) use simulation_types::*;
+pub mod simulation_types;
+pub use simulation_types::*;
 
-pub(crate) mod class_calendar;
-pub(crate) mod metadata_types;
-pub(crate) use metadata_types::*;
+pub mod class_calendar;
+pub mod metadata_types;
+pub use metadata_types::*;
 
 use crate::{class_filter::ClassFilter, week_calendar::WeekCalendar};
 
@@ -21,29 +21,16 @@ use self::class_calendar::{ClassCalendar, ClassId};
 
 #[derive(thiserror::Error, Debug)]
 #[error("Class hours in calendars do not match.")]
-pub(crate) struct ClassHourCountNotMatchingError {}
-
-pub(crate) fn parse_semester_group(s: &str) -> Option<(Semester, Group)> {
-  match s.get(0..4).and_then(|s| s.chars().collect_tuple()) {
-    Some(('0', c1, '0', c2)) => match (
-      c1.to_digit(10).and_then(|d1| d1.try_into().ok()),
-      c2.to_digit(10).and_then(|d2| d2.try_into().ok()),
-    ) {
-      (Some(semester), Some(group)) => Some((semester, group)),
-      _ => None,
-    },
-    _ => None,
-  }
-}
+pub struct ClassHourCountNotMatchingError {}
 
 #[derive(Debug)]
-pub(crate) struct ClassEntry<'a> {
+pub struct ClassEntry<'a> {
   school_schedule: &'a mut SchoolSchedule,
   class_id: ClassId,
 }
 
 impl<'a> ClassEntry<'a> {
-  pub(crate) fn set_hours(&mut self, class_hours: u8) {
+  pub fn set_hours(&mut self, class_hours: u8) {
     let class = self
       .school_schedule
       .simulation_constraints
@@ -77,7 +64,7 @@ impl<'a> ClassEntry<'a> {
     };
   }
 
-  pub(crate) fn set_professor_id(&mut self, professor_id: usize) {
+  pub fn set_professor_id(&mut self, professor_id: usize) {
     let class = self
       .school_schedule
       .simulation_constraints
@@ -87,7 +74,7 @@ impl<'a> ClassEntry<'a> {
     class.professor_id = professor_id;
   }
 
-  pub(crate) fn set_group(&mut self, group: Group) {
+  pub fn set_group(&mut self, group: Group) {
     let class = self
       .school_schedule
       .simulation_constraints
@@ -97,7 +84,7 @@ impl<'a> ClassEntry<'a> {
     class.group = group;
   }
 
-  pub(crate) fn set_semester(&mut self, semester: Semester) {
+  pub fn set_semester(&mut self, semester: Semester) {
     let class = self
       .school_schedule
       .simulation_constraints
@@ -107,7 +94,7 @@ impl<'a> ClassEntry<'a> {
     class.semester = semester;
   }
 
-  pub(crate) fn set_classroom_type(&mut self, classroom_type: ClassroomType) {
+  pub fn set_classroom_type(&mut self, classroom_type: ClassroomType) {
     let class = self
       .school_schedule
       .simulation_constraints
@@ -117,7 +104,7 @@ impl<'a> ClassEntry<'a> {
     class.classroom_type = classroom_type;
   }
 
-  pub(crate) fn set_optative(&mut self, optative: bool) {
+  pub fn set_optative(&mut self, optative: bool) {
     let class = self
       .school_schedule
       .simulation_constraints
@@ -129,14 +116,14 @@ impl<'a> ClassEntry<'a> {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct ClassroomAssignmentKey {
-  pub(crate) day: week_calendar::Day,
-  pub(crate) timeslot: week_calendar::Timeslot,
-  pub(crate) class_id: ClassId,
+pub struct ClassroomAssignmentKey {
+  pub day: week_calendar::Day,
+  pub timeslot: week_calendar::Timeslot,
+  pub class_id: ClassId,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
-pub(crate) struct SchoolSchedule {
+pub struct SchoolSchedule {
   metadata: ScheduleMetadata,
   simulation_constraints: SimulationConstraints,
   class_calendar: ClassCalendar,
@@ -144,48 +131,48 @@ pub(crate) struct SchoolSchedule {
 }
 
 impl SchoolSchedule {
-  pub(crate) fn get_simulation_constraints(&self) -> &SimulationConstraints {
+  pub fn get_simulation_constraints(&self) -> &SimulationConstraints {
     &self.simulation_constraints
   }
 
-  pub(crate) fn get_class(&self, class_id: ClassId) -> Option<&Class> {
+  pub fn get_class(&self, class_id: ClassId) -> Option<&Class> {
     self
       .simulation_constraints
       .classes
       .get(usize::from(class_id))
   }
 
-  pub(crate) fn get_class_entry_mut(&mut self, class_id: ClassId) -> Option<ClassEntry> {
+  pub fn get_class_entry_mut(&mut self, class_id: ClassId) -> Option<ClassEntry> {
     Some(ClassEntry {
       school_schedule: self,
       class_id,
     })
   }
 
-  pub(crate) fn get_class_metadata(&self, class_id: ClassId) -> Option<&ClassMetadata> {
+  pub fn get_class_metadata(&self, class_id: ClassId) -> Option<&ClassMetadata> {
     self.metadata.classes.get(usize::from(class_id))
   }
 
-  pub(crate) fn get_class_metadata_mut(&mut self, class_id: ClassId) -> Option<&mut ClassMetadata> {
+  pub fn get_class_metadata_mut(&mut self, class_id: ClassId) -> Option<&mut ClassMetadata> {
     self.metadata.classes.get_mut(usize::from(class_id))
   }
 
-  pub(crate) fn get_professor_mut(&mut self, professor_id: usize) -> Option<&mut Professor> {
+  pub fn get_professor_mut(&mut self, professor_id: usize) -> Option<&mut Professor> {
     self.simulation_constraints.professors.get_mut(professor_id)
   }
 
-  pub(crate) fn get_professor_metadata(&self, professor_id: usize) -> Option<&ProfessorMetadata> {
+  pub fn get_professor_metadata(&self, professor_id: usize) -> Option<&ProfessorMetadata> {
     self.metadata.professors.get(professor_id)
   }
 
-  pub(crate) fn get_professor_metadata_mut(
+  pub fn get_professor_metadata_mut(
     &mut self,
     professor_id: usize,
   ) -> Option<&mut ProfessorMetadata> {
     self.metadata.professors.get_mut(professor_id)
   }
 
-  pub(crate) fn get_num_classes(&self) -> usize {
+  pub fn get_num_classes(&self) -> usize {
     assert_eq!(
       self.simulation_constraints.classes.len(),
       self.metadata.classes.len()
@@ -193,7 +180,7 @@ impl SchoolSchedule {
     self.simulation_constraints.classes.len()
   }
 
-  pub(crate) fn get_num_professors(&self) -> usize {
+  pub fn get_num_professors(&self) -> usize {
     assert_eq!(
       self.simulation_constraints.professors.len(),
       self.metadata.professors.len()
@@ -201,7 +188,7 @@ impl SchoolSchedule {
     self.simulation_constraints.professors.len()
   }
 
-  pub(crate) fn add_new_professor(&mut self) -> usize {
+  pub fn add_new_professor(&mut self) -> usize {
     let professor_metadata = &mut self.metadata.professors;
     let professors = &mut self.simulation_constraints.professors;
 
@@ -219,7 +206,7 @@ impl SchoolSchedule {
     professors.len() - 1
   }
 
-  pub(crate) fn add_new_class(&mut self) -> ClassId {
+  pub fn add_new_class(&mut self) -> ClassId {
     let class_metadata_list: &mut Vec<ClassMetadata> = &mut self.metadata.classes;
     let class_list = &mut self.simulation_constraints.classes;
 
@@ -265,11 +252,11 @@ impl SchoolSchedule {
     class_id
   }
 
-  pub(crate) fn get_class_calendar(&self) -> &ClassCalendar {
+  pub fn get_class_calendar(&self) -> &ClassCalendar {
     &self.class_calendar
   }
 
-  pub(crate) fn replace_class_calendar(
+  pub fn replace_class_calendar(
     &mut self,
     class_calendar: ClassCalendar,
   ) -> Result<(), ClassHourCountNotMatchingError> {
@@ -282,7 +269,7 @@ impl SchoolSchedule {
     Ok(())
   }
 
-  pub(crate) fn export_ics(&self, class_filter: &ClassFilter) -> icalendar::Calendar {
+  pub fn export_ics(&self, class_filter: &ClassFilter) -> icalendar::Calendar {
     // let school_timezone = chrono_tz::Mexico::BajaNorte;
     let school_timezone = chrono_tz::Europe::Dublin;
     let semester_start = school_timezone

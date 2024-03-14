@@ -1,19 +1,15 @@
+use calendars_core::{Availability, Day, Professor, Timeslot};
 use egui::Color32;
 
-use crate::{
-  school_schedule::{Availability, Professor},
-  week_calendar,
-};
-
-pub(crate) struct ProfessorScheduleWidget<'a> {
+pub struct ProfessorScheduleWidget<'a> {
   state: &'a mut Professor,
 }
 
 impl<'a> ProfessorScheduleWidget<'a> {
-  pub(crate) fn new(state: &'a mut Professor) -> ProfessorScheduleWidget<'a> {
+  pub fn new(state: &'a mut Professor) -> ProfessorScheduleWidget<'a> {
     ProfessorScheduleWidget { state }
   }
-  pub(crate) fn show(&mut self, ctx: &egui::Context, open: &mut bool) {
+  pub fn show(&mut self, ctx: &egui::Context, open: &mut bool) {
     egui::Window::new("Professor")
       .open(open)
       .vscroll(false)
@@ -25,8 +21,8 @@ impl<'a> ProfessorScheduleWidget<'a> {
   }
   fn ui(&mut self, ui: &mut egui::Ui) {
     egui::Grid::new("my_grid").show(ui, |ui| {
-      for j in week_calendar::Timeslot::all() {
-        for i in week_calendar::Day::all() {
+      for j in Timeslot::all() {
+        for i in Day::all() {
           let av = (self.state.availability).get_mut(i, j);
           let text = match av {
             Availability::Available => "1",

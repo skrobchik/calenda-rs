@@ -13,7 +13,7 @@ pub enum StatsTrackerError {
   MissedStatLogging(String),
 }
 
-pub(crate) enum SamplingRate {
+pub enum SamplingRate {
   Steps(usize),
   Duration(Duration),
 }
@@ -30,7 +30,7 @@ impl From<Duration> for SamplingRate {
   }
 }
 
-pub(crate) struct StatsTracker {
+pub struct StatsTracker {
   step_index: usize,
   stats_index: usize,
   sampling_rate: SamplingRate,
@@ -40,7 +40,7 @@ pub(crate) struct StatsTracker {
 }
 
 impl StatsTracker {
-  pub(crate) fn new<T: Into<SamplingRate>>(sampling_rate: T) -> Self {
+  pub fn new<T: Into<SamplingRate>>(sampling_rate: T) -> Self {
     StatsTracker {
       step_index: 0,
       stats_index: 0,
@@ -51,7 +51,7 @@ impl StatsTracker {
     }
   }
 
-  pub(crate) fn with_estimated_size(total_runtime: &StopCondition, estimated_size: usize) -> Self {
+  pub fn with_estimated_size(total_runtime: &StopCondition, estimated_size: usize) -> Self {
     let sampling_rate = match total_runtime {
       StopCondition::Steps(steps) => SamplingRate::from(steps.div_ceil(estimated_size)),
       StopCondition::Time(time) => SamplingRate::from(time.div_f64(estimated_size as f64)),
@@ -59,11 +59,11 @@ impl StatsTracker {
     Self::new(sampling_rate)
   }
 
-  pub(crate) fn into_stats(self) -> BTreeMap<String, Vec<serde_json::Value>> {
+  pub fn into_stats(self) -> BTreeMap<String, Vec<serde_json::Value>> {
     self.stats
   }
 
-  pub(crate) fn inc_step(&mut self) {
+  pub fn inc_step(&mut self) {
     self.step_index += 1;
     if match self.sampling_rate {
       SamplingRate::Steps(sampling_rate) => self.step_index % sampling_rate == 0,
@@ -79,7 +79,7 @@ impl StatsTracker {
     }
   }
 
-  pub(crate) fn log_stat<T: Into<serde_json::Value>>(
+  pub fn log_stat<T: Into<serde_json::Value>>(
     &mut self,
     label: &str,
     value: T,

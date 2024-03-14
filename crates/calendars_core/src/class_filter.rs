@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::school_schedule::{class_calendar::ClassId, Semester, SimulationConstraints};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub(crate) enum ClassFilter {
+pub enum ClassFilter {
   #[default]
   None,
   Semester(Semester),
@@ -11,11 +11,7 @@ pub(crate) enum ClassFilter {
 }
 
 impl ClassFilter {
-  pub(crate) fn filter(
-    &self,
-    class_id: ClassId,
-    simulation_constraints: &SimulationConstraints,
-  ) -> bool {
+  pub fn filter(&self, class_id: ClassId, simulation_constraints: &SimulationConstraints) -> bool {
     match self {
       ClassFilter::None => true,
       ClassFilter::Semester(s) => {

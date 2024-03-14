@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::school_schedule::{class_calendar::ClassCalendar, SimulationConstraints};
 
 #[derive(Debug, Clone, Default)]
-pub(crate) enum ProgressOption {
+pub enum ProgressOption {
   ProgressBar(indicatif::ProgressBar),
   MultiProgress(indicatif::MultiProgress),
   #[default]
@@ -13,7 +13,7 @@ pub(crate) enum ProgressOption {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub(crate) enum TemperatureFunction {
+pub enum TemperatureFunction {
   Linear,
 }
 
@@ -27,10 +27,10 @@ const _: () = {
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub(crate) struct AdvancedSimulationOptions {
-  pub(crate) progress_bar_update_interval: usize,
+pub struct AdvancedSimulationOptions {
+  pub progress_bar_update_interval: usize,
   #[serde(skip)]
-  pub(crate) live_update: Option<LiveUpdate>,
+  pub live_update: Option<LiveUpdate>,
 }
 
 impl Default for AdvancedSimulationOptions {
@@ -43,7 +43,7 @@ impl Default for AdvancedSimulationOptions {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub(crate) enum StopCondition {
+pub enum StopCondition {
   Steps(usize),
   Time(Duration),
 }
@@ -55,18 +55,18 @@ impl Default for StopCondition {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct LiveUpdate {
-  pub(crate) channel: std::sync::mpsc::Sender<ClassCalendar>,
-  pub(crate) live_update_interval: usize,
+pub struct LiveUpdate {
+  pub channel: std::sync::mpsc::Sender<ClassCalendar>,
+  pub live_update_interval: usize,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub(crate) struct SimulationOptions {
-  pub(crate) simulation_constraints: SimulationConstraints,
-  pub(crate) stop_condition: StopCondition,
-  pub(crate) initial_state: Option<ClassCalendar>,
+pub struct SimulationOptions {
+  pub simulation_constraints: SimulationConstraints,
+  pub stop_condition: StopCondition,
+  pub initial_state: Option<ClassCalendar>,
   #[serde(skip)]
-  pub(crate) progress: ProgressOption,
-  pub(crate) temperature_function: TemperatureFunction,
-  pub(crate) advanced_options: AdvancedSimulationOptions,
+  pub progress: ProgressOption,
+  pub temperature_function: TemperatureFunction,
+  pub advanced_options: AdvancedSimulationOptions,
 }

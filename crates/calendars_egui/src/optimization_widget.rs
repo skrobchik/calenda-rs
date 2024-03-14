@@ -1,11 +1,10 @@
 use std::time::Duration;
 
+use calendars_core::StopCondition;
 use serde::{Deserialize, Serialize};
 
-use crate::simulation_options::StopCondition;
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub(crate) struct OptimizationWidget {
+pub struct OptimizationWidget {
   pub open: bool,
   current_stop_condition: StopCondition,
 }
@@ -20,7 +19,7 @@ impl Default for OptimizationWidget {
 }
 
 impl OptimizationWidget {
-  pub(crate) fn show(
+  pub fn show(
     &mut self,
     ctx: &egui::Context,
     pb: Option<&indicatif::ProgressBar>,

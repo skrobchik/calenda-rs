@@ -1,15 +1,14 @@
+use calendars_core::SchoolSchedule;
 use egui::ScrollArea;
 
-use crate::school_schedule::SchoolSchedule;
-
-pub(crate) struct ProfessorEditor<'a> {
+pub struct ProfessorEditor<'a> {
   state: &'a mut SchoolSchedule,
   availability_editor_professor_id: &'a mut Option<usize>,
   availability_editor_widget_open: &'a mut bool,
 }
 
 impl<'a> ProfessorEditor<'a> {
-  pub(crate) fn new(
+  pub fn new(
     state: &'a mut SchoolSchedule,
     availability_editor_professor_id: &'a mut Option<usize>,
     availability_editor_widget_open: &'a mut bool,
@@ -21,7 +20,7 @@ impl<'a> ProfessorEditor<'a> {
     }
   }
 
-  pub(crate) fn show(&mut self, ctx: &egui::Context, open: &mut bool) {
+  pub fn show(&mut self, ctx: &egui::Context, open: &mut bool) {
     egui::Window::new("Professor Editor")
       .open(open)
       .resizable(true)
@@ -30,7 +29,7 @@ impl<'a> ProfessorEditor<'a> {
       });
   }
 
-  pub(crate) fn ui(&mut self, ui: &mut egui::Ui) {
+  pub fn ui(&mut self, ui: &mut egui::Ui) {
     ui.separator();
     let num_professors = self.state.get_num_professors();
     ScrollArea::vertical()

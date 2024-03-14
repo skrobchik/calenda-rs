@@ -10,29 +10,29 @@ use anyhow::anyhow;
 use super::class_calendar::ClassId;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub(crate) struct SimulationConstraints {
+pub struct SimulationConstraints {
   pub(super) classes: Vec<Class>,
   pub(super) professors: Vec<Professor>,
 }
 
 impl SimulationConstraints {
-  pub(crate) fn get_class(&self, class_id: ClassId) -> Option<&Class> {
+  pub fn get_class(&self, class_id: ClassId) -> Option<&Class> {
     self.classes.get(usize::from(class_id))
   }
-  pub(crate) fn iter_classes_with_id(&self) -> impl Iterator<Item = (ClassId, &Class)> {
+  pub fn iter_classes_with_id(&self) -> impl Iterator<Item = (ClassId, &Class)> {
     self
       .classes
       .iter()
       .enumerate()
       .map(|(i, c)| (i.try_into().unwrap(), c))
   }
-  pub(crate) fn get_professors(&self) -> &Vec<Professor> {
+  pub fn get_professors(&self) -> &Vec<Professor> {
     &self.professors
   }
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
-pub(crate) struct Class {
+pub struct Class {
   pub(super) professor_id: usize,
   pub(super) classroom_type: ClassroomType,
   pub(super) class_hours: u8,
@@ -42,34 +42,34 @@ pub(crate) struct Class {
 }
 
 impl Class {
-  pub(crate) fn get_professor_id(&self) -> &usize {
+  pub fn get_professor_id(&self) -> &usize {
     &self.professor_id
   }
-  pub(crate) fn get_classroom_type(&self) -> &ClassroomType {
+  pub fn get_classroom_type(&self) -> &ClassroomType {
     &self.classroom_type
   }
-  pub(crate) fn get_class_hours(&self) -> &u8 {
+  pub fn get_class_hours(&self) -> &u8 {
     &self.class_hours
   }
-  pub(crate) fn get_semester(&self) -> &Semester {
+  pub fn get_semester(&self) -> &Semester {
     &self.semester
   }
-  pub(crate) fn get_group(&self) -> &Group {
+  pub fn get_group(&self) -> &Group {
     &self.group
   }
-  pub(crate) fn is_optative(&self) -> bool {
+  pub fn is_optative(&self) -> bool {
     self.optative
   }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub(crate) struct Professor {
-  pub(crate) availability: WeekCalendar<Availability>,
-  pub(crate) priority: f32,
+pub struct Professor {
+  pub availability: WeekCalendar<Availability>,
+  pub priority: f32,
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy, Sequence, PartialEq, Eq, Debug)]
-pub(crate) enum Semester {
+pub enum Semester {
   S1,
   S2,
   S3,
@@ -135,7 +135,7 @@ impl From<&Semester> for u32 {
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy, Sequence, PartialEq, Eq, Debug)]
-pub(crate) enum Group {
+pub enum Group {
   G1,
   G2,
   G3,
@@ -168,7 +168,7 @@ impl Display for Group {
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub(crate) enum Availability {
+pub enum Availability {
   Available,
   AvailableIfNeeded,
   #[default]
@@ -176,7 +176,7 @@ pub(crate) enum Availability {
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy, Sequence, PartialEq, Eq, Debug, PartialOrd, Ord)]
-pub(crate) enum ClassroomType {
+pub enum ClassroomType {
   AulaSimple,
   AulaDoble,
   LabQuimica,
@@ -197,7 +197,7 @@ impl Display for ClassroomType {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Sequence, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) enum Classroom {
+pub enum Classroom {
   Aula1,
   Aula2_3,
   Aula4,
@@ -209,7 +209,7 @@ pub(crate) enum Classroom {
 }
 
 impl Classroom {
-  pub(crate) fn get_type(&self) -> ClassroomType {
+  pub fn get_type(&self) -> ClassroomType {
     match self {
       Classroom::Aula1 => ClassroomType::AulaSimple,
       Classroom::Aula2_3 => ClassroomType::AulaDoble,

@@ -8,13 +8,13 @@ pub(super) struct ScheduleMetadata {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub(crate) struct ProfessorMetadata {
-  pub(crate) name: String,
+pub struct ProfessorMetadata {
+  pub name: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub(crate) struct ClassMetadata {
-  pub(crate) name: String,
-  pub(crate) color: Color32,
-  pub(crate) class_code: String,
+pub struct ClassMetadata {
+  pub name: String,
+  pub color: Color32,
+  pub class_code: String,
 }

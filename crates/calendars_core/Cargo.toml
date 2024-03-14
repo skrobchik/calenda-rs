@@ -1,0 +1,21 @@
+[package]
+
+name = "calendars_core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.81"
+chrono = "0.4.35"
+chrono-tz = "0.8.6"
+egui = { version="0.26.2", features = ["serde"] }
+enum-iterator = "2.0.0"
+icalendar = "0.16.0"
+indicatif = "0.17.8"
+itertools = "0.12.1"
+rand = "0.8.5"
+rand_chacha = "0.3.1"
+serde = { version="1.0.197", features = ["derive"] }
+serde_json = "1.0.114"
+thiserror = "1.0.58"
+winapi = "0.3.9"

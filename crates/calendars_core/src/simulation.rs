@@ -25,26 +25,26 @@ use crate::{
 };
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub(crate) struct SimulationOutput {
-  pub(crate) simulation_options: SimulationOptions,
-  pub(crate) final_calendar: ClassCalendar,
-  pub(crate) final_cost: f64,
-  pub(crate) start_time: std::time::SystemTime,
-  pub(crate) end_time: std::time::SystemTime,
+pub struct SimulationOutput {
+  pub simulation_options: SimulationOptions,
+  pub final_calendar: ClassCalendar,
+  pub final_cost: f64,
+  pub start_time: std::time::SystemTime,
+  pub end_time: std::time::SystemTime,
 
   /// Not necesarilly equal to `end_time - start_time` (e.g., the system time was changed during the simulation run).
-  pub(crate) duration: std::time::Duration,
+  pub duration: std::time::Duration,
 
-  pub(crate) stats: BTreeMap<String, Vec<serde_json::Value>>,
+  pub stats: BTreeMap<String, Vec<serde_json::Value>>,
 
   /// Needed if stop condition is not number of steps
-  pub(crate) total_steps: usize,
+  pub total_steps: usize,
 
   #[serde(skip)]
-  pub(crate) classroom_assignments: BTreeMap<ClassroomAssignmentKey, Classroom>,
+  pub classroom_assignments: BTreeMap<ClassroomAssignmentKey, Classroom>,
 }
 
-pub(crate) fn generate_schedule(
+pub fn generate_schedule(
   options_list: Vec<SimulationOptions>,
   seed: Option<u64>,
 ) -> JoinHandle<Vec<SimulationOutput>> {
@@ -71,10 +71,10 @@ pub(crate) fn generate_schedule(
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub(crate) struct SimulationRunReport {
-  pub(crate) num_steps: u64,
-  pub(crate) stats: BTreeMap<String, Vec<serde_json::Value>>,
-  pub(crate) start_time: std::time::SystemTime,
+pub struct SimulationRunReport {
+  pub num_steps: u64,
+  pub stats: BTreeMap<String, Vec<serde_json::Value>>,
+  pub start_time: std::time::SystemTime,
 }
 
 fn simulated_annealing<R: Rng>(options: SimulationOptions, mut rng: R) -> SimulationOutput {

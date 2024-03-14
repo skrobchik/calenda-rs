@@ -9,14 +9,14 @@ pub const NUM_CLASS_IDS: usize = 256;
 const CLASS_ID_VALUE_RANGE: std::ops::Range<usize> = 0..NUM_CLASS_IDS;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub(crate) struct ClassId(usize);
+pub struct ClassId(usize);
 
 #[derive(thiserror::Error, Debug)]
 #[error("Class id value is greater than maximum")]
-pub(crate) struct ClassIdOutOfRangeError {}
+pub struct ClassIdOutOfRangeError {}
 
 impl ClassId {
-  pub(crate) fn all() -> impl ExactSizeIterator<Item = Self> {
+  pub fn all() -> impl ExactSizeIterator<Item = Self> {
     CLASS_ID_VALUE_RANGE.map(ClassId)
   }
 }
@@ -40,23 +40,23 @@ impl From<ClassId> for usize {
 }
 
 #[derive(PartialEq, Eq, Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct SingleClassEntry {
-  pub(crate) day_idx: week_calendar::Day,
-  pub(crate) timeslot_idx: week_calendar::Timeslot,
-  pub(crate) class_id: ClassId,
+pub struct SingleClassEntry {
+  pub day_idx: week_calendar::Day,
+  pub timeslot_idx: week_calendar::Timeslot,
+  pub class_id: ClassId,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct ClassEntryDelta {
-  pub(crate) class_id: ClassId,
-  pub(crate) src_day_idx: week_calendar::Day,
-  pub(crate) src_timeslot_idx: week_calendar::Timeslot,
-  pub(crate) dst_day_idx: week_calendar::Day,
-  pub(crate) dst_timeslot_idx: week_calendar::Timeslot,
+pub struct ClassEntryDelta {
+  pub class_id: ClassId,
+  pub src_day_idx: week_calendar::Day,
+  pub src_timeslot_idx: week_calendar::Timeslot,
+  pub dst_day_idx: week_calendar::Day,
+  pub dst_timeslot_idx: week_calendar::Timeslot,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct ClassCalendar {
+pub struct ClassCalendar {
   data: WeekCalendar<Vec<u8>>,
   class_entries: Vec<SingleClassEntry>,
 }
@@ -75,16 +75,16 @@ impl Default for ClassCalendar {
 }
 
 impl ClassCalendar {
-  pub(crate) fn iter_timeslots(&self) -> impl Iterator<Item = &Vec<u8>> {
+  pub fn iter_timeslots(&self) -> impl Iterator<Item = &Vec<u8>> {
     week_calendar::Day::all()
       .flat_map(move |d| week_calendar::Timeslot::all().map(move |t| self.data.get(d, t)))
   }
 
-  pub(crate) fn get_entries(&self) -> &Vec<SingleClassEntry> {
+  pub fn get_entries(&self) -> &Vec<SingleClassEntry> {
     &self.class_entries
   }
 
-  pub(crate) fn get_timeslot(
+  pub fn get_timeslot(
     &self,
     day: week_calendar::Day,
     timeslot: week_calendar::Timeslot,
@@ -92,7 +92,7 @@ impl ClassCalendar {
     self.data.get(day, timeslot)
   }
 
-  pub(crate) fn get_count(
+  pub fn get_count(
     &self,
     day: week_calendar::Day,
     timeslot: week_calendar::Timeslot,
@@ -105,7 +105,7 @@ impl ClassCalendar {
       .unwrap()
   }
 
-  pub(crate) fn move_one_class_random<R: rand::Rng>(&mut self, rng: &mut R) -> ClassEntryDelta {
+  pub fn move_one_class_random<R: rand::Rng>(&mut self, rng: &mut R) -> ClassEntryDelta {
     let entry_idx = rng.gen_range(0..self.class_entries.len());
     let entry = self.class_entries.get_mut(entry_idx).unwrap();
     let class_id = entry.class_id;
@@ -134,7 +134,7 @@ impl ClassCalendar {
     }
   }
 
-  pub(crate) fn move_one_class(
+  pub fn move_one_class(
     &mut self,
     source_day_idx: week_calendar::Day,
     source_timeslot_idx: week_calendar::Timeslot,
@@ -146,7 +146,7 @@ impl ClassCalendar {
     self.add_one_class(target_day_idx, target_timeslot_idx, class_id);
   }
 
-  pub(crate) fn add_one_class(
+  pub fn add_one_class(
     &mut self,
     day_idx: week_calendar::Day,
     timeslot_idx: week_calendar::Timeslot,
@@ -161,7 +161,7 @@ impl ClassCalendar {
     });
   }
 
-  pub(crate) fn remove_one_class(
+  pub fn remove_one_class(
     &mut self,
     day: week_calendar::Day,
     timeslot_idx: week_calendar::Timeslot,

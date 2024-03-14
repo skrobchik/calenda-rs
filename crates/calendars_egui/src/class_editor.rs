@@ -1,12 +1,10 @@
 use egui::{ComboBox, ScrollArea, TextEdit};
 use serde::{Deserialize, Serialize};
 
-use crate::school_schedule::{
-  class_calendar::ClassId, ClassroomType, Group, SchoolSchedule, Semester,
-};
+use calendars_core::{ClassId, ClassroomType, Group, SchoolSchedule, Semester};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub(crate) struct ClassEditor {
+pub struct ClassEditor {
   pub search_text: String,
   pub open: bool,
 }
@@ -21,7 +19,7 @@ impl Default for ClassEditor {
 }
 
 impl ClassEditor {
-  pub(crate) fn show(&mut self, ctx: &egui::Context, state: &mut SchoolSchedule) {
+  pub fn show(&mut self, ctx: &egui::Context, state: &mut SchoolSchedule) {
     let mut open = self.open;
     egui::Window::new("Clases")
       .open(&mut open)

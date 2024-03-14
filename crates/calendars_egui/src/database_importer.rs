@@ -1,6 +1,5 @@
-use crate::{
-  school_schedule::{parse_semester_group, Availability, SchoolSchedule},
-  week_calendar,
+use calendars_core::{
+  Availability, Day, Group, SchoolSchedule, Semester, TIMESLOT_09_00, TIMESLOT_17_00,
 };
 
 use egui::Color32;
@@ -70,6 +69,19 @@ fn is_optative(class_code: &str) -> bool {
   class_code.starts_with("00")
 }
 
+pub fn parse_semester_group(s: &str) -> Option<(Semester, Group)> {
+  match s.get(0..4).and_then(|s| s.chars().collect_tuple()) {
+    Some(('0', c1, '0', c2)) => match (
+      c1.to_digit(10).and_then(|d1| d1.try_into().ok()),
+      c2.to_digit(10).and_then(|d2| d2.try_into().ok()),
+    ) {
+      (Some(semester), Some(group)) => Some((semester, group)),
+      _ => None,
+    },
+    _ => None,
+  }
+}
+
 fn parse_database_data(connection: sqlite::Connection) -> anyhow::Result<SchoolSchedule> {
   let mut schedule: SchoolSchedule = Default::default();
   let query = "SELECT * FROM Materias";
@@ -122,8 +134,8 @@ fn parse_database_data(connection: sqlite::Connection) -> anyhow::Result<SchoolS
     professor_metadata.name = my_professor.name.clone();
     let professor = schedule.get_professor_mut(professor_id).unwrap();
     professor_ids.insert(my_professor.rfc.clone(), professor_id);
-    for day in week_calendar::Day::all() {
-      for timeslot in week_calendar::TIMESLOT_09_00..week_calendar::TIMESLOT_17_00 {
+    for day in Day::all() {
+      for timeslot in TIMESLOT_09_00..TIMESLOT_17_00 {
         *professor
           .availability
           .get_mut(day, timeslot.try_into().unwrap()) = Availability::AvailableIfNeeded;
@@ -214,7 +226,7 @@ impl Default for ImportSchedulePaths<PathBuf, PathBuf> {
   }
 }
 
-pub(crate) fn import_schedule<P1: AsRef<Path>, P2: AsRef<Path>>(
+pub fn import_schedule<P1: AsRef<Path>, P2: AsRef<Path>>(
   paths: ImportSchedulePaths<P1, P2>,
 ) -> anyhow::Result<SchoolSchedule> {
   let connection = import_temporary_database(paths.materias_sql_path, paths.profesores_sql_path)?;

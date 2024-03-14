@@ -1,20 +1,19 @@
 use std::cell::Cell;
 
+use calendars_core::{
+  ClassFilter, Day, SchoolSchedule, Semester, Timeslot, DAY_COUNT, TIMESLOT_COUNT,
+};
 use egui::{Align2, Color32, FontId, Rect, Rounding, Sense, Stroke};
 use serde::{Deserialize, Serialize};
 
-use crate::class_filter::ClassFilter;
-use crate::school_schedule::{SchoolSchedule, Semester};
-use crate::week_calendar;
-
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub(crate) struct SimpleScheduleWidget {
+pub struct SimpleScheduleWidget {
   pub class_filter: ClassFilter,
   pub open: Cell<bool>,
 }
 
 impl SimpleScheduleWidget {
-  pub(crate) fn show(&mut self, ctx: &egui::Context, state: &SchoolSchedule) {
+  pub fn show(&mut self, ctx: &egui::Context, state: &SchoolSchedule) {
     let mut local_open = self.open.clone();
     egui::Window::new("Schedule")
       .open(local_open.get_mut())
@@ -29,10 +28,10 @@ impl SimpleScheduleWidget {
     let (response, painter) = ui.allocate_painter(ui.available_size_before_wrap(), Sense::hover());
     let total_width = response.rect.width();
     let total_height = response.rect.height();
-    let w = total_width / week_calendar::DAY_COUNT as f32;
-    let h: f32 = total_height / week_calendar::TIMESLOT_COUNT as f32;
-    for day_idx in week_calendar::Day::all() {
-      for timeslot_idx in week_calendar::Timeslot::all() {
+    let w = total_width / DAY_COUNT as f32;
+    let h: f32 = total_height / TIMESLOT_COUNT as f32;
+    for day_idx in Day::all() {
+      for timeslot_idx in Timeslot::all() {
         let timeslot: Vec<u8> = state
           .get_class_calendar()
           .get_timeslot(day_idx, timeslot_idx)

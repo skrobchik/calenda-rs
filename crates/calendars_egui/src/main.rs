@@ -1,29 +1,22 @@
 pub mod app;
 pub mod class_editor;
-pub mod class_filter;
 pub mod color_list;
 pub mod database_importer;
-pub mod heuristics;
 pub mod optimization_widget;
 pub mod professor_editor;
 pub mod professor_schedule_widget;
-pub mod school_schedule;
 pub mod simple_schedule_widget;
-pub mod simulation;
-pub mod simulation_options;
-pub mod stats_tracker;
-pub mod week_calendar;
 
 use crate::app::MyApp;
 
+use calendars_core::{
+  ProgressOption, SimulationOptions, SimulationOutput, StopCondition, TemperatureFunction,
+};
 use indicatif::MultiProgress;
-use simulation_options::SimulationOptions;
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
 
-pub(crate) fn load_results<P: AsRef<std::path::Path>>(
-  path: P,
-) -> Vec<simulation::SimulationOutput> {
+pub fn load_results<P: AsRef<std::path::Path>>(path: P) -> Vec<SimulationOutput> {
   let path = path.as_ref();
   let file = std::fs::File::open(path).unwrap();
   let reader = std::io::BufReader::new(file);
@@ -65,15 +58,15 @@ fn run_experiment_1() {
     .into_iter()
     .map(|total_steps| SimulationOptions {
       simulation_constraints: schedule.get_simulation_constraints().clone(),
-      stop_condition: simulation_options::StopCondition::Steps(total_steps as usize),
+      stop_condition: StopCondition::Steps(total_steps as usize),
       initial_state: None,
-      progress: simulation_options::ProgressOption::MultiProgress(mp.clone()),
-      temperature_function: simulation_options::TemperatureFunction::Linear,
+      progress: ProgressOption::MultiProgress(mp.clone()),
+      temperature_function: TemperatureFunction::Linear,
       advanced_options: Default::default(),
     })
     .collect();
 
-  let results = simulation::generate_schedule(simulation_options, None)
+  let results = calendars_core::generate_schedule(simulation_options, None)
     .join()
     .unwrap();
 

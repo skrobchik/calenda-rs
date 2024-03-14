@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use std::ops::Range;
 
-pub(crate) const TIMESLOT_COUNT: usize = 12;
-pub(crate) const DAY_COUNT: usize = 5;
+pub const TIMESLOT_COUNT: usize = 12;
+pub const DAY_COUNT: usize = 5;
 const DATA_LEN: usize = TIMESLOT_COUNT * DAY_COUNT;
 
 const DAY_VALUE_RANGE: Range<usize> = std::ops::Range {
@@ -17,14 +17,14 @@ const TIMESLOT_VALUE_RANGE: Range<usize> = std::ops::Range {
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub(crate) struct Timeslot(usize);
+pub struct Timeslot(usize);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub(crate) struct Day(usize);
+pub struct Day(usize);
 
 #[derive(thiserror::Error, Debug)]
 #[error("Timeslot value is outside of range")]
-pub(crate) struct TimeslotValueOutOfRangeError {}
+pub struct TimeslotValueOutOfRangeError {}
 
 impl TryFrom<usize> for Timeslot {
   type Error = TimeslotValueOutOfRangeError;
@@ -46,7 +46,7 @@ impl From<Timeslot> for usize {
 
 #[derive(thiserror::Error, Debug)]
 #[error("Day value is outside of range")]
-pub(crate) struct DayValueOutOfRangeError {}
+pub struct DayValueOutOfRangeError {}
 
 impl TryFrom<usize> for Day {
   type Error = DayValueOutOfRangeError;
@@ -61,21 +61,21 @@ impl TryFrom<usize> for Day {
 }
 
 impl Timeslot {
-  pub(crate) fn new_random<R: rand::Rng>(rng: &mut R) -> Self {
+  pub fn new_random<R: rand::Rng>(rng: &mut R) -> Self {
     Self(rng.gen_range(TIMESLOT_VALUE_RANGE))
   }
 
-  pub(crate) fn all() -> impl ExactSizeIterator<Item = Self> {
+  pub fn all() -> impl ExactSizeIterator<Item = Self> {
     TIMESLOT_VALUE_RANGE.map(Timeslot)
   }
 }
 
 impl Day {
-  pub(crate) fn new_random<R: rand::Rng>(rng: &mut R) -> Self {
+  pub fn new_random<R: rand::Rng>(rng: &mut R) -> Self {
     Self(rng.gen_range(DAY_VALUE_RANGE))
   }
 
-  pub(crate) fn all() -> impl ExactSizeIterator<Item = Self> {
+  pub fn all() -> impl ExactSizeIterator<Item = Self> {
     DAY_VALUE_RANGE.map(Day)
   }
 }
@@ -86,37 +86,37 @@ impl From<Day> for usize {
   }
 }
 
-pub(crate) fn timeslot_to_hour(timeslot: Timeslot) -> u32 {
+pub fn timeslot_to_hour(timeslot: Timeslot) -> u32 {
   (timeslot.0 as u32) + 8
 }
 
 #[allow(unused)]
-pub(crate) const TIMESLOT_08_00: usize = 0;
+pub const TIMESLOT_08_00: usize = 0;
 #[allow(unused)]
-pub(crate) const TIMESLOT_09_00: usize = 1;
+pub const TIMESLOT_09_00: usize = 1;
 #[allow(unused)]
-pub(crate) const TIMESLOT_10_00: usize = 2;
+pub const TIMESLOT_10_00: usize = 2;
 #[allow(unused)]
-pub(crate) const TIMESLOT_11_00: usize = 3;
+pub const TIMESLOT_11_00: usize = 3;
 #[allow(unused)]
-pub(crate) const TIMESLOT_12_00: usize = 4;
+pub const TIMESLOT_12_00: usize = 4;
 #[allow(unused)]
-pub(crate) const TIMESLOT_13_00: usize = 5;
+pub const TIMESLOT_13_00: usize = 5;
 #[allow(unused)]
-pub(crate) const TIMESLOT_14_00: usize = 6;
+pub const TIMESLOT_14_00: usize = 6;
 #[allow(unused)]
-pub(crate) const TIMESLOT_15_00: usize = 7;
+pub const TIMESLOT_15_00: usize = 7;
 #[allow(unused)]
-pub(crate) const TIMESLOT_16_00: usize = 8;
+pub const TIMESLOT_16_00: usize = 8;
 #[allow(unused)]
-pub(crate) const TIMESLOT_17_00: usize = 9;
+pub const TIMESLOT_17_00: usize = 9;
 #[allow(unused)]
-pub(crate) const TIMESLOT_18_00: usize = 10;
+pub const TIMESLOT_18_00: usize = 10;
 #[allow(unused)]
-pub(crate) const TIMESLOT_19_00: usize = 11;
+pub const TIMESLOT_19_00: usize = 11;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub(crate) struct WeekCalendar<T> {
+pub struct WeekCalendar<T> {
   data: Vec<T>,
 }
 
@@ -133,18 +133,18 @@ fn get_index(day: Day, timeslot: Timeslot) -> usize {
 }
 
 impl<T> WeekCalendar<T> {
-  pub(crate) fn get(&self, day: Day, timeslot: Timeslot) -> &T {
+  pub fn get(&self, day: Day, timeslot: Timeslot) -> &T {
     &self.data[get_index(day, timeslot)]
   }
 
-  pub(crate) fn get_mut(&mut self, day: Day, timeslot: Timeslot) -> &mut T {
+  pub fn get_mut(&mut self, day: Day, timeslot: Timeslot) -> &mut T {
     &mut self.data[get_index(day, timeslot)]
   }
 }
 
 #[derive(thiserror::Error, Debug)]
 #[error("Provided data length is incorrect")]
-pub(crate) struct IncorrectDataLenError {}
+pub struct IncorrectDataLenError {}
 impl<T> TryFrom<Vec<T>> for WeekCalendar<T> {
   type Error = IncorrectDataLenError;
 

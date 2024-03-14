@@ -4,15 +4,13 @@ use std::{
 };
 
 use crate::{
-  class_editor::ClassEditor,
-  database_importer,
-  optimization_widget::OptimizationWidget,
-  professor_editor::ProfessorEditor,
-  professor_schedule_widget::ProfessorScheduleWidget,
-  school_schedule::{class_calendar::ClassCalendar, SchoolSchedule},
+  class_editor::ClassEditor, database_importer, optimization_widget::OptimizationWidget,
+  professor_editor::ProfessorEditor, professor_schedule_widget::ProfessorScheduleWidget,
   simple_schedule_widget::SimpleScheduleWidget,
-  simulation::{self, SimulationOutput},
-  simulation_options::{self, AdvancedSimulationOptions, LiveUpdate, SimulationOptions},
+};
+use calendars_core::{
+  self, AdvancedSimulationOptions, ClassCalendar, LiveUpdate, ProgressOption, SchoolSchedule,
+  SimulationOptions, SimulationOutput, TemperatureFunction,
 };
 use eframe::egui;
 use egui::Ui;
@@ -28,8 +26,8 @@ struct CurrentSimulation {
 
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
-pub(crate) struct MyApp {
-  pub(crate) school_schedule: SchoolSchedule,
+pub struct MyApp {
+  pub school_schedule: SchoolSchedule,
   schedule_widget: SimpleScheduleWidget,
   professor_editor_widget_open: bool,
   class_editor_widget_open: bool,
@@ -39,11 +37,11 @@ pub(crate) struct MyApp {
   availability_editor_widget_open: bool,
   #[serde(skip)]
   current_simulation: Option<CurrentSimulation>,
-  pub(crate) developer_mode: bool,
+  pub developer_mode: bool,
 }
 
 impl MyApp {
-  pub(crate) fn new(cc: &eframe::CreationContext<'_>) -> MyApp {
+  pub fn new(cc: &eframe::CreationContext<'_>) -> MyApp {
     if let Some(storage) = cc.storage {
       return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
     }
@@ -99,7 +97,7 @@ impl MyApp {
       ui.menu_button("Load results3.json", |ui| {
         (0..21).for_each(|i| {
           if ui.button(i.to_string()).clicked() {
-            let simulation_output = crate::load_results("results3.json")
+            let simulation_output: SimulationOutput = crate::load_results("results3.json")
               .into_iter()
               .nth(i)
               .unwrap();
@@ -218,13 +216,13 @@ impl eframe::App for MyApp {
               // simulation thread channel no longer active, exit thread
             });
             let simulation_thread: JoinHandle<Vec<SimulationOutput>> =
-              simulation::generate_schedule(
+              calendars_core::generate_schedule(
                 vec![SimulationOptions {
                   simulation_constraints: local_simulation_constraints,
                   stop_condition,
                   initial_state: None,
-                  temperature_function: simulation_options::TemperatureFunction::Linear,
-                  progress: simulation_options::ProgressOption::ProgressBar(pb),
+                  temperature_function: TemperatureFunction::Linear,
+                  progress: ProgressOption::ProgressBar(pb),
                   advanced_options,
                 }],
                 None,
