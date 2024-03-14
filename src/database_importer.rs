@@ -135,9 +135,10 @@ fn parse_database_data(connection: sqlite::Connection) -> anyhow::Result<SchoolS
     .iter()
     .filter(|c| c.ciclo == "2023-1")
     .filter(|c| {
-      c.grupo.starts_with("01") || c.grupo.starts_with("03")
-      // || c.grupo.starts_with("05")
-      // || c.grupo.starts_with("07")
+      c.grupo.starts_with("01")
+        || c.grupo.starts_with("03")
+        || c.grupo.starts_with("05")
+        || c.grupo.starts_with("07")
     })
     .cloned()
     .collect();
@@ -159,14 +160,18 @@ fn parse_database_data(connection: sqlite::Connection) -> anyhow::Result<SchoolS
   for (my_class, color) in classes.iter().take(num_classes).zip(colors_iterator) {
     let class_id = schedule.add_new_class();
     schedule.get_class_metadata_mut(class_id).unwrap().color = color;
-    schedule.get_class_metadata_mut(class_id).unwrap().name =
-      format!("{} {}", my_class.asignatura, my_class.name);
+    schedule.get_class_metadata_mut(class_id).unwrap().name = format!("{}", my_class.name);
     let professor_id = professor_ids.get(&my_class.rfc1).unwrap_or(&0);
     let mut class_entry = schedule.get_class_entry_mut(class_id).unwrap();
     class_entry.set_professor_id(*professor_id);
     if let Some((semester, group)) = parse_semester_group(&my_class.grupo) {
       class_entry.set_group(group);
       class_entry.set_semester(semester);
+      class_entry.set_optative(is_optative(&my_class.asignatura));
+      schedule
+        .get_class_metadata_mut(class_id)
+        .unwrap()
+        .class_code = my_class.asignatura.clone();
     } else {
       println!("ERRRRRROOOOOR");
     }
@@ -177,8 +182,7 @@ fn parse_database_data(connection: sqlite::Connection) -> anyhow::Result<SchoolS
 
     let class_id = schedule.add_new_class();
     schedule.get_class_metadata_mut(class_id).unwrap().color = color;
-    schedule.get_class_metadata_mut(class_id).unwrap().name =
-      format!("{} {} (Lab)", my_class.asignatura, my_class.name);
+    schedule.get_class_metadata_mut(class_id).unwrap().name = format!("{} (Lab)", my_class.name);
     let professor_id = professor_ids.get(&my_class.rfc2).unwrap_or(&0);
     let mut class_entry = schedule.get_class_entry_mut(class_id).unwrap();
     class_entry.set_professor_id(*professor_id);
@@ -186,6 +190,10 @@ fn parse_database_data(connection: sqlite::Connection) -> anyhow::Result<SchoolS
       class_entry.set_group(group);
       class_entry.set_semester(semester);
       class_entry.set_optative(is_optative(&my_class.asignatura));
+      schedule
+        .get_class_metadata_mut(class_id)
+        .unwrap()
+        .class_code = my_class.asignatura.clone();
     }
   }
 
