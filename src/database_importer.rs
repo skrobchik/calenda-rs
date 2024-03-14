@@ -160,7 +160,7 @@ fn parse_database_data(connection: sqlite::Connection) -> anyhow::Result<SchoolS
   for (my_class, color) in classes.iter().take(num_classes).zip(colors_iterator) {
     let class_id = schedule.add_new_class();
     schedule.get_class_metadata_mut(class_id).unwrap().color = color;
-    schedule.get_class_metadata_mut(class_id).unwrap().name = format!("{}", my_class.name);
+    schedule.get_class_metadata_mut(class_id).unwrap().name = my_class.name.to_string();
     let professor_id = professor_ids.get(&my_class.rfc1).unwrap_or(&0);
     let mut class_entry = schedule.get_class_entry_mut(class_id).unwrap();
     class_entry.set_professor_id(*professor_id);

@@ -266,7 +266,7 @@ pub(crate) fn count_incontinuous_classes(state: &ClassCalendar) -> f64 {
 #[cfg(test)]
 mod test {
   use crate::{
-    school_schedule::{class_calendar, SchoolSchedule},
+    school_schedule::SchoolSchedule,
     week_calendar::{
       TIMESLOT_09_00, TIMESLOT_10_00, TIMESLOT_11_00, TIMESLOT_12_00, TIMESLOT_13_00,
     },

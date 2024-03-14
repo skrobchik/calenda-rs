@@ -82,7 +82,7 @@ impl SimpleScheduleWidget {
               painter.text(
                 topleft,
                 Align2::LEFT_TOP,
-                &class_code,
+                class_code,
                 FontId::default(),
                 Color32::BLACK,
               );

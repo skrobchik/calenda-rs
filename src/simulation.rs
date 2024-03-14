@@ -287,7 +287,7 @@ fn assign_classrooms(
     available_classrooms
       .iter()
       .map(|v| {
-        v.get(0)
+        v.first()
           .expect("A classroom type doesn't have a classroom")
           .clone()
       })
