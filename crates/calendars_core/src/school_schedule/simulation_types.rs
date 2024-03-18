@@ -208,6 +208,21 @@ pub enum Classroom {
   LabQuimica,
 }
 
+impl Display for Classroom {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.write_str(match self {
+      Classroom::Aula1 => "Aula 1",
+      Classroom::Aula2_3 => "Aula 2-3",
+      Classroom::Aula4 => "Aula 4",
+      Classroom::Aula5_6 => "Aula 5-6",
+      Classroom::SalaSeminarios => "Sala de Seminarios",
+      Classroom::SalaComputo => "Sala de Computo",
+      Classroom::LabFisica => "Lab de Fisica",
+      Classroom::LabQuimica => "Lab de Quimica",
+    })
+  }
+}
+
 impl Classroom {
   pub fn get_type(&self) -> ClassroomType {
     match self {

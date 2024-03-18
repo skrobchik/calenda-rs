@@ -292,12 +292,19 @@ impl SchoolSchedule {
       end_timeslot: week_calendar::Timeslot,
     }
     let mut class_ranges: Vec<ClassRange> = Vec::new();
-    for class_entry in self
-      .class_calendar
-      .get_entries()
-      .iter()
-      .filter(|entry| class_filter.filter(entry.class_id, &self.simulation_constraints))
-    {
+    let mut first = true;
+    for class_entry in self.class_calendar.get_entries().iter().filter(|entry| {
+      let b = class_filter.filter(
+        entry.class_id,
+        &self.simulation_constraints,
+        &self.class_calendar,
+        entry.day_idx,
+        entry.timeslot_idx,
+        first,
+      );
+      first = false;
+      b
+    }) {
       let new_range = ClassRange {
         class_id: class_entry.class_id,
         day: class_entry.day_idx,

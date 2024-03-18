@@ -11,6 +11,7 @@ pub use school_schedule::class_calendar::ClassCalendar;
 pub use school_schedule::class_calendar::ClassId;
 pub use school_schedule::Availability;
 pub use school_schedule::ClassMetadata;
+pub use school_schedule::Classroom;
 pub use school_schedule::ClassroomType;
 pub use school_schedule::Group;
 pub use school_schedule::Professor;

@@ -4,7 +4,6 @@ use std::{
 };
 
 use crate::{
-  class_filter::ClassFilter,
   school_schedule::{Classroom, ClassroomAssignmentKey, ClassroomType},
   simulation_options::{ProgressOption, SimulationOptions, StopCondition, TemperatureFunction},
   stats_tracker::StatsTracker,
@@ -268,10 +267,10 @@ fn cost(state: &ClassCalendar, constraints: &SimulationConstraints) -> f64 {
     + 1.5 * heuristics::count_outside_session_length(state, 2, 4)
     + 1.25 * heuristics::count_available_if_needed(state, constraints)
     + 1.0 * heuristics::count_inconsistent_class_timeslots(state)
-    + 0.1 * heuristics::same_timeslot_classes_count(state, constraints, &ClassFilter::None)
+    + 0.1 * heuristics::same_timeslot_classes_count(state)
 }
 
-fn assign_classrooms(
+pub(crate) fn assign_classrooms(
   state: &ClassCalendar,
   constraints: &SimulationConstraints,
 ) -> BTreeMap<ClassroomAssignmentKey, Classroom> {

@@ -1,7 +1,7 @@
 use std::cell::Cell;
 
 use calendars_core::{
-  ClassFilter, Day, SchoolSchedule, Semester, Timeslot, DAY_COUNT, TIMESLOT_COUNT,
+  ClassFilter, Classroom, Day, SchoolSchedule, Semester, Timeslot, DAY_COUNT, TIMESLOT_COUNT,
 };
 use egui::{Align2, Color32, FontId, Rect, Rounding, Sense, Stroke};
 use serde::{Deserialize, Serialize};
@@ -30,6 +30,7 @@ impl SimpleScheduleWidget {
     let total_height = response.rect.height();
     let w = total_width / DAY_COUNT as f32;
     let h: f32 = total_height / TIMESLOT_COUNT as f32;
+    let mut first = true;
     for day_idx in Day::all() {
       for timeslot_idx in Timeslot::all() {
         let timeslot: Vec<u8> = state
@@ -38,14 +39,20 @@ impl SimpleScheduleWidget {
           .iter()
           .enumerate()
           .map(|(class_id, count)| {
-            if self.class_filter.filter(
+            let c = if self.class_filter.filter(
               class_id.try_into().unwrap(),
               state.get_simulation_constraints(),
+              state.get_class_calendar(),
+              day_idx,
+              timeslot_idx,
+              first,
             ) {
               *count
             } else {
               0
-            }
+            };
+            first = false;
+            c
           })
           .collect();
 
@@ -165,6 +172,57 @@ impl SimpleScheduleWidget {
                 state.get_professor_metadata(i).unwrap().name.clone(),
               );
             }
+          });
+      }
+    });
+
+    ui.horizontal(|ui| {
+      if ui
+        .radio(
+          matches!(self.class_filter, ClassFilter::Classroom(_)),
+          "Aula",
+        )
+        .clicked()
+        && !matches!(self.class_filter, ClassFilter::Classroom(_))
+      {
+        self.class_filter = ClassFilter::Classroom(Classroom::Aula5_6);
+      }
+      if let ClassFilter::Classroom(classroom) = &mut self.class_filter {
+        egui::ComboBox::new("schedule_widget_combo_box_2", "")
+          .selected_text(classroom.to_string())
+          .show_ui(ui, |ui| {
+            ui.selectable_value(classroom, Classroom::Aula1, Classroom::Aula1.to_string());
+            ui.selectable_value(
+              classroom,
+              Classroom::Aula2_3,
+              Classroom::Aula2_3.to_string(),
+            );
+            ui.selectable_value(classroom, Classroom::Aula4, Classroom::Aula4.to_string());
+            ui.selectable_value(
+              classroom,
+              Classroom::Aula5_6,
+              Classroom::Aula5_6.to_string(),
+            );
+            ui.selectable_value(
+              classroom,
+              Classroom::SalaSeminarios,
+              Classroom::SalaSeminarios.to_string(),
+            );
+            ui.selectable_value(
+              classroom,
+              Classroom::SalaComputo,
+              Classroom::SalaComputo.to_string(),
+            );
+            ui.selectable_value(
+              classroom,
+              Classroom::LabFisica,
+              Classroom::LabFisica.to_string(),
+            );
+            ui.selectable_value(
+              classroom,
+              Classroom::LabQuimica,
+              Classroom::LabQuimica.to_string(),
+            );
           });
       }
     });
