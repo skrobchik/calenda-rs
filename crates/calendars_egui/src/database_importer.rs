@@ -4,6 +4,7 @@ use calendars_core::{
 
 use egui::Color32;
 use itertools::Itertools;
+use std::collections::BTreeSet;
 use std::fmt::Write;
 use std::{
   collections::BTreeMap,
@@ -112,6 +113,28 @@ fn parse_database_data(connection: sqlite::Connection) -> anyhow::Result<SchoolS
     true
   })?;
 
+  let classes: Vec<Class> = classes
+  .iter()
+  .filter(|c| c.ciclo == "2022-2")
+  .filter(|c| {
+    // c.grupo.starts_with("01")
+    //   || c.grupo.starts_with("03")
+    //   || c.grupo.starts_with("05")
+    //   || c.grupo.starts_with("07")
+    // c.grupo.starts_with("02")
+         c.grupo.starts_with("04")
+      // || c.grupo.starts_with("06")
+      // || c.grupo.starts_with("08")
+  })
+  .cloned()
+  .collect();
+
+  let mut rfc_used: BTreeSet<String> = BTreeSet::new();
+  for class in classes.iter() {
+    rfc_used.insert(class.rfc1.clone());
+    rfc_used.insert(class.rfc2.clone());
+  }
+
   let mut professors: Vec<Professor> = Vec::new();
 
   let query = "SELECT * FROM Profesores";
@@ -129,11 +152,15 @@ fn parse_database_data(connection: sqlite::Connection) -> anyhow::Result<SchoolS
   let mut professor_ids: BTreeMap<String, usize> = BTreeMap::new();
 
   for my_professor in professors.iter().unique() {
+    let rfc = my_professor.rfc.clone();
+    if !rfc_used.contains(&rfc) {
+      continue;
+    }
     let professor_id = schedule.add_new_professor();
     let professor_metadata = schedule.get_professor_metadata_mut(professor_id).unwrap();
     professor_metadata.name = my_professor.name.clone();
     let professor = schedule.get_professor_mut(professor_id).unwrap();
-    professor_ids.insert(my_professor.rfc.clone(), professor_id);
+    professor_ids.insert(rfc, professor_id);
     for day in Day::all() {
       for timeslot in TIMESLOT_09_00..TIMESLOT_17_00 {
         *professor
@@ -143,17 +170,7 @@ fn parse_database_data(connection: sqlite::Connection) -> anyhow::Result<SchoolS
     }
   }
 
-  let classes: Vec<Class> = classes
-    .iter()
-    .filter(|c| c.ciclo == "2023-1")
-    .filter(|c| {
-      c.grupo.starts_with("01")
-        || c.grupo.starts_with("03")
-        || c.grupo.starts_with("05")
-        || c.grupo.starts_with("07")
-    })
-    .cloned()
-    .collect();
+
   println!("Imported {} classes", classes.len());
 
   let num_classes = classes.len();
@@ -173,7 +190,7 @@ fn parse_database_data(connection: sqlite::Connection) -> anyhow::Result<SchoolS
     let class_id = schedule.add_new_class();
     schedule.get_class_metadata_mut(class_id).unwrap().color = color;
     schedule.get_class_metadata_mut(class_id).unwrap().name = my_class.name.to_string();
-    let professor_id = professor_ids.get(&my_class.rfc1).unwrap_or(&0);
+    let professor_id = professor_ids.get(&my_class.rfc1).unwrap();
     let mut class_entry = schedule.get_class_entry_mut(class_id).unwrap();
     class_entry.set_professor_id(*professor_id);
     if let Some((semester, group)) = parse_semester_group(&my_class.grupo) {
@@ -195,7 +212,7 @@ fn parse_database_data(connection: sqlite::Connection) -> anyhow::Result<SchoolS
     let class_id = schedule.add_new_class();
     schedule.get_class_metadata_mut(class_id).unwrap().color = color;
     schedule.get_class_metadata_mut(class_id).unwrap().name = format!("{} (Lab)", my_class.name);
-    let professor_id = professor_ids.get(&my_class.rfc2).unwrap_or(&0);
+    let professor_id = professor_ids.get(&my_class.rfc2).unwrap();
     let mut class_entry = schedule.get_class_entry_mut(class_id).unwrap();
     class_entry.set_professor_id(*professor_id);
     if let Some((semester, group)) = parse_semester_group(&my_class.grupo) {
