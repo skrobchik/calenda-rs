@@ -29,7 +29,16 @@ pub struct ClassEntry<'a> {
   class_id: ClassId,
 }
 
-impl<'a> ClassEntry<'a> {
+impl<'a, 'b> ClassEntry<'a> {
+  fn get_class(&'b mut self) -> &'b mut Class {
+    self
+      .school_schedule
+      .simulation_constraints
+      .classes
+      .get_mut(usize::from(self.class_id))
+      .unwrap()
+  }
+
   pub fn set_hours(&mut self, class_hours: u8) {
     let class = self
       .school_schedule
@@ -65,52 +74,27 @@ impl<'a> ClassEntry<'a> {
   }
 
   pub fn set_professor_id(&mut self, professor_id: usize) {
-    let class = self
-      .school_schedule
-      .simulation_constraints
-      .classes
-      .get_mut(usize::from(self.class_id))
-      .unwrap();
+    let class = self.get_class();
     class.professor_id = professor_id;
   }
 
   pub fn set_group(&mut self, group: Group) {
-    let class = self
-      .school_schedule
-      .simulation_constraints
-      .classes
-      .get_mut(usize::from(self.class_id))
-      .unwrap();
+    let class = self.get_class();
     class.group = group;
   }
 
   pub fn set_semester(&mut self, semester: Semester) {
-    let class = self
-      .school_schedule
-      .simulation_constraints
-      .classes
-      .get_mut(usize::from(self.class_id))
-      .unwrap();
+    let class = self.get_class();
     class.semester = semester;
   }
 
   pub fn set_classroom_type(&mut self, classroom_type: ClassroomType) {
-    let class = self
-      .school_schedule
-      .simulation_constraints
-      .classes
-      .get_mut(usize::from(self.class_id))
-      .unwrap();
+    let class = self.get_class();
     class.classroom_type = classroom_type;
   }
 
   pub fn set_optative(&mut self, optative: bool) {
-    let class = self
-      .school_schedule
-      .simulation_constraints
-      .classes
-      .get_mut(usize::from(self.class_id))
-      .unwrap();
+    let class = self.get_class();
     class.optative = optative;
   }
 }
