@@ -116,16 +116,6 @@ fn parse_database_data(connection: sqlite::Connection) -> anyhow::Result<SchoolS
   let classes: Vec<Class> = classes
   .iter()
   .filter(|c| c.ciclo == "2022-2")
-  .filter(|c| {
-    // c.grupo.starts_with("01")
-    //   || c.grupo.starts_with("03")
-    //   || c.grupo.starts_with("05")
-    //   || c.grupo.starts_with("07")
-    // c.grupo.starts_with("02")
-         c.grupo.starts_with("04")
-      // || c.grupo.starts_with("06")
-      // || c.grupo.starts_with("08")
-  })
   .cloned()
   .collect();
 
