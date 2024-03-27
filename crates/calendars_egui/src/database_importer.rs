@@ -1,69 +1,51 @@
-use calendars_core::{
-  Availability, Day, Group, SchoolSchedule, Semester, TIMESLOT_09_00, TIMESLOT_17_00,
-};
+use calendars_core::{Group, SchoolSchedule, Semester};
 
+use anyhow::Context;
 use egui::Color32;
 use itertools::Itertools;
 use std::collections::BTreeSet;
-use std::fmt::Write;
+use std::iter;
 use std::{
   collections::BTreeMap,
   fs,
   path::{Path, PathBuf},
 };
-use tracing::trace;
 
-fn preprocess_sql_file(contents: String) -> String {
-  contents
-    .lines()
-    .filter(|line| {
-      let ignore = ["ALTER", "ADD", "MODIFY", "SET", "--", "/*"];
-      for pattern in ignore {
-        if line.trim().starts_with(pattern) || line.trim().is_empty() {
-          return false;
-        }
-      }
-      true
-    })
-    .fold(String::new(), |mut output, line| {
-      if line.contains("ENGINE=InnoDB") {
-        let _ = writeln!(output, ");");
-      } else {
-        let _ = writeln!(output, "{line}");
-      }
-      output
-    })
-}
-
-fn import_temporary_database<P1: AsRef<Path>, P2: AsRef<Path>>(
-  materias_sql_path: P1,
-  profesores_sql_path: P2,
-) -> anyhow::Result<sqlite::Connection> {
-  let temp_db_file = tempfile::NamedTempFile::new()?;
-  let temp_db_path = temp_db_file.into_temp_path();
-  let temp_db_path = temp_db_path.keep()?;
-  let connection = sqlite::open(temp_db_path)?;
-  let query_profesores = preprocess_sql_file(fs::read_to_string(profesores_sql_path)?);
-  let query_materias = preprocess_sql_file(fs::read_to_string(materias_sql_path)?);
-  connection.execute(query_materias)?;
-  connection.execute(query_profesores)?;
-  Ok(connection)
-}
-
-#[derive(PartialEq, Eq, Hash, Clone)]
-struct Class {
-  name: String,
+#[derive(PartialEq, Eq, Hash, Clone, Debug)]
+struct ClassRow {
+  descripcion: String,
   rfc1: String,
   rfc2: String,
   ciclo: String,
   grupo: String,
-  asignatura: String,
+  asign: String,
 }
 
-#[derive(PartialEq, Eq, Hash)]
-struct Professor {
-  name: String,
+#[derive(PartialEq, Eq, Hash, Debug)]
+struct ProfessorRow {
+  nombre: String,
   rfc: String,
+}
+
+fn preprocess_sql(contents: &str) -> String {
+  contents
+    .lines()
+    .map(str::trim)
+    .filter(|line| !line.is_empty())
+    .filter(|line| {
+      !["ALTER", "ADD", "MODIFY", "SET", "--", "/*"]
+        .iter()
+        .any(|pat| line.starts_with(pat))
+    })
+    .map(|line| {
+      if line.contains("ENGINE=InnoDB") {
+        ");"
+      } else {
+        line
+      }
+    })
+    .interleave_shortest(iter::repeat("\n"))
+    .collect()
 }
 
 fn is_optative(class_code: &str) -> bool {
@@ -83,140 +65,123 @@ pub fn parse_semester_group(s: &str) -> Option<(Semester, Group)> {
   }
 }
 
-fn parse_database_data(connection: sqlite::Connection) -> anyhow::Result<SchoolSchedule> {
-  let mut schedule: SchoolSchedule = Default::default();
-  let query = "SELECT * FROM Materias";
-
-  let mut classes: Vec<Class> = Vec::new();
-  connection.iterate(query, |rows| {
-    for row in rows.iter().tuple_windows() {
-      trace!("{:?}", row);
-      let (
-        (_, _id),
-        (_, grupo),
-        (_, asignatura),
-        (_, descripcion),
-        (_, rfc1),
-        (_, rfc2),
-        (_, ciclo),
-        (_, _especial),
-      ) = row;
-      classes.push(Class {
-        name: descripcion.unwrap().to_string(),
-        rfc1: rfc1.unwrap().to_string(),
-        rfc2: rfc2.unwrap().to_string(),
-        ciclo: ciclo.unwrap().to_string(),
-        grupo: grupo.unwrap().to_string(),
-        asignatura: asignatura.unwrap().to_string(),
-      });
-    }
-    true
+fn get_professor_rows(
+  connection: &rusqlite::Connection,
+) -> Result<Vec<ProfessorRow>, rusqlite::Error> {
+  let mut statement = connection.prepare("SELECT * FROM `Profesores`")?;
+  let professor_rows = statement.query_map([], |row| {
+    let nombre: String = row.get("nombre")?;
+    let rfc: String = row.get("rfc")?;
+    let _usuario: String = row.get("usuario")?;
+    Ok(ProfessorRow { nombre, rfc })
   })?;
+  professor_rows.collect()
+}
 
-  let classes: Vec<Class> = classes
-  .iter()
-  .filter(|c| c.ciclo == "2022-2")
-  .cloned()
-  .collect();
-
-  let mut rfc_used: BTreeSet<String> = BTreeSet::new();
-  for class in classes.iter() {
-    rfc_used.insert(class.rfc1.clone());
-    rfc_used.insert(class.rfc2.clone());
-  }
-
-  let mut professors: Vec<Professor> = Vec::new();
-
-  let query = "SELECT * FROM Profesores";
-  connection.iterate(query, |rows| {
-    for ((_, nombre), (_, rfc), (_, _usuario)) in rows.iter().tuple_windows() {
-      trace!("{}", nombre.unwrap());
-      professors.push(Professor {
-        name: nombre.unwrap().to_string(),
-        rfc: rfc.unwrap().to_string(),
-      });
-    }
-    true
+fn get_class_rows(connection: &rusqlite::Connection) -> Result<Vec<ClassRow>, rusqlite::Error> {
+  let mut statement = connection.prepare("SELECT * FROM Materias")?;
+  let class_rows = statement.query_map([], |row| {
+    let _id: i64 = row.get("id")?;
+    let grupo: String = row.get("grupo")?;
+    let asignatura: String = row.get("asign")?;
+    let descripcion: String = row.get("descripcion")?;
+    let rfc1: String = row.get("rfc1")?;
+    let rfc2: String = row.get("rfc2")?;
+    let ciclo: String = row.get("ciclo")?;
+    let _especial: i64 = row.get("especial")?;
+    Ok(ClassRow {
+      descripcion,
+      asign: asignatura,
+      rfc1,
+      rfc2,
+      ciclo,
+      grupo,
+    })
   })?;
+  class_rows.collect()
+}
 
-  let mut professor_ids: BTreeMap<String, usize> = BTreeMap::new();
-
-  for my_professor in professors.iter().unique() {
-    let rfc = my_professor.rfc.clone();
-    if !rfc_used.contains(&rfc) {
-      continue;
-    }
+fn create_schedule(
+  professor_rows: &[ProfessorRow],
+  class_rows: &[ClassRow],
+) -> anyhow::Result<SchoolSchedule> {
+  let mut schedule = SchoolSchedule::default();
+  let mut professors: BTreeMap<&str, usize> = BTreeMap::new(); // rfc -> professor_id
+  for professor_row in professor_rows {
     let professor_id = schedule.add_new_professor();
     let professor_metadata = schedule.get_professor_metadata_mut(professor_id).unwrap();
-    professor_metadata.name = my_professor.name.clone();
-    let professor = schedule.get_professor_mut(professor_id).unwrap();
-    professor_ids.insert(rfc, professor_id);
-    for day in Day::all() {
-      for timeslot in TIMESLOT_09_00..TIMESLOT_17_00 {
-        *professor
-          .availability
-          .get_mut(day, timeslot.try_into().unwrap()) = Availability::AvailableIfNeeded;
-      }
+    professor_metadata.name = professor_row.nombre.clone();
+    if professors
+      .insert(professor_row.rfc.as_str(), professor_id)
+      .is_some()
+    {
+      return Err(anyhow::format_err!("Duplicate RFC `{}`", professor_row.rfc));
     }
   }
-
-
-  println!("Imported {} classes", classes.len());
-
-  let num_classes = classes.len();
-  // let colors_iterator = itertools_num::linspace(0.0, 1.0, num_classes).map(|x| {
-  //   let color = ecolor::Hsva::new(x, 1.0, 1.0, 1.0);
-  //   let color = Color32::from(color);
-  //   color
-  // });
   let colors_iterator = crate::color_list::COLOR_LIST.iter().cycle().map(|s| {
     let color = csscolorparser::parse(s).unwrap();
     let color = color.to_rgba8();
 
     Color32::from_rgba_unmultiplied(color[0], color[1], color[2], color[3])
   });
-
-  for (my_class, color) in classes.iter().take(num_classes).zip(colors_iterator) {
-    let class_id = schedule.add_new_class();
-    schedule.get_class_metadata_mut(class_id).unwrap().color = color;
-    schedule.get_class_metadata_mut(class_id).unwrap().name = my_class.name.to_string();
-    let professor_id = professor_ids.get(&my_class.rfc1).unwrap();
-    let mut class_entry = schedule.get_class_entry_mut(class_id).unwrap();
-    class_entry.set_professor_id(*professor_id);
-    if let Some((semester, group)) = parse_semester_group(&my_class.grupo) {
-      class_entry.set_group(group);
-      class_entry.set_semester(semester);
-      class_entry.set_optative(is_optative(&my_class.asignatura));
-      schedule
-        .get_class_metadata_mut(class_id)
-        .unwrap()
-        .class_code = my_class.asignatura.clone();
+  for (class_row, color) in class_rows.iter().zip(colors_iterator) {
+    let has_lab = !class_row.rfc2.trim().is_empty();
+    let theory_professor_id = *professors.get(class_row.rfc1.as_str()).context(format!(
+      "Professor with RFC `{}` not found. Required by class `{} {}`",
+      class_row.rfc1, class_row.asign, class_row.descripcion
+    ))?;
+    let lab_professor_id = if has_lab {
+      Some(*professors.get(class_row.rfc2.as_str()).context(format!(
+        "Lab Professor with RFC `{}` not found. Required by class `{} {}`",
+        class_row.rfc2, class_row.asign, class_row.descripcion
+      ))?)
     } else {
-      println!("ERRRRRROOOOOR");
-    }
-
-    if my_class.rfc2.trim().is_empty() {
-      continue;
-    }
-
-    let class_id = schedule.add_new_class();
-    schedule.get_class_metadata_mut(class_id).unwrap().color = color;
-    schedule.get_class_metadata_mut(class_id).unwrap().name = format!("{} (Lab)", my_class.name);
-    let professor_id = professor_ids.get(&my_class.rfc2).unwrap();
-    let mut class_entry = schedule.get_class_entry_mut(class_id).unwrap();
-    class_entry.set_professor_id(*professor_id);
-    if let Some((semester, group)) = parse_semester_group(&my_class.grupo) {
-      class_entry.set_group(group);
-      class_entry.set_semester(semester);
-      class_entry.set_optative(is_optative(&my_class.asignatura));
-      schedule
-        .get_class_metadata_mut(class_id)
-        .unwrap()
-        .class_code = my_class.asignatura.clone();
+      None
+    };
+    let (semester, group) = parse_semester_group(&class_row.grupo).context(format!(
+      "Couldn't parse semester and group: `{}` from `{}`",
+      class_row.grupo, class_row.descripcion
+    ))?;
+    let is_optative = is_optative(&class_row.asign);
+    let theory_class_id = schedule.add_new_class();
+    let mut theory_class = schedule.get_class_entry(theory_class_id).unwrap();
+    theory_class.set_semester(semester);
+    theory_class.set_group(group);
+    theory_class.set_optative(is_optative);
+    theory_class.set_professor_id(theory_professor_id);
+    let theory_class_metadata = schedule.get_class_metadata_mut(theory_class_id).unwrap();
+    theory_class_metadata.color = color;
+    theory_class_metadata.name = class_row.descripcion.clone();
+    theory_class_metadata.class_code = class_row.asign.clone();
+    if let Some(lab_professor_id) = lab_professor_id {
+      assert!(has_lab);
+      let lab_class_id = schedule.add_new_class();
+      let mut lab_class = schedule.get_class_entry(lab_class_id).unwrap();
+      lab_class.set_semester(semester);
+      lab_class.set_group(group);
+      lab_class.set_optative(is_optative);
+      lab_class.set_professor_id(lab_professor_id);
+      let lab_class_metadata = schedule.get_class_metadata_mut(lab_class_id).unwrap();
+      lab_class_metadata.color = color;
+      lab_class_metadata.name = format!("{} (Lab)", class_row.descripcion);
+      lab_class_metadata.class_code = class_row.asign.clone();
     }
   }
-
   Ok(schedule)
+}
+
+fn filter_unused_professors(
+  class_rows: &[ClassRow],
+  professor_rows: Vec<ProfessorRow>,
+) -> Vec<ProfessorRow> {
+  let rfcs_used: BTreeSet<&str> = class_rows
+    .iter()
+    .flat_map(|c| [c.rfc1.as_str(), c.rfc2.as_str()])
+    .collect();
+  professor_rows
+    .into_iter()
+    .filter(|professor_row| rfcs_used.contains(professor_row.rfc.as_str()))
+    .collect()
 }
 
 pub struct ImportSchedulePaths<P1: AsRef<Path>, P2: AsRef<Path>> {
@@ -236,6 +201,129 @@ impl Default for ImportSchedulePaths<PathBuf, PathBuf> {
 pub fn import_schedule<P1: AsRef<Path>, P2: AsRef<Path>>(
   paths: ImportSchedulePaths<P1, P2>,
 ) -> anyhow::Result<SchoolSchedule> {
-  let connection = import_temporary_database(paths.materias_sql_path, paths.profesores_sql_path)?;
-  parse_database_data(connection)
+  let connection = rusqlite::Connection::open_in_memory()?;
+  connection.execute_batch(&preprocess_sql(&fs::read_to_string(
+    paths.profesores_sql_path,
+  )?))?;
+  connection.execute_batch(&preprocess_sql(&fs::read_to_string(
+    paths.materias_sql_path,
+  )?))?;
+  let classes = get_class_rows(&connection)?;
+  let classes: Vec<ClassRow> = classes
+    .into_iter()
+    .filter(|class_row| class_row.ciclo == "2022-2")
+    .filter(|class_row| class_row.descripcion != "CURSO TALLER DE DIDÁCTICA II")
+    .collect();
+
+  let professors = filter_unused_professors(&classes, get_professor_rows(&connection)?);
+
+  create_schedule(&professors, &classes)
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use pretty_assertions::assert_eq;
+
+  #[test]
+  fn test_preprocess_sql() {
+    let input = r###"
+-- phpMyAdmin SQL Dump
+-- version 4.5.2
+-- http://www.phpmyadmin.net
+--
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+SET time_zone = "+00:00";
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- Database: `nanoDB`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `Profesores`
+--
+
+CREATE TABLE `Profesores` (
+  `nombre` varchar(50) NOT NULL,
+  `rfc` varchar(14) NOT NULL,
+  `usuario` varchar(30) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Dumping data for table `Profesores`
+--
+
+INSERT INTO `Profesores` (`nombre`, `rfc`, `usuario`) VALUES
+('AAAA', 'ABC1111', 'aaaa'),
+('BBBB', 'ABC2222', 'bbbb'),
+('CCCC', 'ABC3333', 'cccc');
+
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `Profesores`
+--
+ALTER TABLE `Profesores`
+  ADD UNIQUE KEY `rfc` (`rfc`);
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+"###;
+    let output = r###"CREATE TABLE `Profesores` (
+`nombre` varchar(50) NOT NULL,
+`rfc` varchar(14) NOT NULL,
+`usuario` varchar(30) NOT NULL
+);
+INSERT INTO `Profesores` (`nombre`, `rfc`, `usuario`) VALUES
+('AAAA', 'ABC1111', 'aaaa'),
+('BBBB', 'ABC2222', 'bbbb'),
+('CCCC', 'ABC3333', 'cccc');
+"###;
+    assert_eq!(&preprocess_sql(input), &output)
+  }
+
+  #[test]
+  fn test_get_professors() {
+    let connection = rusqlite::Connection::open_in_memory().unwrap();
+    connection
+      .execute_batch(
+        r###"CREATE TABLE `Profesores` (
+`nombre` varchar(50) NOT NULL,
+`rfc` varchar(14) NOT NULL,
+`usuario` varchar(30) NOT NULL
+);
+INSERT INTO `Profesores` (`nombre`, `rfc`, `usuario`) VALUES
+('AAAA', 'ABC1111', 'aaaa'),
+('BBBB', 'ABC2222', 'bbbb'),
+('CCCC', 'ABC3333', 'cccc');
+"###,
+      )
+      .unwrap();
+    let output = vec![
+      ProfessorRow {
+        nombre: "AAAA".to_string(),
+        rfc: "ABC1111".to_string(),
+      },
+      ProfessorRow {
+        nombre: "BBBB".to_string(),
+        rfc: "ABC2222".to_string(),
+      },
+      ProfessorRow {
+        nombre: "CCCC".to_string(),
+        rfc: "ABC3333".to_string(),
+      },
+    ];
+    assert_eq!(get_professor_rows(&connection).unwrap(), output);
+  }
 }

@@ -52,7 +52,7 @@ impl ClassEditor {
       let mut optativa = state.get_class(class_id).unwrap().is_optative();
       ui.checkbox(&mut optativa, "Optativa");
       state
-        .get_class_entry_mut(class_id)
+        .get_class_entry(class_id)
         .unwrap()
         .set_optative(optativa);
     }
@@ -77,7 +77,7 @@ impl ClassEditor {
             );
           }
           state
-            .get_class_entry_mut(class_id)
+            .get_class_entry(class_id)
             .unwrap()
             .set_classroom_type(classroom_type);
         });
@@ -103,7 +103,7 @@ impl ClassEditor {
             );
           }
           state
-            .get_class_entry_mut(class_id)
+            .get_class_entry(class_id)
             .unwrap()
             .set_semester(semester);
         });
@@ -118,10 +118,7 @@ impl ClassEditor {
           for group_variant in enum_iterator::all::<Group>() {
             ui.selectable_value(&mut group, group_variant, group_variant.to_string());
           }
-          state
-            .get_class_entry_mut(class_id)
-            .unwrap()
-            .set_group(group);
+          state.get_class_entry(class_id).unwrap().set_group(group);
         });
     });
 
@@ -154,7 +151,7 @@ impl ClassEditor {
               .clicked()
             {
               state
-                .get_class_entry_mut(class_id)
+                .get_class_entry(class_id)
                 .unwrap()
                 .set_professor_id(professor_id);
             }
@@ -166,7 +163,7 @@ impl ClassEditor {
       let mut class_hours = original_class_hours;
       ui.add(egui::Slider::new(&mut class_hours, 0..=20).text(to_human_time(original_class_hours)));
       state
-        .get_class_entry_mut(class_id)
+        .get_class_entry(class_id)
         .unwrap()
         .set_hours(class_hours);
     });

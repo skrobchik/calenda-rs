@@ -126,7 +126,7 @@ impl SchoolSchedule {
       .get(usize::from(class_id))
   }
 
-  pub fn get_class_entry_mut(&mut self, class_id: ClassId) -> Option<ClassEntry> {
+  pub fn get_class_entry(&mut self, class_id: ClassId) -> Option<ClassEntry> {
     Some(ClassEntry {
       school_schedule: self,
       class_id,

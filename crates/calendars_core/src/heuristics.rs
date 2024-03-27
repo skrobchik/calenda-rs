@@ -350,11 +350,11 @@ mod test {
   fn count_labs_on_different_days_test() {
     let mut schedule = SchoolSchedule::default();
     let class_id_0 = schedule.add_new_class();
-    let mut class_0 = schedule.get_class_entry_mut(class_id_0).unwrap();
+    let mut class_0 = schedule.get_class_entry(class_id_0).unwrap();
     class_0.set_hours(3);
     class_0.set_classroom_type(ClassroomType::AulaSimple);
     let class_id_1 = schedule.add_new_class();
-    let mut class_1 = schedule.get_class_entry_mut(class_id_1).unwrap();
+    let mut class_1 = schedule.get_class_entry(class_id_1).unwrap();
     class_1.set_classroom_type(ClassroomType::LabFisica);
     class_1.set_hours(3);
     let mut state = ClassCalendar::default();
