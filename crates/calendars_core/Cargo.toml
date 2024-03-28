@@ -8,7 +8,7 @@ edition = "2021"
 anyhow = "1.0.81"
 chrono = "0.4.35"
 chrono-tz = "0.8.6"
-egui = { version="0.26.2", features = ["serde"] }
+egui = { version="0.27.0", features = ["serde"] }
 enum-iterator = "2.0.0"
 icalendar = "0.16.0"
 indicatif = "0.17.8"

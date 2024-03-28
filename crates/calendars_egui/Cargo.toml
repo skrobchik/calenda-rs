@@ -7,10 +7,10 @@ edition = "2021"
 
 [dependencies]
 calendars_core = { path="../calendars_core" }
-egui = "0.26.2"
-eframe = { version = "0.26.2", features = ["persistence"] }
-egui_extras = "0.26.2"
-ecolor = "0.26.2"
+egui = "0.27.0"
+eframe = { version = "0.27.0", features = ["persistence"] }
+egui_extras = "0.27.0"
+ecolor = "0.27.0"
 serde = { version = "1", features = ["derive"] } # You only need this if you want app persistence
 rand = "0.8.5"
 itertools = "0.11.0"
