@@ -39,10 +39,18 @@ impl ClassFilter {
     match self {
       ClassFilter::None => true,
       ClassFilter::Semester(s) => {
-        simulation_constraints.get_class(class_key).unwrap().get_semester() == s
+        simulation_constraints
+          .get_class(class_key)
+          .unwrap()
+          .get_semester()
+          == s
       }
       ClassFilter::ProfessorId(p) => {
-        simulation_constraints.get_class(class_key).unwrap().get_professor_id() == p
+        simulation_constraints
+          .get_class(class_key)
+          .unwrap()
+          .get_professor_id()
+          == p
       }
       ClassFilter::Classroom(c) => {
         // TODO: Regenerating classroom assignment each time is slow.

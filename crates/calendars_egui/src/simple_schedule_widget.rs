@@ -4,6 +4,7 @@ use calendars_core::{
   ClassFilter, Classroom, Day, SchoolSchedule, Semester, Timeslot, DAY_COUNT, TIMESLOT_COUNT,
 };
 use egui::{Align2, Color32, FontId, Rect, Rounding, Sense, Stroke};
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -33,7 +34,7 @@ impl SimpleScheduleWidget {
     let mut first: bool = true;
     for day in Day::all() {
       for timeslot in Timeslot::all() {
-        let total_count: u32 = state
+        let classes_to_draw = state
           .get_class_calendar()
           .iter_class_keys()
           .filter(|k| {
@@ -48,7 +49,11 @@ impl SimpleScheduleWidget {
             first = false;
             b
           })
-          .map(|k| state.get_class_calendar().get_count(day, timeslot, k) as u32)
+          .collect_vec();
+
+        let total_count: u32 = classes_to_draw
+          .iter()
+          .map(|k| state.get_class_calendar().get_count(day, timeslot, *k) as u32)
           .sum();
 
         let class_width = w / total_count as f32;
@@ -66,12 +71,11 @@ impl SimpleScheduleWidget {
           Stroke::new(1.0, Color32::from_gray(100)),
         );
 
-        for (class_key, class_count) in state
-          .get_class_calendar()
-          .iter_class_keys()
-          .map(|k| (k, state.get_class_calendar().get_count(day, timeslot, k)))
+        for (class_key, class_count) in classes_to_draw
+          .iter()
+          .map(|&k| (k, state.get_class_calendar().get_count(day, timeslot, k)))
         {
-          if let Some(class_metadata) = state.get_class_metadata(class_key.try_into().unwrap()) {
+          if let Some(class_metadata) = state.get_class_metadata(class_key) {
             for _ in 0..class_count {
               let botright: egui::Pos2 = topleft + (class_width, h).into();
               let class_color = class_metadata.color;

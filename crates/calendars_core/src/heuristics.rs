@@ -53,7 +53,7 @@ pub(crate) fn same_timeslot_classes_count_per_semester(
 ) -> f64 {
   let mut same_timeslot_classes_count: u32 = 0;
   const NUM_SEMESTERS: usize = 8;
-  let mut semester_class_counter = [0_u32; NUM_SEMESTERS+1];
+  let mut semester_class_counter = [0_u32; NUM_SEMESTERS + 1];
   for (class_key, day, timeslot) in iter_class_calendar(state) {
     semester_class_counter.fill(0);
     let count = state.get_count(day, timeslot, class_key);
