@@ -75,9 +75,9 @@ impl<'a, 'b> ClassEntry<'a> {
     };
   }
 
-  pub fn set_professor_id(&mut self, professor_id: usize) {
+  pub fn set_professor_id(&mut self, professor_key: ProfessorKey) {
     let class = self.get_class();
-    class.professor_id = professor_id;
+    class.professor_key = professor_key;
   }
 
   pub fn set_group(&mut self, group: Group) {
@@ -140,19 +140,22 @@ impl SchoolSchedule {
     self.metadata.classes.get_mut(class_key)
   }
 
-  pub fn get_professor_mut(&mut self, professor_id: usize) -> Option<&mut Professor> {
-    self.simulation_constraints.professors.get_mut(professor_id)
+  pub fn get_professor_mut(&mut self, professor_key: ProfessorKey) -> Option<&mut Professor> {
+    self
+      .simulation_constraints
+      .professors
+      .get_mut(professor_key)
   }
 
-  pub fn get_professor_metadata(&self, professor_id: usize) -> Option<&ProfessorMetadata> {
-    self.metadata.professors.get(professor_id)
+  pub fn get_professor_metadata(&self, professor_key: ProfessorKey) -> Option<&ProfessorMetadata> {
+    self.metadata.professors.get(professor_key)
   }
 
   pub fn get_professor_metadata_mut(
     &mut self,
-    professor_id: usize,
+    professor_key: ProfessorKey,
   ) -> Option<&mut ProfessorMetadata> {
-    self.metadata.professors.get_mut(professor_id)
+    self.metadata.professors.get_mut(professor_key)
   }
 
   pub fn get_num_classes(&self) -> usize {
@@ -171,25 +174,23 @@ impl SchoolSchedule {
     self.simulation_constraints.professors.len()
   }
 
-  pub fn add_new_professor(&mut self) -> usize {
+  pub fn add_new_professor(&mut self) -> ProfessorKey {
     let professor_metadata = &mut self.metadata.professors;
     let professors = &mut self.simulation_constraints.professors;
-
-    professor_metadata.push(ProfessorMetadata {
-      name: "New Professor".to_string(),
-    });
-
-    professors.push(Professor {
+    let professor_key = professors.insert(Professor {
       availability: WeekCalendar::default(),
       priority: 0.0,
     });
-
-    assert_eq!(professors.len(), professor_metadata.len());
-
-    professors.len() - 1
+    professor_metadata.insert(
+      professor_key,
+      ProfessorMetadata {
+        name: "New Professor".to_string(),
+      },
+    );
+    professor_key
   }
 
-  pub fn add_new_class(&mut self) -> ClassKey {
+  pub fn add_new_class(&mut self, professor_key: ProfessorKey) -> ClassKey {
     let class_key = self.class_calendar.new_class();
 
     let class_metadata_list = &mut self.metadata.classes;
@@ -207,45 +208,15 @@ impl SchoolSchedule {
     class_list.insert(
       class_key,
       Class {
-        professor_id: 0,
+        professor_key,
         classroom_type: ClassroomType::AulaSimple,
-        class_hours: 2,
+        class_hours: 0,
         semester: Semester::S1,
         group: Group::G1,
         optative: false,
       },
     );
 
-    self
-      .class_calendar
-      .add_one_class(
-        4.try_into().unwrap(),
-        week_calendar::TIMESLOT_18_00.try_into().unwrap(),
-        class_key,
-      )
-      .unwrap();
-    self
-      .class_calendar
-      .add_one_class(
-        4.try_into().unwrap(),
-        week_calendar::TIMESLOT_19_00.try_into().unwrap(),
-        class_key,
-      )
-      .unwrap();
-
-    assert_eq!(
-      self.class_calendar.get_count(
-        4.try_into().unwrap(),
-        week_calendar::TIMESLOT_18_00.try_into().unwrap(),
-        class_key
-      ) + self.class_calendar.get_count(
-        4.try_into().unwrap(),
-        week_calendar::TIMESLOT_19_00.try_into().unwrap(),
-        class_key
-      ),
-      class_list[class_key].class_hours
-    );
-    assert_eq!(class_list.len(), class_metadata_list.len());
     class_key
   }
 

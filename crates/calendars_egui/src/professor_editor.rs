@@ -1,16 +1,16 @@
-use calendars_core::SchoolSchedule;
+use calendars_core::{ProfessorKey, SchoolSchedule};
 use egui::ScrollArea;
 
 pub struct ProfessorEditor<'a> {
   state: &'a mut SchoolSchedule,
-  availability_editor_professor_id: &'a mut Option<usize>,
+  availability_editor_professor_id: &'a mut Option<ProfessorKey>,
   availability_editor_widget_open: &'a mut bool,
 }
 
 impl<'a> ProfessorEditor<'a> {
   pub fn new(
     state: &'a mut SchoolSchedule,
-    availability_editor_professor_id: &'a mut Option<usize>,
+    availability_editor_professor_id: &'a mut Option<ProfessorKey>,
     availability_editor_widget_open: &'a mut bool,
   ) -> Self {
     ProfessorEditor {
@@ -31,12 +31,16 @@ impl<'a> ProfessorEditor<'a> {
 
   pub fn ui(&mut self, ui: &mut egui::Ui) {
     ui.separator();
-    let num_professors = self.state.get_num_professors();
     ScrollArea::vertical()
       .auto_shrink([false; 2])
       .max_height(500.0)
       .show(ui, |ui| {
-        for professor_id in 0..num_professors {
+        let professor_keys: Vec<ProfessorKey> = self
+          .state
+          .get_simulation_constraints()
+          .iter_professor_keys()
+          .collect();
+        for professor_id in professor_keys {
           ui.horizontal(|ui| {
             ui.label("Nombre");
             ui.text_edit_singleline(

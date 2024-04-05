@@ -4,7 +4,7 @@ use slotmap::SecondaryMap;
 use crate::{
   school_schedule::{
     class_calendar::{ClassCalendar, ClassKey},
-    Availability, ClassroomType, SimulationConstraints,
+    Availability, ClassroomType, ProfessorKey, SimulationConstraints,
   },
   week_calendar,
 };
@@ -21,23 +21,33 @@ fn iter_class_calendar(
   })
 }
 
+fn iter_week() -> impl Iterator<Item = (week_calendar::Day, week_calendar::Timeslot)> {
+  week_calendar::Day::all().flat_map(|d| week_calendar::Timeslot::all().map(move |t| (d, t)))
+}
+
 pub(crate) fn same_timeslot_classes_count_per_professor(
   state: &ClassCalendar,
   simulation_constraints: &SimulationConstraints,
 ) -> f64 {
   let mut same_timeslot_classes_count: u32 = 0;
-  let num_professors = simulation_constraints.get_professors().len();
-  let mut professor_class_counter = vec![0_u32; num_professors];
-  for (class_key, day, timeslot) in iter_class_calendar(state) {
-    professor_class_counter.fill(0);
-    let count = state.get_count(day, timeslot, class_key);
-    if let Some(class) = simulation_constraints.get_class(class_key) {
-      let professor_id = class.get_professor_id();
-      professor_class_counter[*professor_id] += count as u32;
+  let mut professor_class_counter: SecondaryMap<ProfessorKey, u32> = SecondaryMap::from_iter(
+    simulation_constraints
+      .get_professors()
+      .keys()
+      .map(|k| (k, 0)),
+  );
+  for (day, timeslot) in iter_week() {
+    professor_class_counter.values_mut().for_each(|x| *x = 0);
+    for class_key in state.iter_class_keys() {
+      let count = state.get_count(day, timeslot, class_key);
+      let class = simulation_constraints.get_class(class_key).unwrap();
+      let professor_key = class.get_professor_id();
+      professor_class_counter[professor_key] += count as u32;
     }
     same_timeslot_classes_count += professor_class_counter
       .iter()
-      .filter(|x| **x >= 2)
+      .map(|(_k, &v)| v)
+      .filter(|&x| x >= 2)
       .sum::<u32>();
   }
   same_timeslot_classes_count as f64
@@ -88,7 +98,7 @@ pub(crate) fn count_not_available(
   let mut not_available_count: f64 = 0.0;
 
   for (class_key, day, timeslot) in iter_class_calendar(state) {
-    let professor_id = *constraints.get_class(class_key).unwrap().get_professor_id();
+    let professor_id = constraints.get_class(class_key).unwrap().get_professor_id();
     let professor = &constraints.get_professors()[professor_id];
     let availability = professor.availability.get(day, timeslot);
     if matches!(availability, Availability::NotAvailable) {
@@ -106,7 +116,7 @@ pub(crate) fn count_available_if_needed(
   let mut available_if_needed_count: f64 = 0.0;
 
   for (class_key, day, timeslot) in iter_class_calendar(state) {
-    let professor_id = *constraints.get_class(class_key).unwrap().get_professor_id();
+    let professor_id = constraints.get_class(class_key).unwrap().get_professor_id();
     let professor = &constraints.get_professors()[professor_id];
     let availability = professor.availability.get(day, timeslot);
     if matches!(availability, Availability::AvailableIfNeeded) {
@@ -321,11 +331,12 @@ mod test {
   #[test]
   fn count_labs_on_different_days_test() {
     let mut schedule = SchoolSchedule::default();
-    let k0 = schedule.add_new_class();
+    let p0 = schedule.add_new_professor();
+    let k0 = schedule.add_new_class(p0);
     let mut class_0 = schedule.get_class_entry(k0).unwrap();
     class_0.set_hours(3);
     class_0.set_classroom_type(ClassroomType::AulaSimple);
-    let k1 = schedule.add_new_class();
+    let k1 = schedule.add_new_class(p0);
     let mut class_1 = schedule.get_class_entry(k1).unwrap();
     class_1.set_classroom_type(ClassroomType::LabFisica);
     class_1.set_hours(3);

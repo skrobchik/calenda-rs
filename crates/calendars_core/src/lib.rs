@@ -9,6 +9,7 @@ mod week_calendar;
 pub use class_filter::ClassFilter;
 pub use school_schedule::class_calendar::ClassCalendar;
 pub use school_schedule::class_calendar::ClassKey;
+pub use school_schedule::simulation_types::ProfessorKey;
 pub use school_schedule::Availability;
 pub use school_schedule::ClassMetadata;
 pub use school_schedule::Classroom;

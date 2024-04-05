@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
   school_schedule::{
-    class_calendar::ClassKey, Classroom, ClassroomAssignmentKey, Semester, SimulationConstraints,
+    class_calendar::ClassKey, Classroom, ClassroomAssignmentKey, ProfessorKey, Semester,
+    SimulationConstraints,
   },
   simulation::assign_classrooms,
   ClassCalendar, Day, Timeslot,
@@ -17,7 +18,7 @@ pub enum ClassFilter {
   #[default]
   None,
   Semester(Semester),
-  ProfessorId(usize),
+  Professor(ProfessorKey),
   Classroom(Classroom),
 }
 
@@ -45,12 +46,12 @@ impl ClassFilter {
           .get_semester()
           == s
       }
-      ClassFilter::ProfessorId(p) => {
+      ClassFilter::Professor(p) => {
         simulation_constraints
           .get_class(class_key)
           .unwrap()
           .get_professor_id()
-          == p
+          == *p
       }
       ClassFilter::Classroom(c) => {
         // TODO: Regenerating classroom assignment each time is slow.

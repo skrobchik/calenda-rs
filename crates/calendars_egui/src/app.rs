@@ -9,8 +9,8 @@ use crate::{
   simple_schedule_widget::SimpleScheduleWidget,
 };
 use calendars_core::{
-  AdvancedSimulationOptions, ClassCalendar, LiveUpdate, ProgressOption, SchoolSchedule,
-  SimulationOptions, SimulationOutput, TemperatureFunction,
+  AdvancedSimulationOptions, ClassCalendar, LiveUpdate, ProfessorKey, ProgressOption,
+  SchoolSchedule, SimulationOptions, SimulationOutput, TemperatureFunction,
 };
 use egui::Ui;
 use rfd::FileDialog;
@@ -32,7 +32,7 @@ pub struct MyApp {
   class_editor_widget_open: bool,
   class_editor: ClassEditor,
   optimization_widget: OptimizationWidget,
-  availability_editor_professor_id: Option<usize>,
+  availability_editor_professor_key: Option<ProfessorKey>,
   availability_editor_widget_open: bool,
   #[serde(skip)]
   current_simulation: Option<CurrentSimulation>,
@@ -153,12 +153,12 @@ impl eframe::App for MyApp {
 
       ProfessorEditor::new(
         &mut self.school_schedule,
-        &mut self.availability_editor_professor_id,
+        &mut self.availability_editor_professor_key,
         &mut self.availability_editor_widget_open,
       )
       .show(ctx, &mut self.professor_editor_widget_open);
 
-      if let Some(professor_id) = self.availability_editor_professor_id {
+      if let Some(professor_id) = self.availability_editor_professor_key {
         if let Some(professor) = self.school_schedule.get_professor_mut(professor_id) {
           ProfessorScheduleWidget::new(professor)
             .show(ctx, &mut self.availability_editor_widget_open);
@@ -285,7 +285,7 @@ impl Default for MyApp {
       class_editor_widget_open: true,
       professor_editor_widget_open: true,
       school_schedule: Default::default(),
-      availability_editor_professor_id: None,
+      availability_editor_professor_key: None,
       availability_editor_widget_open: true,
       current_simulation: None,
       class_editor: Default::default(),

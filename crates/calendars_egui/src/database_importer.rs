@@ -1,4 +1,4 @@
-use calendars_core::{Group, SchoolSchedule, Semester};
+use calendars_core::{Group, ProfessorKey, SchoolSchedule, Semester};
 
 use anyhow::Context;
 use egui::Color32;
@@ -106,7 +106,7 @@ fn create_schedule(
   class_rows: &[ClassRow],
 ) -> anyhow::Result<SchoolSchedule> {
   let mut schedule = SchoolSchedule::default();
-  let mut professors: BTreeMap<&str, usize> = BTreeMap::new(); // rfc -> professor_id
+  let mut professors: BTreeMap<&str, ProfessorKey> = BTreeMap::new();
   for professor_row in professor_rows {
     let professor_id = schedule.add_new_professor();
     let professor_metadata = schedule.get_professor_metadata_mut(professor_id).unwrap();
@@ -126,7 +126,7 @@ fn create_schedule(
   });
   for (class_row, color) in class_rows.iter().zip(colors_iterator) {
     let has_lab = !class_row.rfc2.trim().is_empty();
-    let theory_professor_id = *professors.get(class_row.rfc1.as_str()).context(format!(
+    let theory_professor_key = *professors.get(class_row.rfc1.as_str()).context(format!(
       "Professor with RFC `{}` not found. Required by class `{} {}`",
       class_row.rfc1, class_row.asign, class_row.descripcion
     ))?;
@@ -143,12 +143,12 @@ fn create_schedule(
       class_row.grupo, class_row.descripcion
     ))?;
     let is_optative = is_optative(&class_row.asign);
-    let theory_class_key = schedule.add_new_class();
+    let theory_class_key = schedule.add_new_class(theory_professor_key);
     let mut theory_class = schedule.get_class_entry(theory_class_key).unwrap();
     theory_class.set_semester(semester);
     theory_class.set_group(group);
     theory_class.set_optative(is_optative);
-    theory_class.set_professor_id(theory_professor_id);
+    theory_class.set_professor_id(theory_professor_key);
     let theory_class_metadata = schedule.get_class_metadata_mut(theory_class_key).unwrap();
     theory_class_metadata.color = color;
     theory_class_metadata
@@ -157,14 +157,14 @@ fn create_schedule(
     theory_class_metadata
       .class_code
       .clone_from(&class_row.asign);
-    if let Some(lab_professor_id) = lab_professor_id {
+    if let Some(lab_professor_key) = lab_professor_id {
       assert!(has_lab);
-      let lab_class_key = schedule.add_new_class();
+      let lab_class_key = schedule.add_new_class(lab_professor_key);
       let mut lab_class = schedule.get_class_entry(lab_class_key).unwrap();
       lab_class.set_semester(semester);
       lab_class.set_group(group);
       lab_class.set_optative(is_optative);
-      lab_class.set_professor_id(lab_professor_id);
+      lab_class.set_professor_id(lab_professor_key);
       let lab_class_metadata = schedule.get_class_metadata_mut(lab_class_key).unwrap();
       lab_class_metadata.color = color;
       lab_class_metadata.name = format!("{} (Lab)", class_row.descripcion);

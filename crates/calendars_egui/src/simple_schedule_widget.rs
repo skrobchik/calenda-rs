@@ -1,7 +1,8 @@
 use std::cell::Cell;
 
 use calendars_core::{
-  ClassFilter, Classroom, Day, SchoolSchedule, Semester, Timeslot, DAY_COUNT, TIMESLOT_COUNT,
+  ClassFilter, Classroom, Day, ProfessorKey, SchoolSchedule, Semester, Timeslot, DAY_COUNT,
+  TIMESLOT_COUNT,
 };
 use egui::{Align2, Color32, FontId, Rect, Rounding, Sense, Stroke};
 use itertools::Itertools;
@@ -147,28 +148,39 @@ impl SimpleScheduleWidget {
     });
 
     ui.horizontal(|ui| {
-      if ui
-        .radio(
-          matches!(self.class_filter, ClassFilter::ProfessorId(_)),
-          "Profesor",
-        )
-        .clicked()
-        && !matches!(self.class_filter, ClassFilter::ProfessorId(_))
-      {
-        self.class_filter = ClassFilter::ProfessorId(0);
-      }
-      if let ClassFilter::ProfessorId(professor_id) = &mut self.class_filter {
+      let professor_key = state
+        .get_simulation_constraints()
+        .iter_professor_keys()
+        .next();
+      ui.add_enabled_ui(professor_key.is_some(), |ui| {
+        if ui
+          .radio(
+            matches!(self.class_filter, ClassFilter::Professor(_)),
+            "Profesor",
+          )
+          .clicked()
+          && !matches!(self.class_filter, ClassFilter::Professor(_))
+        {
+          self.class_filter =
+            ClassFilter::Professor(professor_key.expect("Radio shouldn't be enabled"));
+        }
+      });
+      if let ClassFilter::Professor(professor_key) = &mut self.class_filter {
         egui::ComboBox::new("schedule_widget_combo_box_2", "")
           .selected_text(
             state
-              .get_professor_metadata(*professor_id)
+              .get_professor_metadata(*professor_key)
               .map(|professor| professor.name.clone())
               .unwrap_or("Profesor Inexistente".to_string()),
           )
           .show_ui(ui, |ui| {
-            for i in 0..state.get_num_professors() {
+            let professor_keys: Vec<ProfessorKey> = state
+              .get_simulation_constraints()
+              .iter_professor_keys()
+              .collect();
+            for i in professor_keys {
               ui.selectable_value(
-                professor_id,
+                professor_key,
                 i,
                 state.get_professor_metadata(i).unwrap().name.clone(),
               );

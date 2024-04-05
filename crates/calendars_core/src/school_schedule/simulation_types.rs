@@ -2,30 +2,37 @@ use std::fmt::Display;
 
 use enum_iterator::Sequence;
 use serde::{Deserialize, Serialize};
-use slotmap::SecondaryMap;
+use slotmap::{new_key_type, SecondaryMap, SlotMap};
 
 use crate::week_calendar::WeekCalendar;
 
 use super::class_calendar::ClassKey;
 
+new_key_type! {
+  pub struct ProfessorKey;
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct SimulationConstraints {
   pub(super) classes: SecondaryMap<ClassKey, Class>,
-  pub(super) professors: Vec<Professor>,
+  pub(super) professors: SlotMap<ProfessorKey, Professor>,
 }
 
 impl SimulationConstraints {
   pub fn get_class(&self, class_key: ClassKey) -> Option<&Class> {
     self.classes.get(class_key)
   }
-  pub fn get_professors(&self) -> &Vec<Professor> {
+  pub fn iter_professor_keys(&self) -> impl Iterator<Item = ProfessorKey> + '_ {
+    self.professors.keys()
+  }
+  pub fn get_professors(&self) -> &SlotMap<ProfessorKey, Professor> {
     &self.professors
   }
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub struct Class {
-  pub(super) professor_id: usize,
+  pub(super) professor_key: ProfessorKey,
   pub(super) classroom_type: ClassroomType,
   pub(super) class_hours: u8,
   pub(super) semester: Semester,
@@ -34,8 +41,8 @@ pub struct Class {
 }
 
 impl Class {
-  pub fn get_professor_id(&self) -> &usize {
-    &self.professor_id
+  pub fn get_professor_id(&self) -> ProfessorKey {
+    self.professor_key
   }
   pub fn get_classroom_type(&self) -> &ClassroomType {
     &self.classroom_type

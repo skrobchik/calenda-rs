@@ -126,20 +126,23 @@ impl ClassEditor {
     ui.horizontal(|ui| {
       ui.label("Profesor");
       ui.label(format!(
-        "{}",
+        "{:?}",
         state.get_class(class_key).unwrap().get_professor_id()
       ));
       ComboBox::from_id_source(format!("professor_selector_{:?}", class_key))
         .selected_text(
           state
-            .get_professor_metadata(*state.get_class(class_key).unwrap().get_professor_id())
+            .get_professor_metadata(state.get_class(class_key).unwrap().get_professor_id())
             .map(|professor_metadata| professor_metadata.name.as_str())
             .unwrap_or("Undefined Professor"),
         )
         .show_ui(ui, |ui| {
-          let num_professors = state.get_num_professors();
-          let selected_professor_id = *state.get_class(class_key).unwrap().get_professor_id();
-          for professor_id in 0..num_professors {
+          let selected_professor_id = state.get_class(class_key).unwrap().get_professor_id();
+          let professor_keys = state
+            .get_simulation_constraints()
+            .iter_professor_keys()
+            .collect_vec();
+          for professor_id in professor_keys {
             if ui
               .selectable_label(
                 professor_id == selected_professor_id,
@@ -184,7 +187,12 @@ impl ClassEditor {
         }
       });
     if ui.button("+").clicked() {
-      state.add_new_class();
+      let professor_key = state
+        .get_simulation_constraints()
+        .iter_professor_keys()
+        .next();
+      let professor_key = professor_key.unwrap_or_else(|| state.add_new_professor());
+      state.add_new_class(professor_key);
     }
   }
 }

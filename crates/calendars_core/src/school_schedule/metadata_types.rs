@@ -4,9 +4,11 @@ use slotmap::SecondaryMap;
 
 use crate::ClassKey;
 
+use crate::ProfessorKey;
+
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub(super) struct ScheduleMetadata {
-  pub(super) professors: Vec<ProfessorMetadata>,
+  pub(super) professors: SecondaryMap<ProfessorKey, ProfessorMetadata>,
   pub(super) classes: SecondaryMap<ClassKey, ClassMetadata>,
 }
 
