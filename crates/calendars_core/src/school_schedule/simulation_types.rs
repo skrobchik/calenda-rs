@@ -23,9 +23,6 @@ impl SimulationConstraints {
   pub fn get_professors(&self) -> &Vec<Professor> {
     &self.professors
   }
-  pub(crate) fn get_class_keys(&self) -> impl Iterator<Item = ClassKey> + '_ {
-    self.classes.keys()
-  }
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]

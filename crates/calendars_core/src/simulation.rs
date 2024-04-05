@@ -7,7 +7,7 @@ use crate::{
   school_schedule::{Classroom, ClassroomAssignmentKey, ClassroomType},
   simulation_options::{ProgressOption, SimulationOptions, StopCondition, TemperatureFunction},
   stats_tracker::StatsTracker,
-  week_calendar::{self, Day, Timeslot},
+  week_calendar,
 };
 use indicatif::{HumanCount, HumanDuration, ProgressStyle};
 use itertools::Itertools;
@@ -231,25 +231,6 @@ fn temperature(x: f64, temperature_function_variant: &TemperatureFunction, ampli
   })
   .clamp(0.0, 1.0)
     * amplitude
-}
-
-fn random_init<R: Rng>(constraints: &SimulationConstraints, rng: &mut R) -> ClassCalendar {
-  let mut state: ClassCalendar = Default::default();
-  let class_keys = constraints.get_class_keys();
-  for (class_key, class) in class_keys
-    .into_iter()
-    .map(|k| (k, constraints.get_class(k).unwrap()))
-  {
-    for _ in 0..*class.get_class_hours() {
-      let timeslot_idx = Timeslot::new_random(rng);
-      let day_idx = Day::new_random(rng);
-      state
-        .add_one_class(day_idx, timeslot_idx, class_key)
-        .unwrap();
-    }
-  }
-
-  state
 }
 
 fn revert_change(state: &mut ClassCalendar, delta: &ClassEntryDelta) {
