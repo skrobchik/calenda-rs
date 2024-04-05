@@ -6,8 +6,6 @@ use slotmap::SecondaryMap;
 
 use crate::week_calendar::WeekCalendar;
 
-use anyhow::anyhow;
-
 use super::class_calendar::ClassKey;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -89,8 +87,12 @@ impl Display for Semester {
   }
 }
 
+#[derive(thiserror::Error, Debug)]
+#[error("Invalid Semester")]
+pub struct InvalidSemesterError {}
+
 impl TryFrom<u32> for Semester {
-  type Error = anyhow::Error;
+  type Error = InvalidSemesterError;
 
   fn try_from(value: u32) -> Result<Self, Self::Error> {
     match value {
@@ -102,7 +104,7 @@ impl TryFrom<u32> for Semester {
       6 => Ok(Semester::S6),
       7 => Ok(Semester::S7),
       8 => Ok(Semester::S8),
-      _ => Err(anyhow!("Invalid semester")),
+      _ => Err(InvalidSemesterError {}),
     }
   }
 }
@@ -136,8 +138,12 @@ pub enum Group {
   G4,
 }
 
+#[derive(thiserror::Error, Debug)]
+#[error("Invalid Group")]
+pub struct InvalidGroupError {}
+
 impl TryFrom<u32> for Group {
-  type Error = anyhow::Error;
+  type Error = InvalidGroupError;
 
   fn try_from(value: u32) -> Result<Self, Self::Error> {
     match value {
@@ -145,7 +151,7 @@ impl TryFrom<u32> for Group {
       2 => Ok(Group::G2),
       3 => Ok(Group::G3),
       4 => Ok(Group::G4),
-      _ => Err(anyhow!("Invalid group")),
+      _ => Err(InvalidGroupError {}),
     }
   }
 }
