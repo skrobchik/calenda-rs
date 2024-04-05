@@ -294,7 +294,7 @@ pub(crate) fn assign_classrooms(
         // if class is repeating (`count` >= 2) it will be assigned the same classroom, but at this point
         // the schedule is really not very good so it doesn't matter
         let required_classroom_type = *constraints
-          .get_class(class_key.try_into().unwrap())
+          .get_class(class_key)
           .unwrap()
           .get_classroom_type();
         if timeslot_available_classrooms[required_classroom_type as usize]
@@ -305,7 +305,7 @@ pub(crate) fn assign_classrooms(
             ClassroomAssignmentKey {
               day,
               timeslot,
-              class_key: class_key.try_into().unwrap(),
+              class_key,
             },
             timeslot_available_classrooms[required_classroom_type as usize]
               .pop()
@@ -316,7 +316,7 @@ pub(crate) fn assign_classrooms(
             ClassroomAssignmentKey {
               day,
               timeslot,
-              class_key: class_key.try_into().unwrap(),
+              class_key,
             },
             default_classroom[required_classroom_type as usize].clone(),
           );
@@ -349,7 +349,7 @@ fn count_classroom_assignment_collisions(
       {
         for _ in 0..count {
           let required_classroom_type = *constraints
-            .get_class(class_key.try_into().unwrap())
+            .get_class(class_key)
             .unwrap()
             .get_classroom_type();
           if timeslot_available_classrooms[required_classroom_type as usize]
