@@ -7,15 +7,34 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'calenda-rs'",
+            "name": "Debug unit tests in library 'calendars_core'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=calendars_core"
+                ],
+                "filter": {
+                    "name": "calendars_core",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'calendars_egui'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=calenda-rs",
-                    "--package=calenda-rs"
+                    "--bin=calendars_egui",
+                    "--package=calendars_egui"
                 ],
                 "filter": {
-                    "name": "calenda-rs",
+                    "name": "calendars_egui",
                     "kind": "bin"
                 }
             },
@@ -25,16 +44,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'calenda-rs'",
+            "name": "Debug unit tests in executable 'calendars_egui'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=calenda-rs",
-                    "--package=calenda-rs"
+                    "--bin=calendars_egui",
+                    "--package=calendars_egui"
                 ],
                 "filter": {
-                    "name": "calenda-rs",
+                    "name": "calendars_egui",
                     "kind": "bin"
                 }
             },

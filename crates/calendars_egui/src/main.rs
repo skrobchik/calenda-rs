@@ -59,7 +59,7 @@ fn run_experiment_1() {
     .map(|total_steps| SimulationOptions {
       simulation_constraints: schedule.get_simulation_constraints().clone(),
       stop_condition: StopCondition::Steps(total_steps as usize),
-      initial_state: None,
+      initial_state: schedule.get_class_calendar().clone(),
       progress: ProgressOption::MultiProgress(mp.clone()),
       temperature_function: TemperatureFunction::Linear,
       advanced_options: Default::default(),

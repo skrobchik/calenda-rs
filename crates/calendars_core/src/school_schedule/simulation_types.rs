@@ -2,32 +2,29 @@ use std::fmt::Display;
 
 use enum_iterator::Sequence;
 use serde::{Deserialize, Serialize};
+use slotmap::SecondaryMap;
 
 use crate::week_calendar::WeekCalendar;
 
 use anyhow::anyhow;
 
-use super::class_calendar::ClassId;
+use super::class_calendar::ClassKey;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct SimulationConstraints {
-  pub(super) classes: Vec<Class>,
+  pub(super) classes: SecondaryMap<ClassKey, Class>,
   pub(super) professors: Vec<Professor>,
 }
 
 impl SimulationConstraints {
-  pub fn get_class(&self, class_id: ClassId) -> Option<&Class> {
-    self.classes.get(usize::from(class_id))
-  }
-  pub fn iter_classes_with_id(&self) -> impl Iterator<Item = (ClassId, &Class)> {
-    self
-      .classes
-      .iter()
-      .enumerate()
-      .map(|(i, c)| (i.try_into().unwrap(), c))
+  pub fn get_class(&self, class_key: ClassKey) -> Option<&Class> {
+    self.classes.get(class_key)
   }
   pub fn get_professors(&self) -> &Vec<Professor> {
     &self.professors
+  }
+  pub(crate) fn get_class_keys<'a>(&'a self) -> impl Iterator<Item = ClassKey> + 'a {
+    self.classes.keys()
   }
 }
 

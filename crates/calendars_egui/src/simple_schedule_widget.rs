@@ -30,40 +30,33 @@ impl SimpleScheduleWidget {
     let total_height = response.rect.height();
     let w = total_width / DAY_COUNT as f32;
     let h: f32 = total_height / TIMESLOT_COUNT as f32;
-    let mut first = true;
-    for day_idx in Day::all() {
-      for timeslot_idx in Timeslot::all() {
-        let timeslot: Vec<u8> = state
+    let mut first: bool = true;
+    for day in Day::all() {
+      for timeslot in Timeslot::all() {
+        let total_count: u32 = state
           .get_class_calendar()
-          .get_timeslot(day_idx, timeslot_idx)
-          .iter()
-          .enumerate()
-          .map(|(class_id, count)| {
-            let c = if self.class_filter.filter(
-              class_id.try_into().unwrap(),
+          .iter_class_keys()
+          .filter(|k| {
+            let b = self.class_filter.filter(
+              *k,
               state.get_simulation_constraints(),
               state.get_class_calendar(),
-              day_idx,
-              timeslot_idx,
+              day,
+              timeslot,
               first,
-            ) {
-              *count
-            } else {
-              0
-            };
+            );
             first = false;
-            c
+            b
           })
-          .collect();
+          .map(|k| state.get_class_calendar().get_count(day, timeslot, k) as u32)
+          .sum();
 
-        let num_sessions: u32 = timeslot.iter().map(|x| *x as u32).sum();
-
-        let class_width = w / num_sessions as f32;
+        let class_width = w / total_count as f32;
 
         let mut topleft: egui::Pos2 = response.rect.left_top()
           + (
-            w * usize::from(day_idx) as f32,
-            h * usize::from(timeslot_idx) as f32,
+            w * usize::from(day) as f32,
+            h * usize::from(timeslot) as f32,
           )
             .into();
 
@@ -73,9 +66,13 @@ impl SimpleScheduleWidget {
           Stroke::new(1.0, Color32::from_gray(100)),
         );
 
-        for (class_id, class_count) in timeslot.iter().enumerate() {
+        for (class_id, class_count) in state
+          .get_class_calendar()
+          .iter_class_keys()
+          .map(|k| (k, state.get_class_calendar().get_count(day, timeslot, k)))
+        {
           if let Some(class_metadata) = state.get_class_metadata(class_id.try_into().unwrap()) {
-            for _ in 0..*class_count {
+            for _ in 0..class_count {
               let botright: egui::Pos2 = topleft + (class_width, h).into();
               let class_color = class_metadata.color;
               painter.rect(

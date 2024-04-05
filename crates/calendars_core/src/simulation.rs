@@ -86,7 +86,8 @@ fn simulated_annealing<R: Rng>(options: SimulationOptions, mut rng: R) -> Simula
 
   let mut stats = StatsTracker::with_estimated_size(stop_condition, 5_000);
 
-  let mut state = random_init(constraints, &mut rng);
+  // let mut state = random_init(constraints, &mut rng);
+  let mut state = options.initial_state.clone();
   let mut state_cost = cost(&state, constraints);
 
   let mut progress_bar: Option<indicatif::ProgressBar> = {
@@ -152,7 +153,7 @@ fn simulated_annealing<R: Rng>(options: SimulationOptions, mut rng: R) -> Simula
     stats.log_stat("temperature", t).unwrap();
 
     let old_cost = state_cost;
-    let delta = state.move_one_class_random(&mut rng);
+    let delta = state.move_one_class_random(&mut rng).unwrap();
 
     let new_cost = cost(&state, constraints);
     stats.log_stat("new_cost", new_cost).unwrap();
@@ -234,12 +235,17 @@ fn temperature(x: f64, temperature_function_variant: &TemperatureFunction, ampli
 
 fn random_init<R: Rng>(constraints: &SimulationConstraints, rng: &mut R) -> ClassCalendar {
   let mut state: ClassCalendar = Default::default();
-
-  for (class_id, class) in constraints.iter_classes_with_id() {
+  let class_keys = constraints.get_class_keys();
+  for (class_id, class) in class_keys
+    .into_iter()
+    .map(|k| (k, constraints.get_class(k).unwrap()))
+  {
     for _ in 0..*class.get_class_hours() {
       let timeslot_idx = Timeslot::new_random(rng);
       let day_idx = Day::new_random(rng);
-      state.add_one_class(day_idx, timeslot_idx, class_id)
+      state
+        .add_one_class(day_idx, timeslot_idx, class_id)
+        .unwrap();
     }
   }
 
@@ -248,11 +254,11 @@ fn random_init<R: Rng>(constraints: &SimulationConstraints, rng: &mut R) -> Clas
 
 fn revert_change(state: &mut ClassCalendar, delta: &ClassEntryDelta) {
   state.move_one_class(
-    delta.dst_day_idx,
-    delta.dst_timeslot_idx,
-    delta.src_day_idx,
-    delta.src_timeslot_idx,
-    delta.class_id,
+    delta.dst_day,
+    delta.dst_timeslot,
+    delta.src_day,
+    delta.src_timeslot,
+    delta.class_key,
   );
 }
 
@@ -294,11 +300,14 @@ pub(crate) fn assign_classrooms(
       .try_into()
       .unwrap();
   let mut classroom_assignment: BTreeMap<ClassroomAssignmentKey, Classroom> = BTreeMap::new();
-  for day_idx in week_calendar::Day::all() {
-    for timeslot_idx in week_calendar::Timeslot::all() {
+  for day in week_calendar::Day::all() {
+    for timeslot in week_calendar::Timeslot::all() {
       let mut timeslot_available_classrooms = available_classrooms.clone();
-      for (class_id, count) in state.get_timeslot(day_idx, timeslot_idx).iter().enumerate() {
-        if *count == 0 {
+      for (class_id, count) in state
+        .iter_class_keys()
+        .map(|k| (k, state.get_count(day, timeslot, k)))
+      {
+        if count == 0 {
           continue;
         }
         // if class is repeating (`count` >= 2) it will be assigned the same classroom, but at this point
@@ -313,8 +322,8 @@ pub(crate) fn assign_classrooms(
         {
           classroom_assignment.insert(
             ClassroomAssignmentKey {
-              day: day_idx,
-              timeslot: timeslot_idx,
+              day,
+              timeslot,
               class_id: class_id.try_into().unwrap(),
             },
             timeslot_available_classrooms[required_classroom_type as usize]
@@ -324,8 +333,8 @@ pub(crate) fn assign_classrooms(
         } else {
           classroom_assignment.insert(
             ClassroomAssignmentKey {
-              day: day_idx,
-              timeslot: timeslot_idx,
+              day,
+              timeslot,
               class_id: class_id.try_into().unwrap(),
             },
             default_classroom[required_classroom_type as usize].clone(),
@@ -350,11 +359,14 @@ fn count_classroom_assignment_collisions(
     available_classrooms
   };
   let mut num_classroom_assignment_collisions = 0;
-  for day_idx in week_calendar::Day::all() {
-    for timeslot_idx in week_calendar::Timeslot::all() {
+  for day in week_calendar::Day::all() {
+    for timeslot in week_calendar::Timeslot::all() {
       let mut timeslot_available_classrooms = available_classrooms.clone();
-      for (class_id, count) in state.get_timeslot(day_idx, timeslot_idx).iter().enumerate() {
-        for _ in 0..*count {
+      for (class_id, count) in state
+        .iter_class_keys()
+        .map(|k| (k, state.get_count(day, timeslot, k)))
+      {
+        for _ in 0..count {
           let required_classroom_type = *constraints
             .get_class(class_id.try_into().unwrap())
             .unwrap()

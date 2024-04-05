@@ -1,7 +1,8 @@
 use egui::{ComboBox, ScrollArea, TextEdit};
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use calendars_core::{ClassId, ClassroomType, Group, SchoolSchedule, Semester};
+use calendars_core::{ClassKey, ClassroomType, Group, SchoolSchedule, Semester};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ClassEditor {
@@ -30,7 +31,7 @@ impl ClassEditor {
     self.open = open;
   }
 
-  fn class_entry(&mut self, ui: &mut egui::Ui, state: &mut SchoolSchedule, class_id: ClassId) {
+  fn class_entry(&mut self, ui: &mut egui::Ui, state: &mut SchoolSchedule, class_id: ClassKey) {
     let class_name = &state.get_class_metadata(class_id).unwrap().name;
     if !class_name
       .to_lowercase()
@@ -59,7 +60,7 @@ impl ClassEditor {
 
     ui.horizontal(|ui| {
       ui.label("Aula");
-      ComboBox::from_id_source(format!("classroom_type_selector_{}", usize::from(class_id)))
+      ComboBox::from_id_source(format!("classroom_type_selector_{:?}", class_id))
         .selected_text(
           state
             .get_class(class_id)
@@ -85,7 +86,7 @@ impl ClassEditor {
 
     ui.horizontal(|ui| {
       ui.label("Semestre");
-      ComboBox::from_id_source(format!("semester_selector_{}", usize::from(class_id)))
+      ComboBox::from_id_source(format!("semester_selector_{:?}", class_id))
         .selected_text(
           state
             .get_class(class_id)
@@ -111,7 +112,7 @@ impl ClassEditor {
 
     ui.horizontal(|ui| {
       ui.label("Groupo");
-      ComboBox::from_id_source(format!("group_selector_{}", usize::from(class_id)))
+      ComboBox::from_id_source(format!("group_selector_{:?}", class_id))
         .selected_text(state.get_class(class_id).unwrap().get_group().to_string())
         .show_ui(ui, |ui| {
           let mut group = *state.get_class(class_id).unwrap().get_group();
@@ -128,7 +129,7 @@ impl ClassEditor {
         "{}",
         state.get_class(class_id).unwrap().get_professor_id()
       ));
-      ComboBox::from_id_source(format!("professor_selector_{}", usize::from(class_id)))
+      ComboBox::from_id_source(format!("professor_selector_{:?}", class_id))
         .selected_text(
           state
             .get_professor_metadata(*state.get_class(class_id).unwrap().get_professor_id())
@@ -173,13 +174,13 @@ impl ClassEditor {
   fn ui(&mut self, ui: &mut egui::Ui, state: &mut SchoolSchedule) {
     ui.text_edit_singleline(&mut self.search_text);
     ui.separator();
-    let num_classes = state.get_num_classes();
+    let class_keys = state.get_class_calendar().iter_class_keys().collect_vec();
     ScrollArea::vertical()
       .auto_shrink([false; 2])
       .max_height(500.0)
       .show(ui, |ui| {
-        for class_id in 0..num_classes {
-          self.class_entry(ui, state, class_id.try_into().unwrap());
+        for class_key in class_keys.into_iter() {
+          self.class_entry(ui, state, class_key);
         }
       });
     if ui.button("+").clicked() {

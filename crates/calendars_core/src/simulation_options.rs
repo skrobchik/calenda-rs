@@ -64,7 +64,7 @@ pub struct LiveUpdate {
 pub struct SimulationOptions {
   pub simulation_constraints: SimulationConstraints,
   pub stop_condition: StopCondition,
-  pub initial_state: Option<ClassCalendar>,
+  pub initial_state: ClassCalendar,
   #[serde(skip)]
   pub progress: ProgressOption,
   pub temperature_function: TemperatureFunction,

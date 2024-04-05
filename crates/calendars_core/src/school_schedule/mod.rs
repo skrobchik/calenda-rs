@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use chrono::{Datelike, Days, TimeZone, Timelike, Utc};
 use egui::Color32;
+use slotmap::SecondaryMap;
 
 use crate::week_calendar;
 use icalendar::{Component, EventLike};
@@ -17,7 +18,7 @@ pub use metadata_types::*;
 
 use crate::{class_filter::ClassFilter, week_calendar::WeekCalendar};
 
-use self::class_calendar::{ClassCalendar, ClassId};
+use self::class_calendar::{ClassCalendar, ClassKey};
 
 #[derive(thiserror::Error, Debug)]
 #[error("Class hours in calendars do not match.")]
@@ -26,7 +27,7 @@ pub struct ClassHourCountNotMatchingError {}
 #[derive(Debug)]
 pub struct ClassEntry<'a> {
   school_schedule: &'a mut SchoolSchedule,
-  class_id: ClassId,
+  class_key: ClassKey,
 }
 
 impl<'a, 'b> ClassEntry<'a> {
@@ -35,7 +36,7 @@ impl<'a, 'b> ClassEntry<'a> {
       .school_schedule
       .simulation_constraints
       .classes
-      .get_mut(usize::from(self.class_id))
+      .get_mut(self.class_key)
       .unwrap()
   }
 
@@ -44,7 +45,7 @@ impl<'a, 'b> ClassEntry<'a> {
       .school_schedule
       .simulation_constraints
       .classes
-      .get_mut(usize::from(self.class_id))
+      .get_mut(self.class_key)
       .unwrap();
     let curr_class_hours = class.class_hours;
     match class_hours.cmp(&curr_class_hours) {
@@ -55,18 +56,19 @@ impl<'a, 'b> ClassEntry<'a> {
           self
             .school_schedule
             .class_calendar
-            .remove_one_class_anywhere(self.class_id);
+            .remove_one_class_anywhere(self.class_key)
+            .unwrap();
         }
         class.class_hours = class_hours;
       }
       std::cmp::Ordering::Greater => {
         let positive_delta = class_hours - curr_class_hours;
         for _ in 0..positive_delta {
-          self.school_schedule.class_calendar.add_one_class(
-            0.try_into().unwrap(),
-            0.try_into().unwrap(),
-            self.class_id,
-          );
+          self
+            .school_schedule
+            .class_calendar
+            .add_one_class(0.try_into().unwrap(), 0.try_into().unwrap(), self.class_key)
+            .unwrap();
         }
         class.class_hours = class_hours;
       }
@@ -103,7 +105,7 @@ impl<'a, 'b> ClassEntry<'a> {
 pub struct ClassroomAssignmentKey {
   pub day: week_calendar::Day,
   pub timeslot: week_calendar::Timeslot,
-  pub class_id: ClassId,
+  pub class_id: ClassKey,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
@@ -119,26 +121,23 @@ impl SchoolSchedule {
     &self.simulation_constraints
   }
 
-  pub fn get_class(&self, class_id: ClassId) -> Option<&Class> {
-    self
-      .simulation_constraints
-      .classes
-      .get(usize::from(class_id))
+  pub fn get_class(&self, class_id: ClassKey) -> Option<&Class> {
+    self.simulation_constraints.classes.get(class_id)
   }
 
-  pub fn get_class_entry(&mut self, class_id: ClassId) -> Option<ClassEntry> {
+  pub fn get_class_entry(&mut self, class_id: ClassKey) -> Option<ClassEntry> {
     Some(ClassEntry {
       school_schedule: self,
-      class_id,
+      class_key: class_id,
     })
   }
 
-  pub fn get_class_metadata(&self, class_id: ClassId) -> Option<&ClassMetadata> {
-    self.metadata.classes.get(usize::from(class_id))
+  pub fn get_class_metadata(&self, class_id: ClassKey) -> Option<&ClassMetadata> {
+    self.metadata.classes.get(class_id)
   }
 
-  pub fn get_class_metadata_mut(&mut self, class_id: ClassId) -> Option<&mut ClassMetadata> {
-    self.metadata.classes.get_mut(usize::from(class_id))
+  pub fn get_class_metadata_mut(&mut self, class_id: ClassKey) -> Option<&mut ClassMetadata> {
+    self.metadata.classes.get_mut(class_id)
   }
 
   pub fn get_professor_mut(&mut self, professor_id: usize) -> Option<&mut Professor> {
@@ -190,54 +189,73 @@ impl SchoolSchedule {
     professors.len() - 1
   }
 
-  pub fn add_new_class(&mut self) -> ClassId {
-    let class_metadata_list: &mut Vec<ClassMetadata> = &mut self.metadata.classes;
+  pub fn add_new_class(&mut self) -> ClassKey {
+    let class_key = self.class_calendar.new_class();
+
+    let class_metadata_list = &mut self.metadata.classes;
     let class_list = &mut self.simulation_constraints.classes;
 
-    class_metadata_list.push(ClassMetadata {
-      name: "New Class".to_string(),
-      color: Color32::LIGHT_YELLOW,
-      class_code: "0000".to_string(),
-    });
+    class_metadata_list.insert(
+      class_key,
+      ClassMetadata {
+        name: "New Class".to_string(),
+        color: Color32::LIGHT_YELLOW,
+        class_code: "0000".to_string(),
+      },
+    );
 
-    class_list.push(Class {
-      professor_id: 0,
-      classroom_type: ClassroomType::AulaSimple,
-      class_hours: 2,
-      semester: Semester::S1,
-      group: Group::G1,
-      optative: false,
-    });
-    let class_id: ClassId = (class_list.len() - 1).try_into().unwrap();
-    self.class_calendar.add_one_class(
-      4.try_into().unwrap(),
-      week_calendar::TIMESLOT_18_00.try_into().unwrap(),
-      class_id,
+    class_list.insert(
+      class_key,
+      Class {
+        professor_id: 0,
+        classroom_type: ClassroomType::AulaSimple,
+        class_hours: 2,
+        semester: Semester::S1,
+        group: Group::G1,
+        optative: false,
+      },
     );
-    self.class_calendar.add_one_class(
-      4.try_into().unwrap(),
-      week_calendar::TIMESLOT_19_00.try_into().unwrap(),
-      class_id,
-    );
+
+    self
+      .class_calendar
+      .add_one_class(
+        4.try_into().unwrap(),
+        week_calendar::TIMESLOT_18_00.try_into().unwrap(),
+        class_key,
+      )
+      .unwrap();
+    self
+      .class_calendar
+      .add_one_class(
+        4.try_into().unwrap(),
+        week_calendar::TIMESLOT_19_00.try_into().unwrap(),
+        class_key,
+      )
+      .unwrap();
 
     assert_eq!(
       self.class_calendar.get_count(
         4.try_into().unwrap(),
         week_calendar::TIMESLOT_18_00.try_into().unwrap(),
-        class_id
+        class_key
       ) + self.class_calendar.get_count(
         4.try_into().unwrap(),
         week_calendar::TIMESLOT_19_00.try_into().unwrap(),
-        class_id
+        class_key
       ),
-      class_list[usize::from(class_id)].class_hours
+      class_list[class_key].class_hours
     );
     assert_eq!(class_list.len(), class_metadata_list.len());
-    class_id
+    class_key
   }
 
   pub fn get_class_calendar(&self) -> &ClassCalendar {
     &self.class_calendar
+  }
+
+  /// Only use for tests
+  pub(crate) fn get_class_calendar_mut(&mut self) -> &mut ClassCalendar {
+    &mut self.class_calendar
   }
 
   pub fn replace_class_calendar(
@@ -269,7 +287,7 @@ impl SchoolSchedule {
 
     let mut cal = icalendar::Calendar::new();
     struct ClassRange {
-      class_id: ClassId,
+      class_id: ClassKey,
       day: week_calendar::Day,
       start_timeslot: week_calendar::Timeslot,
       /// inclusive
@@ -279,21 +297,21 @@ impl SchoolSchedule {
     let mut first = true;
     for class_entry in self.class_calendar.get_entries().iter().filter(|entry| {
       let b = class_filter.filter(
-        entry.class_id,
+        entry.class_key,
         &self.simulation_constraints,
         &self.class_calendar,
-        entry.day_idx,
-        entry.timeslot_idx,
+        entry.day,
+        entry.timeslot,
         first,
       );
       first = false;
       b
     }) {
       let new_range = ClassRange {
-        class_id: class_entry.class_id,
-        day: class_entry.day_idx,
-        start_timeslot: class_entry.timeslot_idx,
-        end_timeslot: class_entry.timeslot_idx,
+        class_id: class_entry.class_key,
+        day: class_entry.day,
+        start_timeslot: class_entry.timeslot,
+        end_timeslot: class_entry.timeslot,
       };
       if let Some(prev_range) = class_ranges.iter_mut().find(|r| {
         r.class_id == new_range.class_id
@@ -336,18 +354,16 @@ impl SchoolSchedule {
   }
 }
 
-fn count_class_hours(class_calendar: &ClassCalendar) -> Vec<u8> {
-  let mut class_hour_count: Vec<u8> = Vec::new();
-  for timeslot in class_calendar.iter_timeslots() {
-    for (class_id, count) in timeslot.iter().enumerate() {
-      if *count == 0 {
-        continue;
+fn count_class_hours(class_calendar: &ClassCalendar) -> SecondaryMap<ClassKey, u32> {
+  let mut class_hour_count = SecondaryMap::new();
+  for class_key in class_calendar.iter_class_keys() {
+    let mut sum: u32 = 0;
+    for day in week_calendar::Day::all() {
+      for timeslot in week_calendar::Timeslot::all() {
+        sum += class_calendar.get_count(day, timeslot, class_key) as u32;
       }
-      if class_id >= class_hour_count.len() {
-        class_hour_count.resize(class_id + 1, 0);
-      }
-      class_hour_count[class_id] += count;
     }
+    class_hour_count.insert(class_key, sum);
   }
   class_hour_count
 }

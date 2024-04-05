@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
   school_schedule::{
-    class_calendar::ClassId, Classroom, ClassroomAssignmentKey, Semester, SimulationConstraints,
+    class_calendar::ClassKey, Classroom, ClassroomAssignmentKey, Semester, SimulationConstraints,
   },
   simulation::assign_classrooms,
   ClassCalendar, Day, Timeslot,
@@ -27,7 +27,7 @@ static mut CLASSROOM_ASSIGNMENT_MEMO: Lazy<BTreeMap<ClassroomAssignmentKey, Clas
 impl ClassFilter {
   pub fn filter(
     &self,
-    class_id: ClassId,
+    class_id: ClassKey,
     simulation_constraints: &SimulationConstraints,
     state: &ClassCalendar,
     day: Day,

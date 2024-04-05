@@ -9,10 +9,9 @@ use crate::{
   simple_schedule_widget::SimpleScheduleWidget,
 };
 use calendars_core::{
-  self, AdvancedSimulationOptions, ClassCalendar, LiveUpdate, ProgressOption, SchoolSchedule,
+  AdvancedSimulationOptions, ClassCalendar, LiveUpdate, ProgressOption, SchoolSchedule,
   SimulationOptions, SimulationOutput, TemperatureFunction,
 };
-use eframe::egui;
 use egui::Ui;
 use rfd::FileDialog;
 use serde::{Deserialize, Serialize};
@@ -191,6 +190,7 @@ impl eframe::App for MyApp {
           let local_simulation_constraints =
             self.school_schedule.get_simulation_constraints().clone();
           let local_ctx = ctx.clone();
+          let initial_state = self.school_schedule.get_class_calendar().clone();
           let join_handle = std::thread::spawn(move || {
             let pb2 = pb.clone();
             let pb_ctx = local_ctx.clone();
@@ -220,7 +220,7 @@ impl eframe::App for MyApp {
                 vec![SimulationOptions {
                   simulation_constraints: local_simulation_constraints,
                   stop_condition,
-                  initial_state: None,
+                  initial_state,
                   temperature_function: TemperatureFunction::Linear,
                   progress: ProgressOption::ProgressBar(pb),
                   advanced_options,
