@@ -105,7 +105,7 @@ impl<'a, 'b> ClassEntry<'a> {
 pub struct ClassroomAssignmentKey {
   pub day: week_calendar::Day,
   pub timeslot: week_calendar::Timeslot,
-  pub class_id: ClassKey,
+  pub class_key: ClassKey,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
@@ -121,23 +121,23 @@ impl SchoolSchedule {
     &self.simulation_constraints
   }
 
-  pub fn get_class(&self, class_id: ClassKey) -> Option<&Class> {
-    self.simulation_constraints.classes.get(class_id)
+  pub fn get_class(&self, class_key: ClassKey) -> Option<&Class> {
+    self.simulation_constraints.classes.get(class_key)
   }
 
-  pub fn get_class_entry(&mut self, class_id: ClassKey) -> Option<ClassEntry> {
+  pub fn get_class_entry(&mut self, class_key: ClassKey) -> Option<ClassEntry> {
     Some(ClassEntry {
       school_schedule: self,
-      class_key: class_id,
+      class_key,
     })
   }
 
-  pub fn get_class_metadata(&self, class_id: ClassKey) -> Option<&ClassMetadata> {
-    self.metadata.classes.get(class_id)
+  pub fn get_class_metadata(&self, class_key: ClassKey) -> Option<&ClassMetadata> {
+    self.metadata.classes.get(class_key)
   }
 
-  pub fn get_class_metadata_mut(&mut self, class_id: ClassKey) -> Option<&mut ClassMetadata> {
-    self.metadata.classes.get_mut(class_id)
+  pub fn get_class_metadata_mut(&mut self, class_key: ClassKey) -> Option<&mut ClassMetadata> {
+    self.metadata.classes.get_mut(class_key)
   }
 
   pub fn get_professor_mut(&mut self, professor_id: usize) -> Option<&mut Professor> {
@@ -287,7 +287,7 @@ impl SchoolSchedule {
 
     let mut cal = icalendar::Calendar::new();
     struct ClassRange {
-      class_id: ClassKey,
+      class_key: ClassKey,
       day: week_calendar::Day,
       start_timeslot: week_calendar::Timeslot,
       /// inclusive
@@ -308,13 +308,13 @@ impl SchoolSchedule {
       b
     }) {
       let new_range = ClassRange {
-        class_id: class_entry.class_key,
+        class_key: class_entry.class_key,
         day: class_entry.day,
         start_timeslot: class_entry.timeslot,
         end_timeslot: class_entry.timeslot,
       };
       if let Some(prev_range) = class_ranges.iter_mut().find(|r| {
-        r.class_id == new_range.class_id
+        r.class_key == new_range.class_key
           && r.day == new_range.day
           && usize::from(r.end_timeslot).checked_add(1_usize).map_or(
             false,
@@ -346,7 +346,7 @@ impl SchoolSchedule {
         .with_timezone(&Utc);
       event.starts(start_time);
       event.ends(end_time);
-      event.summary(&self.get_class_metadata(class_range.class_id).unwrap().name);
+      event.summary(&self.get_class_metadata(class_range.class_key).unwrap().name);
 
       cal.push(event);
     }

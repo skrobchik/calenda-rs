@@ -27,7 +27,7 @@ static mut CLASSROOM_ASSIGNMENT_MEMO: Lazy<BTreeMap<ClassroomAssignmentKey, Clas
 impl ClassFilter {
   pub fn filter(
     &self,
-    class_id: ClassKey,
+    class_key: ClassKey,
     simulation_constraints: &SimulationConstraints,
     state: &ClassCalendar,
     day: Day,
@@ -39,18 +39,10 @@ impl ClassFilter {
     match self {
       ClassFilter::None => true,
       ClassFilter::Semester(s) => {
-        if let Some(class) = simulation_constraints.get_class(class_id) {
-          class.get_semester() == s
-        } else {
-          false
-        }
+        simulation_constraints.get_class(class_key).unwrap().get_semester() == s
       }
       ClassFilter::ProfessorId(p) => {
-        if let Some(class) = simulation_constraints.get_class(class_id) {
-          class.get_professor_id() == p
-        } else {
-          false
-        }
+        simulation_constraints.get_class(class_key).unwrap().get_professor_id() == p
       }
       ClassFilter::Classroom(c) => {
         // TODO: Regenerating classroom assignment each time is slow.
@@ -68,13 +60,9 @@ impl ClassFilter {
         let key = ClassroomAssignmentKey {
           day,
           timeslot,
-          class_id,
+          class_key,
         };
-        if let Some(classroom) = classroom_assignment.get(&key) {
-          classroom == c
-        } else {
-          false
-        }
+        classroom_assignment.get(&key).unwrap() == c
       }
     }
   }

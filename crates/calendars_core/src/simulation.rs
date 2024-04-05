@@ -236,7 +236,7 @@ fn temperature(x: f64, temperature_function_variant: &TemperatureFunction, ampli
 fn random_init<R: Rng>(constraints: &SimulationConstraints, rng: &mut R) -> ClassCalendar {
   let mut state: ClassCalendar = Default::default();
   let class_keys = constraints.get_class_keys();
-  for (class_id, class) in class_keys
+  for (class_key, class) in class_keys
     .into_iter()
     .map(|k| (k, constraints.get_class(k).unwrap()))
   {
@@ -244,7 +244,7 @@ fn random_init<R: Rng>(constraints: &SimulationConstraints, rng: &mut R) -> Clas
       let timeslot_idx = Timeslot::new_random(rng);
       let day_idx = Day::new_random(rng);
       state
-        .add_one_class(day_idx, timeslot_idx, class_id)
+        .add_one_class(day_idx, timeslot_idx, class_key)
         .unwrap();
     }
   }
@@ -303,7 +303,7 @@ pub(crate) fn assign_classrooms(
   for day in week_calendar::Day::all() {
     for timeslot in week_calendar::Timeslot::all() {
       let mut timeslot_available_classrooms = available_classrooms.clone();
-      for (class_id, count) in state
+      for (class_key, count) in state
         .iter_class_keys()
         .map(|k| (k, state.get_count(day, timeslot, k)))
       {
@@ -313,7 +313,7 @@ pub(crate) fn assign_classrooms(
         // if class is repeating (`count` >= 2) it will be assigned the same classroom, but at this point
         // the schedule is really not very good so it doesn't matter
         let required_classroom_type = *constraints
-          .get_class(class_id.try_into().unwrap())
+          .get_class(class_key.try_into().unwrap())
           .unwrap()
           .get_classroom_type();
         if timeslot_available_classrooms[required_classroom_type as usize]
@@ -324,7 +324,7 @@ pub(crate) fn assign_classrooms(
             ClassroomAssignmentKey {
               day,
               timeslot,
-              class_id: class_id.try_into().unwrap(),
+              class_key: class_key.try_into().unwrap(),
             },
             timeslot_available_classrooms[required_classroom_type as usize]
               .pop()
@@ -335,7 +335,7 @@ pub(crate) fn assign_classrooms(
             ClassroomAssignmentKey {
               day,
               timeslot,
-              class_id: class_id.try_into().unwrap(),
+              class_key: class_key.try_into().unwrap(),
             },
             default_classroom[required_classroom_type as usize].clone(),
           );
@@ -362,13 +362,13 @@ fn count_classroom_assignment_collisions(
   for day in week_calendar::Day::all() {
     for timeslot in week_calendar::Timeslot::all() {
       let mut timeslot_available_classrooms = available_classrooms.clone();
-      for (class_id, count) in state
+      for (class_key, count) in state
         .iter_class_keys()
         .map(|k| (k, state.get_count(day, timeslot, k)))
       {
         for _ in 0..count {
           let required_classroom_type = *constraints
-            .get_class(class_id.try_into().unwrap())
+            .get_class(class_key.try_into().unwrap())
             .unwrap()
             .get_classroom_type();
           if timeslot_available_classrooms[required_classroom_type as usize]

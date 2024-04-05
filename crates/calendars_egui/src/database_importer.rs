@@ -143,25 +143,25 @@ fn create_schedule(
       class_row.grupo, class_row.descripcion
     ))?;
     let is_optative = is_optative(&class_row.asign);
-    let theory_class_id = schedule.add_new_class();
-    let mut theory_class = schedule.get_class_entry(theory_class_id).unwrap();
+    let theory_class_key = schedule.add_new_class();
+    let mut theory_class = schedule.get_class_entry(theory_class_key).unwrap();
     theory_class.set_semester(semester);
     theory_class.set_group(group);
     theory_class.set_optative(is_optative);
     theory_class.set_professor_id(theory_professor_id);
-    let theory_class_metadata = schedule.get_class_metadata_mut(theory_class_id).unwrap();
+    let theory_class_metadata = schedule.get_class_metadata_mut(theory_class_key).unwrap();
     theory_class_metadata.color = color;
     theory_class_metadata.name = class_row.descripcion.clone();
     theory_class_metadata.class_code = class_row.asign.clone();
     if let Some(lab_professor_id) = lab_professor_id {
       assert!(has_lab);
-      let lab_class_id = schedule.add_new_class();
-      let mut lab_class = schedule.get_class_entry(lab_class_id).unwrap();
+      let lab_class_key = schedule.add_new_class();
+      let mut lab_class = schedule.get_class_entry(lab_class_key).unwrap();
       lab_class.set_semester(semester);
       lab_class.set_group(group);
       lab_class.set_optative(is_optative);
       lab_class.set_professor_id(lab_professor_id);
-      let lab_class_metadata = schedule.get_class_metadata_mut(lab_class_id).unwrap();
+      let lab_class_metadata = schedule.get_class_metadata_mut(lab_class_key).unwrap();
       lab_class_metadata.color = color;
       lab_class_metadata.name = format!("{} (Lab)", class_row.descripcion);
       lab_class_metadata.class_code = class_row.asign.clone();

@@ -199,7 +199,7 @@ pub(crate) fn count_labs_on_different_days(
 ) -> f64 {
   let mut different_days_labs_count = 0;
   let class_keys = state.iter_class_keys();
-  for (class_id, class) in class_keys.map(|k| (k, constraints.get_class(k).unwrap())) {
+  for (class_key, class) in class_keys.map(|k| (k, constraints.get_class(k).unwrap())) {
     if match class.get_classroom_type() {
       ClassroomType::AulaSimple => true,
       ClassroomType::AulaDoble => true,
@@ -212,7 +212,7 @@ pub(crate) fn count_labs_on_different_days(
     let mut count: i32 = 0;
     for day in week_calendar::Day::all() {
       if week_calendar::Timeslot::all()
-        .map(|timeslot| state.get_count(day, timeslot, class_id))
+        .map(|timeslot| state.get_count(day, timeslot, class_key))
         .any(|c| c >= 1)
       {
         count += 1;
@@ -227,11 +227,11 @@ pub(crate) fn count_labs_on_different_days(
 
 pub(crate) fn count_incontinuous_classes(state: &ClassCalendar) -> f64 {
   let mut count = 0;
-  for class_id in state.iter_class_keys() {
+  for class_key in state.iter_class_keys() {
     for day in week_calendar::Day::all() {
       let times = week_calendar::Timeslot::all()
         .enumerate()
-        .map(|(i, t)| (i, state.get_count(day, t, class_id)))
+        .map(|(i, t)| (i, state.get_count(day, t, class_key)))
         .filter(|(_i, c)| *c >= 1)
         .map(|(i, _c)| i);
       if times.tuple_windows().any(|(i1, i2)| {

@@ -66,12 +66,12 @@ impl SimpleScheduleWidget {
           Stroke::new(1.0, Color32::from_gray(100)),
         );
 
-        for (class_id, class_count) in state
+        for (class_key, class_count) in state
           .get_class_calendar()
           .iter_class_keys()
           .map(|k| (k, state.get_class_calendar().get_count(day, timeslot, k)))
         {
-          if let Some(class_metadata) = state.get_class_metadata(class_id.try_into().unwrap()) {
+          if let Some(class_metadata) = state.get_class_metadata(class_key.try_into().unwrap()) {
             for _ in 0..class_count {
               let botright: egui::Pos2 = topleft + (class_width, h).into();
               let class_color = class_metadata.color;
