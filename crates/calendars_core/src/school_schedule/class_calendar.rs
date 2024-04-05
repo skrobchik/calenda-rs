@@ -62,7 +62,7 @@ impl ClassCalendar {
     &self.class_entries
   }
 
-  pub fn iter_class_keys<'a>(&'a self) -> impl Iterator<Item = ClassKey> + 'a {
+  pub fn iter_class_keys(&self) -> impl Iterator<Item = ClassKey> + '_ {
     self.data.keys()
   }
 

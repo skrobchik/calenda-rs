@@ -9,20 +9,16 @@ use crate::{
   week_calendar,
 };
 
-fn iter_class_calendar<'a>(
-  class_calendar: &'a ClassCalendar,
-) -> impl Iterator<Item = (ClassKey, week_calendar::Day, week_calendar::Timeslot)> + 'a {
+fn iter_class_calendar(
+  class_calendar: &ClassCalendar,
+) -> impl Iterator<Item = (ClassKey, week_calendar::Day, week_calendar::Timeslot)> + '_ {
   let classes = class_calendar.iter_class_keys();
-  let it = classes
-    .map(move |class_key| {
-      week_calendar::Day::all()
-        .map(move |day| {
-          week_calendar::Timeslot::all().map(move |timeslot| (class_key, day, timeslot))
-        })
-        .flatten()
+
+  classes.flat_map(move |class_key| {
+    week_calendar::Day::all().flat_map(move |day| {
+      week_calendar::Timeslot::all().map(move |timeslot| (class_key, day, timeslot))
     })
-    .flatten();
-  it
+  })
 }
 
 pub(crate) fn same_timeslot_classes_count_per_professor(

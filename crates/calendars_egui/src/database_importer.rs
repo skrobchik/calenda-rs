@@ -110,7 +110,7 @@ fn create_schedule(
   for professor_row in professor_rows {
     let professor_id = schedule.add_new_professor();
     let professor_metadata = schedule.get_professor_metadata_mut(professor_id).unwrap();
-    professor_metadata.name = professor_row.nombre.clone();
+    professor_metadata.name.clone_from(&professor_row.nombre);
     if professors
       .insert(professor_row.rfc.as_str(), professor_id)
       .is_some()
@@ -151,8 +151,12 @@ fn create_schedule(
     theory_class.set_professor_id(theory_professor_id);
     let theory_class_metadata = schedule.get_class_metadata_mut(theory_class_key).unwrap();
     theory_class_metadata.color = color;
-    theory_class_metadata.name = class_row.descripcion.clone();
-    theory_class_metadata.class_code = class_row.asign.clone();
+    theory_class_metadata
+      .name
+      .clone_from(&class_row.descripcion);
+    theory_class_metadata
+      .class_code
+      .clone_from(&class_row.asign);
     if let Some(lab_professor_id) = lab_professor_id {
       assert!(has_lab);
       let lab_class_key = schedule.add_new_class();
@@ -164,7 +168,7 @@ fn create_schedule(
       let lab_class_metadata = schedule.get_class_metadata_mut(lab_class_key).unwrap();
       lab_class_metadata.color = color;
       lab_class_metadata.name = format!("{} (Lab)", class_row.descripcion);
-      lab_class_metadata.class_code = class_row.asign.clone();
+      lab_class_metadata.class_code.clone_from(&class_row.asign);
     }
   }
   Ok(schedule)
