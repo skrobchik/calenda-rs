@@ -149,6 +149,7 @@ fn create_schedule(
     theory_class.set_group(group);
     theory_class.set_optative(is_optative);
     theory_class.set_professor_id(theory_professor_key);
+    theory_class.set_hours(2);
     let theory_class_metadata = schedule.get_class_metadata_mut(theory_class_key).unwrap();
     theory_class_metadata.color = color;
     theory_class_metadata
@@ -165,6 +166,7 @@ fn create_schedule(
       lab_class.set_group(group);
       lab_class.set_optative(is_optative);
       lab_class.set_professor_id(lab_professor_key);
+      lab_class.set_hours(3);
       let lab_class_metadata = schedule.get_class_metadata_mut(lab_class_key).unwrap();
       lab_class_metadata.color = color;
       lab_class_metadata.name = format!("{} (Lab)", class_row.descripcion);
