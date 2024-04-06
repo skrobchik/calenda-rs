@@ -206,13 +206,11 @@ pub(crate) fn count_labs_on_different_days(
   let mut different_days_labs_count = 0;
   let class_keys = state.iter_class_keys();
   for (class_key, class) in class_keys.map(|k| (k, constraints.get_class(k).unwrap())) {
-    if match class.get_classroom_type() {
-      ClassroomType::AulaSimple => true,
-      ClassroomType::AulaDoble => true,
-      ClassroomType::LabQuimica => false,
-      ClassroomType::LabFisica => false,
-      ClassroomType::AulaComputo => false,
-    } {
+    if class
+      .get_allowed_classroom_types()
+      .intersection_c(ClassroomType::LabFisica | ClassroomType::LabQuimica)
+      .is_empty()
+    {
       continue;
     }
     let mut count: i32 = 0;
@@ -335,10 +333,10 @@ mod test {
     let k0 = schedule.add_new_class(p0);
     let mut class_0 = schedule.get_class_entry(k0).unwrap();
     class_0.set_hours(3);
-    class_0.set_classroom_type(ClassroomType::AulaSimple);
+    class_0.set_allowed_classroom_types(ClassroomType::AulaSimple | ClassroomType::AulaDoble);
     let k1 = schedule.add_new_class(p0);
     let mut class_1 = schedule.get_class_entry(k1).unwrap();
-    class_1.set_classroom_type(ClassroomType::LabFisica);
+    class_1.set_allowed_classroom_types(ClassroomType::LabFisica | ClassroomType::LabQuimica);
     class_1.set_hours(3);
     let state = schedule.get_class_calendar_mut();
     let d0 = week_calendar::Day::try_from(0).unwrap();

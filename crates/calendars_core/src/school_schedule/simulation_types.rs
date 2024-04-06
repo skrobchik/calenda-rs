@@ -1,8 +1,9 @@
 use std::fmt::Display;
 
-use enum_iterator::Sequence;
+use enumflags2::{bitflags, BitFlags};
 use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SecondaryMap, SlotMap};
+use strum::{EnumIter, VariantArray};
 
 use crate::week_calendar::WeekCalendar;
 
@@ -33,7 +34,7 @@ impl SimulationConstraints {
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub struct Class {
   pub(super) professor_key: ProfessorKey,
-  pub(super) classroom_type: ClassroomType,
+  pub(super) allowed_classroom_types: AllowedClassroomTypes,
   pub(super) class_hours: u8,
   pub(super) semester: Semester,
   pub(super) group: Group,
@@ -44,8 +45,8 @@ impl Class {
   pub fn get_professor_id(&self) -> ProfessorKey {
     self.professor_key
   }
-  pub fn get_classroom_type(&self) -> &ClassroomType {
-    &self.classroom_type
+  pub fn get_allowed_classroom_types(&self) -> &AllowedClassroomTypes {
+    &self.allowed_classroom_types
   }
   pub fn get_class_hours(&self) -> &u8 {
     &self.class_hours
@@ -67,7 +68,7 @@ pub struct Professor {
   pub priority: f32,
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, Sequence, PartialEq, Eq, Debug)]
+#[derive(Serialize, Deserialize, EnumIter, Clone, Copy, VariantArray, PartialEq, Eq, Debug)]
 pub enum Semester {
   S1,
   S2,
@@ -137,7 +138,7 @@ impl From<&Semester> for u32 {
   }
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, Sequence, PartialEq, Eq, Debug)]
+#[derive(Serialize, Deserialize, EnumIter, Clone, Copy, VariantArray, PartialEq, Eq, Debug)]
 pub enum Group {
   G1,
   G2,
@@ -182,7 +183,13 @@ pub enum Availability {
   NotAvailable,
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, Sequence, PartialEq, Eq, Debug, PartialOrd, Ord)]
+pub type AllowedClassroomTypes = BitFlags<ClassroomType>;
+
+#[bitflags]
+#[repr(u8)]
+#[derive(
+  Serialize, Deserialize, Clone, Copy, EnumIter, VariantArray, PartialEq, Eq, Debug, PartialOrd, Ord,
+)]
 pub enum ClassroomType {
   AulaSimple,
   AulaDoble,
@@ -203,7 +210,20 @@ impl Display for ClassroomType {
   }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Sequence, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(
+  Serialize,
+  Deserialize,
+  Debug,
+  Clone,
+  Copy,
+  EnumIter,
+  VariantArray,
+  PartialEq,
+  Eq,
+  PartialOrd,
+  Ord,
+  Hash,
+)]
 pub enum Classroom {
   Aula1,
   Aula2_3,

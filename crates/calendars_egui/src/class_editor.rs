@@ -2,7 +2,9 @@ use egui::{Color32, ComboBox, ScrollArea, TextEdit};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use calendars_core::{ClassKey, ClassroomType, Group, SchoolSchedule, Semester};
+use calendars_core::{
+  strum::IntoEnumIterator, ClassKey, ClassroomType, Group, SchoolSchedule, Semester,
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ClassEditor {
@@ -68,22 +70,25 @@ impl ClassEditor {
           state
             .get_class(class_key)
             .unwrap()
-            .get_classroom_type()
+            .get_allowed_classroom_types()
             .to_string(),
         )
         .show_ui(ui, |ui| {
-          let mut classroom_type = *state.get_class(class_key).unwrap().get_classroom_type();
-          for classroom_type_variant in enum_iterator::all::<ClassroomType>() {
+          let mut classroom_type = *state
+            .get_class(class_key)
+            .unwrap()
+            .get_allowed_classroom_types();
+          for classroom_type_variant in ClassroomType::iter() {
             ui.selectable_value(
               &mut classroom_type,
-              classroom_type_variant,
+              classroom_type_variant.into(),
               classroom_type_variant.to_string(),
             );
           }
           state
             .get_class_entry(class_key)
             .unwrap()
-            .set_classroom_type(classroom_type);
+            .set_allowed_classroom_types(classroom_type);
         });
     });
 
@@ -99,7 +104,7 @@ impl ClassEditor {
         )
         .show_ui(ui, |ui| {
           let mut semester = *state.get_class(class_key).unwrap().get_semester();
-          for semester_variant in enum_iterator::all::<Semester>() {
+          for semester_variant in Semester::iter() {
             ui.selectable_value(
               &mut semester,
               semester_variant,
@@ -119,7 +124,7 @@ impl ClassEditor {
         .selected_text(state.get_class(class_key).unwrap().get_group().to_string())
         .show_ui(ui, |ui| {
           let mut group = *state.get_class(class_key).unwrap().get_group();
-          for group_variant in enum_iterator::all::<Group>() {
+          for group_variant in Group::iter() {
             ui.selectable_value(&mut group, group_variant, group_variant.to_string());
           }
           state.get_class_entry(class_key).unwrap().set_group(group);

@@ -29,6 +29,7 @@ pub use simulation_options::SimulationOptions;
 pub use simulation_options::StopCondition;
 pub use simulation_options::TemperatureFunction;
 pub use slotmap;
+pub use strum;
 pub use week_calendar::Day;
 pub use week_calendar::Timeslot;
 pub use week_calendar::DAY_COUNT;

@@ -80,7 +80,8 @@ impl SimpleScheduleWidget {
             for _ in 0..class_count {
               let botright: egui::Pos2 = topleft + (class_width, h).into();
               let rgba = class_metadata.rgba;
-              let class_color = Color32::from_rgba_premultiplied(rgba[0], rgba[1], rgba[2], rgba[3]);
+              let class_color =
+                Color32::from_rgba_premultiplied(rgba[0], rgba[1], rgba[2], rgba[3]);
               painter.rect(
                 Rect::from_two_pos(topleft, botright),
                 Rounding::same(0.02 * w.min(h)),

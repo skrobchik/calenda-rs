@@ -7,13 +7,13 @@ use crate::{
   school_schedule::{Classroom, ClassroomAssignmentKey, ClassroomType},
   simulation_options::{ProgressOption, SimulationOptions, StopCondition, TemperatureFunction},
   stats_tracker::StatsTracker,
-  week_calendar,
 };
 use indicatif::{HumanCount, HumanDuration, ProgressStyle};
 use itertools::Itertools;
 use rand::prelude::*;
 use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
+use strum::{IntoEnumIterator, VariantArray};
 
 use crate::{
   heuristics,
@@ -261,110 +261,80 @@ pub(crate) fn assign_classrooms(
   state: &ClassCalendar,
   constraints: &SimulationConstraints,
 ) -> BTreeMap<ClassroomAssignmentKey, Classroom> {
-  let available_classrooms: [Vec<Classroom>; enum_iterator::cardinality::<ClassroomType>()] = {
-    const EMPTY_VEC: Vec<Classroom> = Vec::new();
-    let mut available_classrooms = [EMPTY_VEC; enum_iterator::cardinality::<ClassroomType>()];
-    for classroom in enum_iterator::all::<Classroom>() {
-      available_classrooms[classroom.get_type() as usize].push(classroom);
-    }
-    available_classrooms
-  };
-  let default_classroom: [Classroom; enum_iterator::cardinality::<ClassroomType>()] =
-    available_classrooms
+  let matching = assign_classrooms_matching(state, constraints);
+  matching
+    .into_iter()
+    .map(|(a, b)| match (a, b) {
+      (
+        ClassroomAssignmentVertex::ClassSession(classroom_assignment_key),
+        ClassroomAssignmentVertex::Classroom(classroom),
+      ) => (classroom_assignment_key, classroom),
+      _ => unreachable!(),
+    })
+    .collect()
+}
+
+#[derive(Hash, Clone, Copy, PartialEq, Eq)]
+enum ClassroomAssignmentVertex {
+  ClassSession(ClassroomAssignmentKey),
+  Classroom(Classroom),
+}
+
+fn assign_classrooms_matching(
+  state: &ClassCalendar,
+  constraints: &SimulationConstraints,
+) -> Vec<(ClassroomAssignmentVertex, ClassroomAssignmentVertex)> {
+  let available_classrooms: [Vec<Classroom>; ClassroomType::VARIANTS.len()] =
+    ClassroomType::VARIANTS
       .iter()
       .map(|v| {
-        v.first()
-          .expect("A classroom type doesn't have a classroom")
-          .clone()
+        Classroom::iter()
+          .filter(|c| c.get_type() == *v)
+          .collect_vec()
       })
       .collect_vec()
       .try_into()
       .unwrap();
-  let mut classroom_assignment: BTreeMap<ClassroomAssignmentKey, Classroom> = BTreeMap::new();
-  for day in week_calendar::Day::all() {
-    for timeslot in week_calendar::Timeslot::all() {
-      let mut timeslot_available_classrooms = available_classrooms.clone();
-      for (class_key, count) in state
-        .iter_class_keys()
-        .map(|k| (k, state.get_count(day, timeslot, k)))
-      {
-        if count == 0 {
-          continue;
-        }
-        // if class is repeating (`count` >= 2) it will be assigned the same classroom, but at this point
-        // the schedule is really not very good so it doesn't matter
-        let required_classroom_type = *constraints
-          .get_class(class_key)
+
+  let mut edges: Vec<(ClassroomAssignmentVertex, ClassroomAssignmentVertex)> = Vec::new();
+  for entry in state.get_entries() {
+    let class = constraints.get_class(entry.class_key).unwrap();
+    let classroom_assignment_key = ClassroomAssignmentKey {
+      day: entry.day,
+      timeslot: entry.timeslot,
+      class_key: entry.class_key,
+    };
+    let entry_edges = class
+      .get_allowed_classroom_types()
+      .iter()
+      .map(|classroom_type| {
+        ClassroomType::VARIANTS
+          .iter()
+          .position(|v| *v == classroom_type)
           .unwrap()
-          .get_classroom_type();
-        if timeslot_available_classrooms[required_classroom_type as usize]
-          .last()
-          .is_some()
-        {
-          classroom_assignment.insert(
-            ClassroomAssignmentKey {
-              day,
-              timeslot,
-              class_key,
-            },
-            timeslot_available_classrooms[required_classroom_type as usize]
-              .pop()
-              .unwrap(),
-          );
-        } else {
-          classroom_assignment.insert(
-            ClassroomAssignmentKey {
-              day,
-              timeslot,
-              class_key,
-            },
-            default_classroom[required_classroom_type as usize].clone(),
-          );
-        }
-      }
-    }
+      })
+      .flat_map(|classroom_type_i| &available_classrooms[classroom_type_i])
+      .unique()
+      .map(|classroom| (classroom_assignment_key, *classroom))
+      .map(|(a, b)| {
+        (
+          ClassroomAssignmentVertex::ClassSession(a),
+          ClassroomAssignmentVertex::Classroom(b),
+        )
+      });
+    edges.extend(entry_edges);
   }
-  classroom_assignment
+
+  hopcroft_karp::matching(&edges)
 }
 
 fn count_classroom_assignment_collisions(
   state: &ClassCalendar,
   constraints: &SimulationConstraints,
-) -> u32 {
-  let available_classrooms: [Vec<Classroom>; enum_iterator::cardinality::<ClassroomType>()] = {
-    const EMPTY_VEC: Vec<Classroom> = Vec::new();
-    let mut available_classrooms = [EMPTY_VEC; enum_iterator::cardinality::<ClassroomType>()];
-    for classroom in enum_iterator::all::<Classroom>() {
-      available_classrooms[classroom.get_type() as usize].push(classroom);
-    }
-    available_classrooms
-  };
-  let mut num_classroom_assignment_collisions = 0;
-  for day in week_calendar::Day::all() {
-    for timeslot in week_calendar::Timeslot::all() {
-      let mut timeslot_available_classrooms = available_classrooms.clone();
-      for (class_key, count) in state
-        .iter_class_keys()
-        .map(|k| (k, state.get_count(day, timeslot, k)))
-      {
-        for _ in 0..count {
-          let required_classroom_type = *constraints
-            .get_class(class_key)
-            .unwrap()
-            .get_classroom_type();
-          if timeslot_available_classrooms[required_classroom_type as usize]
-            .last()
-            .is_some()
-          {
-            timeslot_available_classrooms[required_classroom_type as usize]
-              .pop()
-              .unwrap();
-          } else {
-            num_classroom_assignment_collisions += 1;
-          }
-        }
-      }
-    }
-  }
-  num_classroom_assignment_collisions
+) -> usize {
+  state
+    .get_entries()
+    .len()
+    .checked_sub(assign_classrooms_matching(state, constraints).len())
+    .expect("Can't be more matching than class entries")
 }

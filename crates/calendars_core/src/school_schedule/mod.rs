@@ -89,9 +89,9 @@ impl<'a, 'b> ClassEntry<'a> {
     class.semester = semester;
   }
 
-  pub fn set_classroom_type(&mut self, classroom_type: ClassroomType) {
+  pub fn set_allowed_classroom_types(&mut self, allowed_classroom_types: AllowedClassroomTypes) {
     let class = self.get_class();
-    class.classroom_type = classroom_type;
+    class.allowed_classroom_types = allowed_classroom_types;
   }
 
   pub fn set_optative(&mut self, optative: bool) {
@@ -100,7 +100,7 @@ impl<'a, 'b> ClassEntry<'a> {
   }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ClassroomAssignmentKey {
   pub day: week_calendar::Day,
   pub timeslot: week_calendar::Timeslot,
@@ -208,7 +208,7 @@ impl SchoolSchedule {
       class_key,
       Class {
         professor_key,
-        classroom_type: ClassroomType::AulaSimple,
+        allowed_classroom_types: ClassroomType::AulaSimple | ClassroomType::AulaDoble,
         class_hours: 0,
         semester: Semester::S1,
         group: Group::G1,
