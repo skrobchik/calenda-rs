@@ -1,4 +1,3 @@
-use egui::Color32;
 use serde::{Deserialize, Serialize};
 use slotmap::SecondaryMap;
 
@@ -20,6 +19,6 @@ pub struct ProfessorMetadata {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ClassMetadata {
   pub name: String,
-  pub color: Color32,
+  pub rgba: [u8; 4],
   pub class_code: String,
 }

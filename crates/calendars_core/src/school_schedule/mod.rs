@@ -1,7 +1,6 @@
 use std::collections::BTreeMap;
 
 use chrono::{Datelike, Days, TimeZone, Timelike, Utc};
-use egui::Color32;
 use slotmap::SecondaryMap;
 
 use crate::week_calendar;
@@ -200,7 +199,7 @@ impl SchoolSchedule {
       class_key,
       ClassMetadata {
         name: "New Class".to_string(),
-        color: Color32::LIGHT_YELLOW,
+        rgba: [255, 255, 224, 255], // Light Yellow
         class_code: "0000".to_string(),
       },
     );

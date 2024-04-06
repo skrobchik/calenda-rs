@@ -1,4 +1,4 @@
-use egui::{ComboBox, ScrollArea, TextEdit};
+use egui::{Color32, ComboBox, ScrollArea, TextEdit};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
@@ -41,7 +41,10 @@ impl ClassEditor {
     }
 
     ui.horizontal(|ui| {
-      ui.color_edit_button_srgba(&mut state.get_class_metadata_mut(class_key).unwrap().color);
+      let rgba = state.get_class_metadata_mut(class_key).unwrap().rgba;
+      let mut color = Color32::from_rgba_premultiplied(rgba[0], rgba[1], rgba[2], rgba[3]);
+      ui.color_edit_button_srgba(&mut color);
+      state.get_class_metadata_mut(class_key).unwrap().rgba = color.to_array();
       TextEdit::singleline(&mut state.get_class_metadata_mut(class_key).unwrap().class_code)
         .char_limit(4)
         .desired_width(50.0)

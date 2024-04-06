@@ -7,7 +7,6 @@ edition = "2021"
 [dependencies]
 chrono = "0.4.37"
 chrono-tz = "0.9.0"
-egui = { version="0.27.2", features = ["serde"] }
 enum-iterator = "2.0.0"
 icalendar = "0.16.0"
 indicatif = "0.17.8"
