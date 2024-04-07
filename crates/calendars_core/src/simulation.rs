@@ -1,5 +1,6 @@
 use std::{
   collections::BTreeMap,
+  rc::Rc,
   thread::{self, JoinHandle},
 };
 
@@ -7,6 +8,7 @@ use crate::{
   school_schedule::{Classroom, ClassroomAssignmentKey, ClassroomType},
   simulation_options::{ProgressOption, SimulationOptions, StopCondition, TemperatureFunction},
   stats_tracker::StatsTracker,
+  week_calendar, ClassKey,
 };
 use indicatif::{HumanCount, HumanDuration, ProgressStyle};
 use itertools::Itertools;
@@ -262,28 +264,71 @@ pub(crate) fn assign_classrooms(
   constraints: &SimulationConstraints,
 ) -> BTreeMap<ClassroomAssignmentKey, Classroom> {
   let matching = assign_classrooms_matching(state, constraints);
-  matching
-    .into_iter()
-    .map(|(a, b)| match (a, b) {
-      (
-        ClassroomAssignmentVertex::ClassSession(classroom_assignment_key),
-        ClassroomAssignmentVertex::Classroom(classroom),
-      ) => (classroom_assignment_key, classroom),
-      _ => unreachable!(),
-    })
-    .collect()
+  matching.collect()
 }
 
 #[derive(Hash, Clone, Copy, PartialEq, Eq)]
 enum ClassroomAssignmentVertex {
-  ClassSession(ClassroomAssignmentKey),
+  Class(ClassKey),
   Classroom(Classroom),
 }
 
-fn assign_classrooms_matching(
-  state: &ClassCalendar,
-  constraints: &SimulationConstraints,
-) -> Vec<(ClassroomAssignmentVertex, ClassroomAssignmentVertex)> {
+fn timeslot_assign_classrooms<'a>(
+  state: &'a ClassCalendar,
+  constraints: &'a SimulationConstraints,
+  day: week_calendar::Day,
+  timeslot: week_calendar::Timeslot,
+  available_classrooms: Rc<[Vec<Classroom>; ClassroomType::VARIANTS.len()]>,
+) -> impl Iterator<Item = (ClassroomAssignmentKey, Classroom)> + 'a {
+  let mut edges: Vec<(ClassroomAssignmentVertex, ClassroomAssignmentVertex)> = Vec::new();
+  for class_key in state
+    .iter_class_keys()
+    .filter(|k| state.get_count(day, timeslot, *k) > 0)
+  {
+    let class = constraints.get_class(class_key).unwrap();
+    let classrooms = class
+      .get_allowed_classroom_types()
+      .iter()
+      .map(|classroom_type| {
+        ClassroomType::VARIANTS
+          .iter()
+          .position(|v| *v == classroom_type)
+          .unwrap()
+      })
+      .flat_map(|classroom_type_i| &available_classrooms[classroom_type_i])
+      .unique();
+    for classroom in classrooms {
+      edges.push((
+        ClassroomAssignmentVertex::Class(class_key),
+        ClassroomAssignmentVertex::Classroom(*classroom),
+      ));
+    }
+  }
+  let matching = hopcroft_karp::matching(&edges);
+  matching.into_iter().map(move |(a, b)| match (a, b) {
+    (
+      ClassroomAssignmentVertex::Class(class_key),
+      ClassroomAssignmentVertex::Classroom(classroom),
+    ) => (
+      ClassroomAssignmentKey {
+        day,
+        timeslot,
+        class_key,
+      },
+      classroom,
+    ),
+    _ => unreachable!(),
+  })
+}
+
+fn iter_week() -> impl Iterator<Item = (week_calendar::Day, week_calendar::Timeslot)> {
+  week_calendar::Day::all().flat_map(|d| week_calendar::Timeslot::all().map(move |t| (d, t)))
+}
+
+fn assign_classrooms_matching<'a>(
+  state: &'a ClassCalendar,
+  constraints: &'a SimulationConstraints,
+) -> impl Iterator<Item = (ClassroomAssignmentKey, Classroom)> + 'a {
   let available_classrooms: [Vec<Classroom>; ClassroomType::VARIANTS.len()] =
     ClassroomType::VARIANTS
       .iter()
@@ -295,37 +340,17 @@ fn assign_classrooms_matching(
       .collect_vec()
       .try_into()
       .unwrap();
+  let available_classrooms = Rc::new(available_classrooms);
 
-  let mut edges: Vec<(ClassroomAssignmentVertex, ClassroomAssignmentVertex)> = Vec::new();
-  for entry in state.get_entries() {
-    let class = constraints.get_class(entry.class_key).unwrap();
-    let classroom_assignment_key = ClassroomAssignmentKey {
-      day: entry.day,
-      timeslot: entry.timeslot,
-      class_key: entry.class_key,
-    };
-    let entry_edges = class
-      .get_allowed_classroom_types()
-      .iter()
-      .map(|classroom_type| {
-        ClassroomType::VARIANTS
-          .iter()
-          .position(|v| *v == classroom_type)
-          .unwrap()
-      })
-      .flat_map(|classroom_type_i| &available_classrooms[classroom_type_i])
-      .unique()
-      .map(|classroom| (classroom_assignment_key, *classroom))
-      .map(|(a, b)| {
-        (
-          ClassroomAssignmentVertex::ClassSession(a),
-          ClassroomAssignmentVertex::Classroom(b),
-        )
-      });
-    edges.extend(entry_edges);
-  }
-
-  hopcroft_karp::matching(&edges)
+  iter_week().flat_map(move |(day, timeslot)| {
+    timeslot_assign_classrooms(
+      state,
+      constraints,
+      day,
+      timeslot,
+      available_classrooms.clone(),
+    )
+  })
 }
 
 fn count_classroom_assignment_collisions(
@@ -335,6 +360,6 @@ fn count_classroom_assignment_collisions(
   state
     .get_entries()
     .len()
-    .checked_sub(assign_classrooms_matching(state, constraints).len())
+    .checked_sub(assign_classrooms_matching(state, constraints).count())
     .expect("Can't be more matching than class entries")
 }

@@ -74,7 +74,10 @@ impl ClassFilter {
         if state.get_count(day, timeslot, class_key) == 0 {
           return false;
         }
-        classroom_assignment.get(&key).unwrap() == c
+        classroom_assignment
+          .get(&key)
+          .unwrap_or(&Classroom::NotAssigned)
+          == c
       }
     }
   }
