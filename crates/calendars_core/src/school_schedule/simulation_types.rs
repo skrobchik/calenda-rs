@@ -196,6 +196,7 @@ pub enum ClassroomType {
   LabQuimica,
   LabFisica,
   AulaComputo,
+  NotAssigned,
 }
 
 impl Display for ClassroomType {
@@ -206,6 +207,7 @@ impl Display for ClassroomType {
       ClassroomType::LabQuimica => "Lab Quimica",
       ClassroomType::LabFisica => "Lab Fisica",
       ClassroomType::AulaComputo => "Aula Computo",
+      ClassroomType::NotAssigned => "No asginado",
     })
   }
 }
@@ -233,6 +235,7 @@ pub enum Classroom {
   SalaComputo,
   LabFisica,
   LabQuimica,
+  NotAssigned,
 }
 
 impl Display for Classroom {
@@ -246,6 +249,7 @@ impl Display for Classroom {
       Classroom::SalaComputo => "Sala de Computo",
       Classroom::LabFisica => "Lab de Fisica",
       Classroom::LabQuimica => "Lab de Quimica",
+      Classroom::NotAssigned => "No asignado",
     })
   }
 }
@@ -261,6 +265,7 @@ impl Classroom {
       Classroom::SalaComputo => ClassroomType::AulaComputo,
       Classroom::LabFisica => ClassroomType::LabFisica,
       Classroom::LabQuimica => ClassroomType::LabQuimica,
+      Classroom::NotAssigned => ClassroomType::NotAssigned,
     }
   }
 }
