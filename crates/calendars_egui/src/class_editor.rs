@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use calendars_core::{
   enumflags2::BitFlags,
-  strum::{IntoEnumIterator, VariantArray},
+  strum::{IntoEnumIterator},
   ClassKey, ClassroomType, Group, SchoolSchedule, Semester,
 };
 
