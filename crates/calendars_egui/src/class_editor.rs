@@ -129,7 +129,7 @@ impl ClassEditor {
                 .set_semester(semester);
             });
         });
-    
+
         ui.horizontal(|ui| {
           ui.label("Groupo");
           ComboBox::from_id_source(format!("group_selector_{:?}", class_key))
@@ -142,7 +142,7 @@ impl ClassEditor {
               state.get_class_entry(class_key).unwrap().set_group(group);
             });
         });
-    
+
         ui.horizontal(|ui| {
           ui.label("Profesor");
           ComboBox::from_id_source(egui::Id::new(("professor_combo_box", class_key)))

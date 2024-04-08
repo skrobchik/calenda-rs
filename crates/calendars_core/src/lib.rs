@@ -7,6 +7,7 @@ mod stats_tracker;
 mod week_calendar;
 
 pub use class_filter::ClassFilter;
+pub use enumflags2;
 pub use school_schedule::class_calendar::ClassCalendar;
 pub use school_schedule::class_calendar::ClassKey;
 pub use school_schedule::simulation_types::ProfessorKey;
@@ -30,7 +31,6 @@ pub use simulation_options::StopCondition;
 pub use simulation_options::TemperatureFunction;
 pub use slotmap;
 pub use strum;
-pub use enumflags2;
 pub use week_calendar::Day;
 pub use week_calendar::Timeslot;
 pub use week_calendar::DAY_COUNT;
