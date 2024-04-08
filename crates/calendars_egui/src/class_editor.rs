@@ -3,9 +3,8 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use calendars_core::{
-  enumflags2::BitFlags,
-  strum::{IntoEnumIterator},
-  ClassKey, ClassroomType, Group, SchoolSchedule, Semester,
+  enumflags2::BitFlags, strum::IntoEnumIterator, ClassKey, ClassroomType, Group, SchoolSchedule,
+  Semester,
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
