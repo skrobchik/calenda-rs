@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 use chrono::{Datelike, Days, TimeZone, Timelike, Utc};
+use enumflags2::BitFlags;
 use slotmap::SecondaryMap;
 
 use crate::week_calendar;
@@ -208,7 +209,7 @@ impl SchoolSchedule {
       class_key,
       Class {
         professor_key,
-        allowed_classroom_types: ClassroomType::AulaSimple | ClassroomType::AulaDoble,
+        allowed_classroom_types: BitFlags::empty(),
         class_hours: 0,
         semester: Semester::S1,
         group: Group::G1,
