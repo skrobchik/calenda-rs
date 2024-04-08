@@ -238,6 +238,11 @@ impl SimpleScheduleWidget {
               Classroom::LabQuimica,
               Classroom::LabQuimica.to_string(),
             );
+            ui.selectable_value(
+              classroom,
+              Classroom::NotAssigned,
+              "No Asignados (choque de clases)",
+            )
           });
       }
     });
