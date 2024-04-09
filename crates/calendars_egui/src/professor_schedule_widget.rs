@@ -10,7 +10,7 @@ impl<'a> ProfessorScheduleWidget<'a> {
     ProfessorScheduleWidget { state }
   }
   pub fn show(&mut self, ctx: &egui::Context, open: &mut bool) {
-    egui::Window::new("Professor")
+    egui::Window::new("Profesor")
       .open(open)
       .vscroll(false)
       .resizable(true)

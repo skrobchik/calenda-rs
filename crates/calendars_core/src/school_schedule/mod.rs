@@ -184,7 +184,7 @@ impl SchoolSchedule {
     professor_metadata.insert(
       professor_key,
       ProfessorMetadata {
-        name: "New Professor".to_string(),
+        name: "Nuevo Profesor".to_string(),
       },
     );
     professor_key

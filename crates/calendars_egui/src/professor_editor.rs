@@ -21,7 +21,7 @@ impl<'a> ProfessorEditor<'a> {
   }
 
   pub fn show(&mut self, ctx: &egui::Context, open: &mut bool) {
-    egui::Window::new("Professor Editor")
+    egui::Window::new("Editor de profesores")
       .open(open)
       .resizable(true)
       .show(ctx, |ui| {

@@ -17,7 +17,7 @@ pub struct SimpleScheduleWidget {
 impl SimpleScheduleWidget {
   pub fn show(&mut self, ctx: &egui::Context, state: &SchoolSchedule) {
     let mut local_open = self.open.clone();
-    egui::Window::new("Schedule")
+    egui::Window::new("Horario")
       .open(local_open.get_mut())
       .vscroll(false)
       .resizable(true)
