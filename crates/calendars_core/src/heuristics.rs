@@ -146,10 +146,13 @@ pub(crate) fn count_not_available(
   let mut not_available_count: u64 = 0;
 
   for (class_key, day, timeslot) in iter_class_calendar(state) {
-    let professor_id = constraints.get_class(class_key).unwrap().get_professor_id();
-    let professor = &constraints.get_professors()[professor_id];
+    let class = constraints.get_class(class_key).unwrap();
+    let professor_key = class.get_professor_id();
+    let professor = &constraints.get_professors()[professor_key];
     let availability = professor.availability.get(day, timeslot);
-    if matches!(availability, Availability::NotAvailable) {
+    if matches!(availability, Availability::NotAvailable)
+      && (state.get_count(day, timeslot, class_key) > 0)
+    {
       not_available_count += 1;
     }
   }
@@ -164,10 +167,13 @@ pub(crate) fn count_available_if_needed(
   let mut available_if_needed_count: u64 = 0;
 
   for (class_key, day, timeslot) in iter_class_calendar(state) {
-    let professor_id = constraints.get_class(class_key).unwrap().get_professor_id();
-    let professor = &constraints.get_professors()[professor_id];
+    let class = constraints.get_class(class_key).unwrap();
+    let professor_key = class.get_professor_id();
+    let professor = &constraints.get_professors()[professor_key];
     let availability = professor.availability.get(day, timeslot);
-    if matches!(availability, Availability::AvailableIfNeeded) {
+    if matches!(availability, Availability::AvailableIfNeeded)
+      && (state.get_count(day, timeslot, class_key) > 0)
+    {
       available_if_needed_count += 1;
     }
   }
