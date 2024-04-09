@@ -315,7 +315,7 @@ struct ParEvaluator {
 }
 
 impl ParEvaluator {
-  fn new<'a>(init_state: ClassCalendar, init_constraints: SimulationConstraints) -> Self {
+  fn new(init_state: ClassCalendar, init_constraints: SimulationConstraints) -> Self {
     let cost_counter = Arc::new(AtomicU64::new(0));
     let state = Arc::new(RwLock::new(init_state));
     let constraints = Arc::new(RwLock::new(init_constraints));
