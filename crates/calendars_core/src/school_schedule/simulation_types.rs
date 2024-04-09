@@ -178,8 +178,8 @@ impl Display for Group {
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Availability {
   Available,
-  AvailableIfNeeded,
   #[default]
+  AvailableIfNeeded,
   NotAvailable,
 }
 

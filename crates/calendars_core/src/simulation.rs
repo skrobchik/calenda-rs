@@ -205,6 +205,13 @@ fn simulated_annealing<R: Rng>(options: SimulationOptions, mut rng: R) -> Simula
   let end_time = std::time::SystemTime::now();
   let duration = start_instant.elapsed();
 
+  for (i, evaluator) in EVALUATORS.iter().enumerate() {
+    let r = evaluator(&state, constraints);
+    let r = r as f64;
+    let r = r / (EVALUATORS_FACTOR as f64);
+    println!("Evaluator {i}: {r}")
+  }
+  println!("Total: {}", state_cost);
   let classroom_assignments = assign_classrooms(&state, constraints);
   SimulationOutput {
     simulation_options: SimulationOptions {
@@ -263,7 +270,7 @@ fn revert_change(state: &mut ClassCalendar, delta: &ClassEntryDelta) {
 }
 
 #[rustfmt::skip]
-const EVALUATORS: [fn(&ClassCalendar, &SimulationConstraints)->u64; 10] = [
+const EVALUATORS: [fn(&ClassCalendar, &SimulationConstraints)->u64; 11] = [
   |state,  constraints| 10000 * (count_classroom_assignment_collisions(state, constraints) as u64),
   |state,  constraints|  9000 * heuristics::same_timeslot_classes_count_per_professor(state, constraints),
   |state,  constraints|  5000 * heuristics::same_timeslot_classes_count_per_semester(state, constraints),
@@ -271,6 +278,7 @@ const EVALUATORS: [fn(&ClassCalendar, &SimulationConstraints)->u64; 10] = [
   |state,  constraints|  3000 * heuristics::count_not_available(state, constraints),
   |state, _constraints|  2500 * heuristics::count_incontinuous_classes(state),
   |state, _constraints|  1500 * heuristics::count_outside_session_length(state, 2, 4),
+  |state,  constraints|  1300 * heuristics::count_holes_per_semester(state, constraints),
   |state,  constraints|  1250 * heuristics::count_available_if_needed(state, constraints),
   |state, _constraints|  1000 * heuristics::count_inconsistent_class_timeslots(state),
   |state, _constraints|   100 * heuristics::same_timeslot_classes_count(state),
@@ -289,8 +297,8 @@ fn cost(
     // assert_eq!(state.clone(), par_eval.get_curr_state());
 
     let r2: u64 = EVALUATORS.iter().map(|f| f(state, constraints)).sum();
-    let r2 = r2 / EVALUATORS_FACTOR;
     let r2 = r2 as f64;
+    let r2 = r2 / (EVALUATORS_FACTOR as f64);
 
     assert_eq!(r0, r2);
   }
@@ -363,9 +371,9 @@ impl ParEvaluator {
     // Wait for all threads to finish
     // Return the sum from all threads
     let r = self.cost_counter.load(Ordering::SeqCst);
-    let r = r / EVALUATORS_FACTOR;
+    let r = r as f64;
 
-    r as f64
+    r / (EVALUATORS_FACTOR as f64)
   }
 
   fn get_curr_state(&self) -> ClassCalendar {

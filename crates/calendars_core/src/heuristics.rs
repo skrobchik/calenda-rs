@@ -1,12 +1,13 @@
 use itertools::Itertools;
 use slotmap::SecondaryMap;
+use strum::{IntoEnumIterator, VariantArray};
 
 use crate::{
   school_schedule::{
     class_calendar::{ClassCalendar, ClassKey},
     Availability, ClassroomType, ProfessorKey, SimulationConstraints,
   },
-  week_calendar,
+  week_calendar, Semester,
 };
 
 fn iter_class_calendar(
@@ -23,6 +24,52 @@ fn iter_class_calendar(
 
 fn iter_week() -> impl Iterator<Item = (week_calendar::Day, week_calendar::Timeslot)> {
   week_calendar::Day::all().flat_map(|d| week_calendar::Timeslot::all().map(move |t| (d, t)))
+}
+
+pub(crate) fn count_holes_per_semester(
+  state: &ClassCalendar,
+  simulation_constraints: &SimulationConstraints,
+) -> u64 {
+  let mut total: u64 = 0;
+  for semester in Semester::iter() {
+    for day in week_calendar::Day::all() {
+      let has_class = week_calendar::Timeslot::all()
+        .map(|t| {
+          for class_key in state.iter_class_keys() {
+            if state.get_count(day, t, class_key) >= 1
+              && *simulation_constraints
+                .get_class(class_key)
+                .unwrap()
+                .get_semester()
+                == semester
+            {
+              return true;
+            }
+          }
+          false
+        })
+        .collect_vec();
+      let first_class_i = has_class.iter().position(|x| *x);
+      let last_class_i = has_class
+        .iter()
+        .enumerate()
+        .rev()
+        .find(|(_i, &x)| x)
+        .map(|(i, _x)| i);
+      if let Some(first_class_i) = first_class_i {
+        let last_class_i = last_class_i.expect(
+          "If we found a class from the beginning, we should've also found a class from the back.",
+        );
+        total += has_class
+          .get(first_class_i..=last_class_i)
+          .unwrap()
+          .iter()
+          .filter(|&x| !x)
+          .count() as u64;
+      }
+    }
+  }
+  total
 }
 
 pub(crate) fn same_timeslot_classes_count_per_professor(
@@ -58,15 +105,17 @@ pub(crate) fn same_timeslot_classes_count_per_semester(
   simulation_constraints: &SimulationConstraints,
 ) -> u64 {
   let mut same_timeslot_classes_count: u64 = 0;
-  const NUM_SEMESTERS: usize = 8;
-  let mut semester_class_counter = [0_u64; NUM_SEMESTERS + 1];
-  for (class_key, day, timeslot) in iter_class_calendar(state) {
+  let mut semester_class_counter = [0_u64; Semester::VARIANTS.len()];
+  for (day, timeslot) in iter_week() {
     semester_class_counter.fill(0);
-    let count = state.get_count(day, timeslot, class_key);
-    if let Some(class) = simulation_constraints.get_class(class_key) {
+    for class_key in state.iter_class_keys() {
+      let count = state.get_count(day, timeslot, class_key);
+      let class = simulation_constraints.get_class(class_key).unwrap();
       let semester = class.get_semester();
-      let semester: u32 = semester.into();
-      semester_class_counter[semester as usize] += count as u64;
+      semester_class_counter[Semester::VARIANTS
+        .iter()
+        .position(|v| v == semester)
+        .unwrap()] += count as u64;
     }
     same_timeslot_classes_count += semester_class_counter
       .iter()
@@ -78,14 +127,13 @@ pub(crate) fn same_timeslot_classes_count_per_semester(
 
 pub(crate) fn same_timeslot_classes_count(state: &ClassCalendar) -> u64 {
   let mut same_timeslot_classes_count: u64 = 0;
-  for class_key in state.iter_class_keys() {
-    for timeslot in week_calendar::Timeslot::all() {
-      let x: u64 = week_calendar::Day::all()
-        .map(|day| state.get_count(day, timeslot, class_key) as u64)
-        .sum();
-      if x >= 2 {
-        same_timeslot_classes_count += x;
-      }
+  for (day, timeslot) in iter_week() {
+    let mut x: u64 = 0;
+    for class_key in state.iter_class_keys() {
+      x += state.get_count(day, timeslot, class_key) as u64;
+    }
+    if x >= 2 {
+      same_timeslot_classes_count += x;
     }
   }
   same_timeslot_classes_count
@@ -425,5 +473,25 @@ mod test {
       .add_one_class(d3, TIMESLOT_09_00.try_into().unwrap(), k7)
       .unwrap();
     assert_eq!(count_incontinuous_classes(&state), 2);
+  }
+
+  #[test]
+  fn test_same_timeslot_classes_count_per_semester() {
+    let mut schedule = SchoolSchedule::default();
+    let p0 = schedule.add_new_professor();
+    let k0 = schedule.add_new_class(p0);
+    let k1 = schedule.add_new_class(p0);
+    let d0 = 0.try_into().unwrap();
+    let t0 = 0.try_into().unwrap();
+    let calendar = schedule.get_class_calendar_mut();
+    calendar.add_one_class(d0, t0, k0).unwrap();
+    calendar.add_one_class(d0, t0, k1).unwrap();
+    assert_eq!(
+      same_timeslot_classes_count_per_semester(
+        schedule.get_class_calendar(),
+        schedule.get_simulation_constraints()
+      ),
+      2
+    );
   }
 }

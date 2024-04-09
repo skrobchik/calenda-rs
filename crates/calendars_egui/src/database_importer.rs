@@ -149,7 +149,7 @@ fn create_schedule(
     theory_class.set_group(group);
     theory_class.set_optative(is_optative);
     theory_class.set_professor_id(theory_professor_key);
-    theory_class.set_hours(2);
+    theory_class.set_hours(4);
     theory_class.set_allowed_classroom_types(ClassroomType::AulaSimple | ClassroomType::AulaDoble);
     let theory_class_metadata = schedule.get_class_metadata_mut(theory_class_key).unwrap();
     theory_class_metadata.rgba = color.to_array();
