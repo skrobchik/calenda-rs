@@ -28,9 +28,9 @@ fn iter_week() -> impl Iterator<Item = (week_calendar::Day, week_calendar::Times
 pub(crate) fn same_timeslot_classes_count_per_professor(
   state: &ClassCalendar,
   simulation_constraints: &SimulationConstraints,
-) -> f64 {
-  let mut same_timeslot_classes_count: u32 = 0;
-  let mut professor_class_counter: SecondaryMap<ProfessorKey, u32> = SecondaryMap::from_iter(
+) -> u64 {
+  let mut same_timeslot_classes_count: u64 = 0;
+  let mut professor_class_counter: SecondaryMap<ProfessorKey, u64> = SecondaryMap::from_iter(
     simulation_constraints
       .get_professors()
       .keys()
@@ -42,67 +42,67 @@ pub(crate) fn same_timeslot_classes_count_per_professor(
       let count = state.get_count(day, timeslot, class_key);
       let class = simulation_constraints.get_class(class_key).unwrap();
       let professor_key = class.get_professor_id();
-      professor_class_counter[professor_key] += count as u32;
+      professor_class_counter[professor_key] += count as u64;
     }
     same_timeslot_classes_count += professor_class_counter
       .iter()
       .map(|(_k, &v)| v)
       .filter(|&x| x >= 2)
-      .sum::<u32>();
+      .sum::<u64>();
   }
-  same_timeslot_classes_count as f64
+  same_timeslot_classes_count
 }
 
 pub(crate) fn same_timeslot_classes_count_per_semester(
   state: &ClassCalendar,
   simulation_constraints: &SimulationConstraints,
-) -> f64 {
-  let mut same_timeslot_classes_count: u32 = 0;
+) -> u64 {
+  let mut same_timeslot_classes_count: u64 = 0;
   const NUM_SEMESTERS: usize = 8;
-  let mut semester_class_counter = [0_u32; NUM_SEMESTERS + 1];
+  let mut semester_class_counter = [0_u64; NUM_SEMESTERS + 1];
   for (class_key, day, timeslot) in iter_class_calendar(state) {
     semester_class_counter.fill(0);
     let count = state.get_count(day, timeslot, class_key);
     if let Some(class) = simulation_constraints.get_class(class_key) {
       let semester = class.get_semester();
       let semester: u32 = semester.into();
-      semester_class_counter[semester as usize] += count as u32;
+      semester_class_counter[semester as usize] += count as u64;
     }
     same_timeslot_classes_count += semester_class_counter
       .iter()
       .filter(|x| **x >= 2)
-      .sum::<u32>();
+      .sum::<u64>();
   }
-  same_timeslot_classes_count as f64
+  same_timeslot_classes_count
 }
 
-pub(crate) fn same_timeslot_classes_count(state: &ClassCalendar) -> f64 {
-  let mut same_timeslot_classes_count: u32 = 0;
+pub(crate) fn same_timeslot_classes_count(state: &ClassCalendar) -> u64 {
+  let mut same_timeslot_classes_count: u64 = 0;
   for class_key in state.iter_class_keys() {
     for timeslot in week_calendar::Timeslot::all() {
-      let x: u32 = week_calendar::Day::all()
-        .map(|day| state.get_count(day, timeslot, class_key) as u32)
+      let x: u64 = week_calendar::Day::all()
+        .map(|day| state.get_count(day, timeslot, class_key) as u64)
         .sum();
       if x >= 2 {
         same_timeslot_classes_count += x;
       }
     }
   }
-  same_timeslot_classes_count as f64
+  same_timeslot_classes_count
 }
 
 pub(crate) fn count_not_available(
   state: &ClassCalendar,
   constraints: &SimulationConstraints,
-) -> f64 {
-  let mut not_available_count: f64 = 0.0;
+) -> u64 {
+  let mut not_available_count: u64 = 0;
 
   for (class_key, day, timeslot) in iter_class_calendar(state) {
     let professor_id = constraints.get_class(class_key).unwrap().get_professor_id();
     let professor = &constraints.get_professors()[professor_id];
     let availability = professor.availability.get(day, timeslot);
     if matches!(availability, Availability::NotAvailable) {
-      not_available_count += 1.0;
+      not_available_count += 1;
     }
   }
 
@@ -112,15 +112,15 @@ pub(crate) fn count_not_available(
 pub(crate) fn count_available_if_needed(
   state: &ClassCalendar,
   constraints: &SimulationConstraints,
-) -> f64 {
-  let mut available_if_needed_count: f64 = 0.0;
+) -> u64 {
+  let mut available_if_needed_count: u64 = 0;
 
   for (class_key, day, timeslot) in iter_class_calendar(state) {
     let professor_id = constraints.get_class(class_key).unwrap().get_professor_id();
     let professor = &constraints.get_professors()[professor_id];
     let availability = professor.availability.get(day, timeslot);
     if matches!(availability, Availability::AvailableIfNeeded) {
-      available_if_needed_count += 1.0;
+      available_if_needed_count += 1;
     }
   }
 
@@ -131,7 +131,7 @@ pub(crate) fn count_outside_session_length(
   state: &ClassCalendar,
   min_session_length: u8,
   max_session_length: u8,
-) -> f64 {
+) -> u64 {
   let mut outside_session_length_count: u64 = 0;
   for class_key in state.iter_class_keys() {
     for day in week_calendar::Day::all() {
@@ -155,10 +155,10 @@ pub(crate) fn count_outside_session_length(
       }
     }
   }
-  outside_session_length_count as f64
+  outside_session_length_count
 }
 
-pub(crate) fn count_inconsistent_class_timeslots(state: &ClassCalendar) -> f64 {
+pub(crate) fn count_inconsistent_class_timeslots(state: &ClassCalendar) -> u64 {
   let mut class_days: SecondaryMap<ClassKey, u8> = Default::default(); // Counts the number of days in which the i-th class is present
   for class_key in state.iter_class_keys() {
     class_days.insert(class_key, 0);
@@ -196,13 +196,13 @@ pub(crate) fn count_inconsistent_class_timeslots(state: &ClassCalendar) -> f64 {
     }
   }
 
-  inconsistent_count as f64
+  inconsistent_count
 }
 
 pub(crate) fn count_labs_on_different_days(
   state: &ClassCalendar,
   constraints: &SimulationConstraints,
-) -> f64 {
+) -> u64 {
   let mut different_days_labs_count = 0;
   let class_keys = state.iter_class_keys();
   for (class_key, class) in class_keys.map(|k| (k, constraints.get_class(k).unwrap())) {
@@ -213,7 +213,7 @@ pub(crate) fn count_labs_on_different_days(
     {
       continue;
     }
-    let mut count: i32 = 0;
+    let mut count: u64 = 0;
     for day in week_calendar::Day::all() {
       if week_calendar::Timeslot::all()
         .map(|timeslot| state.get_count(day, timeslot, class_key))
@@ -226,10 +226,10 @@ pub(crate) fn count_labs_on_different_days(
       different_days_labs_count += count - 1;
     }
   }
-  different_days_labs_count as f64
+  different_days_labs_count
 }
 
-pub(crate) fn count_incontinuous_classes(state: &ClassCalendar) -> f64 {
+pub(crate) fn count_incontinuous_classes(state: &ClassCalendar) -> u64 {
   let mut count = 0;
   for class_key in state.iter_class_keys() {
     for day in week_calendar::Day::all() {
@@ -246,7 +246,7 @@ pub(crate) fn count_incontinuous_classes(state: &ClassCalendar) -> f64 {
       }
     }
   }
-  count as f64
+  count
 }
 
 #[cfg(test)]
@@ -268,27 +268,27 @@ mod test {
     let k0 = state.new_class();
     let d0: week_calendar::Day = 0.try_into().unwrap();
 
-    assert_eq!(count_outside_session_length(&state, 2, 4), 0.0);
+    assert_eq!(count_outside_session_length(&state, 2, 4), 0);
     state
       .add_one_class(d0, week_calendar::TIMESLOT_15_00.try_into().unwrap(), k0)
       .unwrap();
-    assert_eq!(count_outside_session_length(&state, 2, 4), 1.0);
+    assert_eq!(count_outside_session_length(&state, 2, 4), 1);
     state
       .add_one_class(d0, week_calendar::TIMESLOT_16_00.try_into().unwrap(), k0)
       .unwrap();
-    assert_eq!(count_outside_session_length(&state, 2, 4), 0.0);
+    assert_eq!(count_outside_session_length(&state, 2, 4), 0);
     state
       .add_one_class(d0, week_calendar::TIMESLOT_17_00.try_into().unwrap(), k0)
       .unwrap();
-    assert_eq!(count_outside_session_length(&state, 2, 4), 0.0);
+    assert_eq!(count_outside_session_length(&state, 2, 4), 0);
     state
       .add_one_class(d0, week_calendar::TIMESLOT_18_00.try_into().unwrap(), k0)
       .unwrap();
-    assert_eq!(count_outside_session_length(&state, 2, 4), 0.0);
+    assert_eq!(count_outside_session_length(&state, 2, 4), 0);
     state
       .add_one_class(d0, week_calendar::TIMESLOT_19_00.try_into().unwrap(), k0)
       .unwrap();
-    assert_eq!(count_outside_session_length(&state, 2, 4), 1.0);
+    assert_eq!(count_outside_session_length(&state, 2, 4), 1);
   }
 
   #[test]
@@ -299,31 +299,31 @@ mod test {
     let d0: week_calendar::Day = 0.try_into().unwrap();
     let d3: week_calendar::Day = 3.try_into().unwrap();
     let d4: week_calendar::Day = 4.try_into().unwrap();
-    assert_eq!(count_inconsistent_class_timeslots(&state), 0.0);
+    assert_eq!(count_inconsistent_class_timeslots(&state), 0);
     state
       .add_one_class(d0, week_calendar::TIMESLOT_18_00.try_into().unwrap(), k7)
       .unwrap();
-    assert_eq!(count_inconsistent_class_timeslots(&state), 0.0);
+    assert_eq!(count_inconsistent_class_timeslots(&state), 0);
     state
       .add_one_class(d4, week_calendar::TIMESLOT_18_00.try_into().unwrap(), k6)
       .unwrap();
-    assert_eq!(count_inconsistent_class_timeslots(&state), 0.0);
+    assert_eq!(count_inconsistent_class_timeslots(&state), 0);
     state
       .add_one_class(d4, week_calendar::TIMESLOT_18_00.try_into().unwrap(), k7)
       .unwrap();
-    assert_eq!(count_inconsistent_class_timeslots(&state), 0.0);
+    assert_eq!(count_inconsistent_class_timeslots(&state), 0);
     state
       .add_one_class(d3, week_calendar::TIMESLOT_19_00.try_into().unwrap(), k6)
       .unwrap();
-    assert_eq!(count_inconsistent_class_timeslots(&state), 2.0);
+    assert_eq!(count_inconsistent_class_timeslots(&state), 2);
     state
       .add_one_class(d3, week_calendar::TIMESLOT_18_00.try_into().unwrap(), k6)
       .unwrap();
-    assert_eq!(count_inconsistent_class_timeslots(&state), 1.0);
+    assert_eq!(count_inconsistent_class_timeslots(&state), 1);
     state
       .add_one_class(d0, week_calendar::TIMESLOT_19_00.try_into().unwrap(), k6)
       .unwrap();
-    assert_eq!(count_inconsistent_class_timeslots(&state), 0.0);
+    assert_eq!(count_inconsistent_class_timeslots(&state), 0);
   }
 
   #[test]
@@ -372,7 +372,7 @@ mod test {
   #[test]
   fn test_count_incontinuous_classes() {
     let mut state = ClassCalendar::default();
-    assert_eq!(count_incontinuous_classes(&state), 0.0);
+    assert_eq!(count_incontinuous_classes(&state), 0);
     let d2: week_calendar::Day = 2.try_into().unwrap();
     let d3: week_calendar::Day = 3.try_into().unwrap();
     for _i in 1..=6 {
@@ -384,46 +384,46 @@ mod test {
     state
       .add_one_class(d2, TIMESLOT_08_00.try_into().unwrap(), k9)
       .unwrap();
-    assert_eq!(count_incontinuous_classes(&state), 0.0);
+    assert_eq!(count_incontinuous_classes(&state), 0);
     state
       .add_one_class(d2, TIMESLOT_09_00.try_into().unwrap(), k9)
       .unwrap();
-    assert_eq!(count_incontinuous_classes(&state), 0.0);
+    assert_eq!(count_incontinuous_classes(&state), 0);
     state
       .add_one_class(d2, TIMESLOT_11_00.try_into().unwrap(), k9)
       .unwrap();
-    assert_eq!(count_incontinuous_classes(&state), 1.0);
+    assert_eq!(count_incontinuous_classes(&state), 1);
     state
       .add_one_class(d2, TIMESLOT_13_00.try_into().unwrap(), k9)
       .unwrap();
-    assert_eq!(count_incontinuous_classes(&state), 1.0);
+    assert_eq!(count_incontinuous_classes(&state), 1);
     state
       .add_one_class(d3, TIMESLOT_13_00.try_into().unwrap(), k9)
       .unwrap();
-    assert_eq!(count_incontinuous_classes(&state), 1.0);
+    assert_eq!(count_incontinuous_classes(&state), 1);
     state
       .add_one_class(d3, TIMESLOT_11_00.try_into().unwrap(), k9)
       .unwrap();
-    assert_eq!(count_incontinuous_classes(&state), 2.0);
+    assert_eq!(count_incontinuous_classes(&state), 2);
     state
       .add_one_class(d2, TIMESLOT_10_00.try_into().unwrap(), k9)
       .unwrap();
-    assert_eq!(count_incontinuous_classes(&state), 2.0);
+    assert_eq!(count_incontinuous_classes(&state), 2);
     state
       .add_one_class(d2, TIMESLOT_12_00.try_into().unwrap(), k9)
       .unwrap();
-    assert_eq!(count_incontinuous_classes(&state), 1.0);
+    assert_eq!(count_incontinuous_classes(&state), 1);
     state
       .add_one_class(d2, TIMESLOT_10_00.try_into().unwrap(), k7)
       .unwrap();
-    assert_eq!(count_incontinuous_classes(&state), 1.0);
+    assert_eq!(count_incontinuous_classes(&state), 1);
     state
       .add_one_class(d3, TIMESLOT_11_00.try_into().unwrap(), k7)
       .unwrap();
-    assert_eq!(count_incontinuous_classes(&state), 1.0);
+    assert_eq!(count_incontinuous_classes(&state), 1);
     state
       .add_one_class(d3, TIMESLOT_09_00.try_into().unwrap(), k7)
       .unwrap();
-    assert_eq!(count_incontinuous_classes(&state), 2.0);
+    assert_eq!(count_incontinuous_classes(&state), 2);
   }
 }

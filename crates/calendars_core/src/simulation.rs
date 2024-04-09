@@ -1,6 +1,10 @@
 use std::{
   collections::BTreeMap,
   rc::Rc,
+  sync::{
+    atomic::{AtomicU64, Ordering},
+    Arc, Barrier, RwLock,
+  },
   thread::{self, JoinHandle},
 };
 
@@ -90,7 +94,8 @@ fn simulated_annealing<R: Rng>(options: SimulationOptions, mut rng: R) -> Simula
 
   // let mut state = random_init(constraints, &mut rng);
   let mut state = options.initial_state.clone();
-  let mut state_cost = cost(&state, constraints);
+  let mut par_eval = ParEvaluator::new(state.clone(), constraints.clone());
+  let mut state_cost = cost(&mut par_eval, &state, constraints);
 
   let mut progress_bar: Option<indicatif::ProgressBar> = {
     match (options.progress, &options.stop_condition) {
@@ -156,8 +161,9 @@ fn simulated_annealing<R: Rng>(options: SimulationOptions, mut rng: R) -> Simula
 
     let old_cost = state_cost;
     let delta = state.move_one_class_random(&mut rng).unwrap();
+    par_eval.apply_change(&delta);
 
-    let new_cost = cost(&state, constraints);
+    let new_cost = cost(&mut par_eval, &state, constraints);
     stats.log_stat("new_cost", new_cost).unwrap();
 
     let ap = acceptance_probability(old_cost, new_cost, t);
@@ -170,6 +176,7 @@ fn simulated_annealing<R: Rng>(options: SimulationOptions, mut rng: R) -> Simula
     } else {
       stats.log_stat("accepted", false).unwrap();
       revert_change(&mut state, &delta);
+      par_eval.apply_change(&swap_delta(delta));
       state_cost = old_cost;
     }
 
@@ -235,6 +242,26 @@ fn temperature(x: f64, temperature_function_variant: &TemperatureFunction, ampli
     * amplitude
 }
 
+fn swap_delta(delta: ClassEntryDelta) -> ClassEntryDelta {
+  ClassEntryDelta {
+    class_key: delta.class_key,
+    src_day: delta.dst_day,
+    src_timeslot: delta.dst_timeslot,
+    dst_day: delta.src_day,
+    dst_timeslot: delta.src_timeslot,
+  }
+}
+
+fn apply_change(state: &mut ClassCalendar, delta: &ClassEntryDelta) {
+  state.move_one_class(
+    delta.src_day,
+    delta.src_timeslot,
+    delta.dst_day,
+    delta.dst_timeslot,
+    delta.class_key,
+  );
+}
+
 fn revert_change(state: &mut ClassCalendar, delta: &ClassEntryDelta) {
   state.move_one_class(
     delta.dst_day,
@@ -245,18 +272,145 @@ fn revert_change(state: &mut ClassCalendar, delta: &ClassEntryDelta) {
   );
 }
 
-fn cost(state: &ClassCalendar, constraints: &SimulationConstraints) -> f64 {
-  0.0
-    + 10.0 * (count_classroom_assignment_collisions(state, constraints) as f64)
-    + 9.0 * heuristics::same_timeslot_classes_count_per_professor(state, constraints)
-    + 5.0 * heuristics::same_timeslot_classes_count_per_semester(state, constraints)
-    + 4.5 * heuristics::count_labs_on_different_days(state, constraints)
-    + 3.0 * heuristics::count_not_available(state, constraints)
-    + 2.5 * heuristics::count_incontinuous_classes(state)
-    + 1.5 * heuristics::count_outside_session_length(state, 2, 4)
-    + 1.25 * heuristics::count_available_if_needed(state, constraints)
-    + 1.0 * heuristics::count_inconsistent_class_timeslots(state)
-    + 0.1 * heuristics::same_timeslot_classes_count(state)
+fn cost(
+  par_eval: &mut ParEvaluator,
+  state: &ClassCalendar,
+  constraints: &SimulationConstraints,
+) -> f64 {
+  let r0 = par_eval.eval_cost();
+
+  #[cfg(debug_assertions)]
+  {
+    // assert_eq!(state.clone(), par_eval.get_curr_state());
+
+    let r1 = 0.0000
+      + 10.0000 * (count_classroom_assignment_collisions(state, constraints) as f64)
+      + 9.0000 * (heuristics::same_timeslot_classes_count_per_professor(state, constraints) as f64)
+      + 5.0000 * (heuristics::same_timeslot_classes_count_per_semester(state, constraints) as f64)
+      + 4.5000 * (heuristics::count_labs_on_different_days(state, constraints) as f64)
+      + 3.0000 * (heuristics::count_not_available(state, constraints) as f64)
+      + 2.5000 * (heuristics::count_incontinuous_classes(state) as f64)
+      + 1.5000 * (heuristics::count_outside_session_length(state, 2, 4) as f64)
+      + 1.2500 * (heuristics::count_available_if_needed(state, constraints) as f64)
+      + 1.0000 * (heuristics::count_inconsistent_class_timeslots(state) as f64)
+      + 0.1000 * (heuristics::same_timeslot_classes_count(state) as f64);
+
+    #[rustfmt::skip]
+    let evaluators: Vec<fn(&ClassCalendar, &SimulationConstraints)->u64> = vec![
+      |state,  constraints| 100000 * (count_classroom_assignment_collisions(state, constraints) as u64),
+      |state,  constraints|  90000 * heuristics::same_timeslot_classes_count_per_professor(state, constraints),
+      |state,  constraints|  50000 * heuristics::same_timeslot_classes_count_per_semester(state, constraints),
+      |state,  constraints|  45000 * heuristics::count_labs_on_different_days(state, constraints),
+      |state,  constraints|  30000 * heuristics::count_not_available(state, constraints),
+      |state, _constraints|  25000 * heuristics::count_incontinuous_classes(state),
+      |state, _constraints|  15000 * heuristics::count_outside_session_length(state, 2, 4),
+      |state,  constraints|  12500 * heuristics::count_available_if_needed(state, constraints),
+      |state, _constraints|  10000 * heuristics::count_inconsistent_class_timeslots(state),
+      |state, _constraints|   1000 * heuristics::same_timeslot_classes_count(state),
+    ];
+
+    let r2: u64 = evaluators.iter().map(|f| f(state, constraints)).sum();
+    let r2 = r2 / 10000;
+    let r2 = r2 as f64;
+
+    assert_eq!(r0, r2); // both of these perform operations with u64 and convert to f64 at the end, so they should be the same
+                        // r1 and r2 should be close
+    assert!((r1 - r2).abs() < 1.0);
+  }
+
+  r0
+}
+
+struct ParEvaluator {
+  state: Arc<RwLock<ClassCalendar>>,
+  evaluators: Arc<Vec<fn(&ClassCalendar, &SimulationConstraints) -> u64>>,
+  start_eval_barrier: Arc<Barrier>,
+  finish_eval_barrier: Arc<Barrier>,
+  evaluator_handles: Vec<JoinHandle<()>>,
+  cost_counter: Arc<AtomicU64>,
+}
+
+impl ParEvaluator {
+  fn new<'a>(init_state: ClassCalendar, init_constraints: SimulationConstraints) -> Self {
+    #[rustfmt::skip]
+    let evaluators: Arc<Vec<fn(&ClassCalendar, &SimulationConstraints)->u64>> = Arc::new(vec![
+      |state,  constraints| 100000 * (count_classroom_assignment_collisions(state, constraints) as u64),
+      |state,  constraints|  90000 * heuristics::same_timeslot_classes_count_per_professor(state, constraints),
+      |state,  constraints|  50000 * heuristics::same_timeslot_classes_count_per_semester(state, constraints),
+      |state,  constraints|  45000 * heuristics::count_labs_on_different_days(state, constraints),
+      |state,  constraints|  30000 * heuristics::count_not_available(state, constraints),
+      |state, _constraints|  25000 * heuristics::count_incontinuous_classes(state),
+      |state, _constraints|  15000 * heuristics::count_outside_session_length(state, 2, 4),
+      |state,  constraints|  12500 * heuristics::count_available_if_needed(state, constraints),
+      |state, _constraints|  10000 * heuristics::count_inconsistent_class_timeslots(state),
+      |state, _constraints|   1000 * heuristics::same_timeslot_classes_count(state),
+    ]);
+
+    let cost_counter = Arc::new(AtomicU64::new(0));
+    let state = Arc::new(RwLock::new(init_state));
+    let constraints = Arc::new(RwLock::new(init_constraints));
+    let start_eval_barrier = Arc::new(Barrier::new(1 + evaluators.len()));
+    let finish_eval_barrier = Arc::new(Barrier::new(1 + evaluators.len()));
+
+    let evaluator_handles = (0..evaluators.len())
+      .map(|f_i| {
+        let local_state = state.clone();
+        let local_constraints = constraints.clone();
+        let local_start_eval_barrier = start_eval_barrier.clone();
+        let local_finish_eval_barrier = finish_eval_barrier.clone();
+        let local_cost_counter = cost_counter.clone();
+        let local_evaluators = evaluators.clone();
+        std::thread::spawn(move || {
+          let f = local_evaluators[f_i];
+          loop {
+            local_start_eval_barrier.wait();
+            let lock_state = local_state.read().unwrap();
+            let lock_constraints = local_constraints.read().unwrap();
+            local_cost_counter.fetch_add(f(&lock_state, &lock_constraints), Ordering::SeqCst);
+            local_finish_eval_barrier.wait();
+          }
+        })
+      })
+      .collect_vec();
+
+    Self {
+      start_eval_barrier,
+      finish_eval_barrier,
+      evaluator_handles,
+      cost_counter,
+      evaluators,
+      state,
+    }
+  }
+
+  fn apply_change(&mut self, delta: &ClassEntryDelta) {
+    let mut write_lock_state = self.state.write().unwrap();
+    write_lock_state.move_one_class(
+      delta.src_day,
+      delta.src_timeslot,
+      delta.dst_day,
+      delta.dst_timeslot,
+      delta.class_key,
+    );
+  }
+
+  fn eval_cost(&mut self) -> f64 {
+    self.cost_counter.store(0, Ordering::SeqCst);
+    self.start_eval_barrier.wait();
+    // All threads start to eval
+    // All threads add to the cost_counter
+    self.finish_eval_barrier.wait();
+    // Wait for all threads to finish
+    // Return the sum from all threads
+    let r = self.cost_counter.load(Ordering::SeqCst);
+    let r = r / 10000;
+
+    r as f64
+  }
+
+  fn get_curr_state(&self) -> ClassCalendar {
+    self.state.read().unwrap().clone()
+  }
 }
 
 pub(crate) fn assign_classrooms(
