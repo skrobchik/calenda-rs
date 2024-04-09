@@ -220,6 +220,7 @@ pub fn import_schedule<P1: AsRef<Path>, P2: AsRef<Path>>(
   let classes: Vec<ClassRow> = classes
     .into_iter()
     .filter(|class_row| class_row.ciclo == "2022-2")
+    .filter(|class_row| class_row.grupo.starts_with("02"))
     .filter(|class_row| class_row.descripcion != "CURSO TALLER DE DIDÁCTICA II")
     .collect();
 

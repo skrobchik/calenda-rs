@@ -155,7 +155,7 @@ fn simulated_annealing<R: Rng>(options: SimulationOptions, mut rng: R) -> Simula
     };
     stats.log_stat("x", x).unwrap();
 
-    let t_amplitude = 1.0;
+    let t_amplitude = 3.0;
     let t = temperature(x, temperature_function, t_amplitude);
     stats.log_stat("temperature", t).unwrap();
 
@@ -252,16 +252,6 @@ fn swap_delta(delta: ClassEntryDelta) -> ClassEntryDelta {
   }
 }
 
-fn apply_change(state: &mut ClassCalendar, delta: &ClassEntryDelta) {
-  state.move_one_class(
-    delta.src_day,
-    delta.src_timeslot,
-    delta.dst_day,
-    delta.dst_timeslot,
-    delta.class_key,
-  );
-}
-
 fn revert_change(state: &mut ClassCalendar, delta: &ClassEntryDelta) {
   state.move_one_class(
     delta.dst_day,
@@ -271,6 +261,21 @@ fn revert_change(state: &mut ClassCalendar, delta: &ClassEntryDelta) {
     delta.class_key,
   );
 }
+
+#[rustfmt::skip]
+const EVALUATORS: [fn(&ClassCalendar, &SimulationConstraints)->u64; 10] = [
+  |state,  constraints| 10000 * (count_classroom_assignment_collisions(state, constraints) as u64),
+  |state,  constraints|  9000 * heuristics::same_timeslot_classes_count_per_professor(state, constraints),
+  |state,  constraints|  5000 * heuristics::same_timeslot_classes_count_per_semester(state, constraints),
+  |state,  constraints|  4500 * heuristics::count_labs_on_different_days(state, constraints),
+  |state,  constraints|  3000 * heuristics::count_not_available(state, constraints),
+  |state, _constraints|  2500 * heuristics::count_incontinuous_classes(state),
+  |state, _constraints|  1500 * heuristics::count_outside_session_length(state, 2, 4),
+  |state,  constraints|  1250 * heuristics::count_available_if_needed(state, constraints),
+  |state, _constraints|  1000 * heuristics::count_inconsistent_class_timeslots(state),
+  |state, _constraints|   100 * heuristics::same_timeslot_classes_count(state),
+];
+const EVALUATORS_FACTOR: u64 = 1000;
 
 fn cost(
   par_eval: &mut ParEvaluator,
@@ -283,39 +288,11 @@ fn cost(
   {
     // assert_eq!(state.clone(), par_eval.get_curr_state());
 
-    let r1 = 0.0000
-      + 10.0000 * (count_classroom_assignment_collisions(state, constraints) as f64)
-      + 9.0000 * (heuristics::same_timeslot_classes_count_per_professor(state, constraints) as f64)
-      + 5.0000 * (heuristics::same_timeslot_classes_count_per_semester(state, constraints) as f64)
-      + 4.5000 * (heuristics::count_labs_on_different_days(state, constraints) as f64)
-      + 3.0000 * (heuristics::count_not_available(state, constraints) as f64)
-      + 2.5000 * (heuristics::count_incontinuous_classes(state) as f64)
-      + 1.5000 * (heuristics::count_outside_session_length(state, 2, 4) as f64)
-      + 1.2500 * (heuristics::count_available_if_needed(state, constraints) as f64)
-      + 1.0000 * (heuristics::count_inconsistent_class_timeslots(state) as f64)
-      + 0.1000 * (heuristics::same_timeslot_classes_count(state) as f64);
-
-    #[rustfmt::skip]
-    let evaluators: Vec<fn(&ClassCalendar, &SimulationConstraints)->u64> = vec![
-      |state,  constraints| 100000 * (count_classroom_assignment_collisions(state, constraints) as u64),
-      |state,  constraints|  90000 * heuristics::same_timeslot_classes_count_per_professor(state, constraints),
-      |state,  constraints|  50000 * heuristics::same_timeslot_classes_count_per_semester(state, constraints),
-      |state,  constraints|  45000 * heuristics::count_labs_on_different_days(state, constraints),
-      |state,  constraints|  30000 * heuristics::count_not_available(state, constraints),
-      |state, _constraints|  25000 * heuristics::count_incontinuous_classes(state),
-      |state, _constraints|  15000 * heuristics::count_outside_session_length(state, 2, 4),
-      |state,  constraints|  12500 * heuristics::count_available_if_needed(state, constraints),
-      |state, _constraints|  10000 * heuristics::count_inconsistent_class_timeslots(state),
-      |state, _constraints|   1000 * heuristics::same_timeslot_classes_count(state),
-    ];
-
-    let r2: u64 = evaluators.iter().map(|f| f(state, constraints)).sum();
-    let r2 = r2 / 10000;
+    let r2: u64 = EVALUATORS.iter().map(|f| f(state, constraints)).sum();
+    let r2 = r2 / EVALUATORS_FACTOR;
     let r2 = r2 as f64;
 
-    assert_eq!(r0, r2); // both of these perform operations with u64 and convert to f64 at the end, so they should be the same
-                        // r1 and r2 should be close
-    assert!((r1 - r2).abs() < 1.0);
+    assert_eq!(r0, r2);
   }
 
   r0
@@ -323,45 +300,29 @@ fn cost(
 
 struct ParEvaluator {
   state: Arc<RwLock<ClassCalendar>>,
-  evaluators: Arc<Vec<fn(&ClassCalendar, &SimulationConstraints) -> u64>>,
   start_eval_barrier: Arc<Barrier>,
   finish_eval_barrier: Arc<Barrier>,
-  evaluator_handles: Vec<JoinHandle<()>>,
+  _evaluator_handles: Vec<JoinHandle<()>>,
   cost_counter: Arc<AtomicU64>,
 }
 
 impl ParEvaluator {
   fn new<'a>(init_state: ClassCalendar, init_constraints: SimulationConstraints) -> Self {
-    #[rustfmt::skip]
-    let evaluators: Arc<Vec<fn(&ClassCalendar, &SimulationConstraints)->u64>> = Arc::new(vec![
-      |state,  constraints| 100000 * (count_classroom_assignment_collisions(state, constraints) as u64),
-      |state,  constraints|  90000 * heuristics::same_timeslot_classes_count_per_professor(state, constraints),
-      |state,  constraints|  50000 * heuristics::same_timeslot_classes_count_per_semester(state, constraints),
-      |state,  constraints|  45000 * heuristics::count_labs_on_different_days(state, constraints),
-      |state,  constraints|  30000 * heuristics::count_not_available(state, constraints),
-      |state, _constraints|  25000 * heuristics::count_incontinuous_classes(state),
-      |state, _constraints|  15000 * heuristics::count_outside_session_length(state, 2, 4),
-      |state,  constraints|  12500 * heuristics::count_available_if_needed(state, constraints),
-      |state, _constraints|  10000 * heuristics::count_inconsistent_class_timeslots(state),
-      |state, _constraints|   1000 * heuristics::same_timeslot_classes_count(state),
-    ]);
-
     let cost_counter = Arc::new(AtomicU64::new(0));
     let state = Arc::new(RwLock::new(init_state));
     let constraints = Arc::new(RwLock::new(init_constraints));
-    let start_eval_barrier = Arc::new(Barrier::new(1 + evaluators.len()));
-    let finish_eval_barrier = Arc::new(Barrier::new(1 + evaluators.len()));
+    let start_eval_barrier = Arc::new(Barrier::new(1 + EVALUATORS.len()));
+    let finish_eval_barrier = Arc::new(Barrier::new(1 + EVALUATORS.len()));
 
-    let evaluator_handles = (0..evaluators.len())
+    let evaluator_handles = (0..EVALUATORS.len())
       .map(|f_i| {
         let local_state = state.clone();
         let local_constraints = constraints.clone();
         let local_start_eval_barrier = start_eval_barrier.clone();
         let local_finish_eval_barrier = finish_eval_barrier.clone();
         let local_cost_counter = cost_counter.clone();
-        let local_evaluators = evaluators.clone();
         std::thread::spawn(move || {
-          let f = local_evaluators[f_i];
+          let f = EVALUATORS[f_i];
           loop {
             local_start_eval_barrier.wait();
             let lock_state = local_state.read().unwrap();
@@ -376,9 +337,8 @@ impl ParEvaluator {
     Self {
       start_eval_barrier,
       finish_eval_barrier,
-      evaluator_handles,
+      _evaluator_handles: evaluator_handles,
       cost_counter,
-      evaluators,
       state,
     }
   }
@@ -403,7 +363,7 @@ impl ParEvaluator {
     // Wait for all threads to finish
     // Return the sum from all threads
     let r = self.cost_counter.load(Ordering::SeqCst);
-    let r = r / 10000;
+    let r = r / EVALUATORS_FACTOR;
 
     r as f64
   }
