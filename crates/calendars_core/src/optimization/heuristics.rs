@@ -323,23 +323,23 @@ mod test {
     let mut state = ClassCalendar::default();
     assert_eq!(count_outside_session_length(&state, 2, 4), 0);
     state
-      .add_one_class(d0, week_calendar::TIMESLOT_15_00.try_into().unwrap(), k0)
+      .add_one_class(d0, week_calendar::TIMESLOT_15_00, k0)
       .unwrap();
     assert_eq!(count_outside_session_length(&state, 2, 4), 1);
     state
-      .add_one_class(d0, week_calendar::TIMESLOT_16_00.try_into().unwrap(), k0)
+      .add_one_class(d0, week_calendar::TIMESLOT_16_00, k0)
       .unwrap();
     assert_eq!(count_outside_session_length(&state, 2, 4), 0);
     state
-      .add_one_class(d0, week_calendar::TIMESLOT_17_00.try_into().unwrap(), k0)
+      .add_one_class(d0, week_calendar::TIMESLOT_17_00, k0)
       .unwrap();
     assert_eq!(count_outside_session_length(&state, 2, 4), 0);
     state
-      .add_one_class(d0, week_calendar::TIMESLOT_18_00.try_into().unwrap(), k0)
+      .add_one_class(d0, week_calendar::TIMESLOT_18_00, k0)
       .unwrap();
     assert_eq!(count_outside_session_length(&state, 2, 4), 0);
     state
-      .add_one_class(d0, week_calendar::TIMESLOT_19_00.try_into().unwrap(), k0)
+      .add_one_class(d0, week_calendar::TIMESLOT_19_00, k0)
       .unwrap();
     assert_eq!(count_outside_session_length(&state, 2, 4), 1);
   }
@@ -355,27 +355,27 @@ mod test {
     let d4: week_calendar::Day = Day::from_usize(4).unwrap();
     assert_eq!(count_inconsistent_class_timeslots(&state), 0);
     state
-      .add_one_class(d0, week_calendar::TIMESLOT_18_00.try_into().unwrap(), k7)
+      .add_one_class(d0, week_calendar::TIMESLOT_18_00, k7)
       .unwrap();
     assert_eq!(count_inconsistent_class_timeslots(&state), 0);
     state
-      .add_one_class(d4, week_calendar::TIMESLOT_18_00.try_into().unwrap(), k6)
+      .add_one_class(d4, week_calendar::TIMESLOT_18_00, k6)
       .unwrap();
     assert_eq!(count_inconsistent_class_timeslots(&state), 0);
     state
-      .add_one_class(d4, week_calendar::TIMESLOT_18_00.try_into().unwrap(), k7)
+      .add_one_class(d4, week_calendar::TIMESLOT_18_00, k7)
       .unwrap();
     assert_eq!(count_inconsistent_class_timeslots(&state), 0);
     state
-      .add_one_class(d3, week_calendar::TIMESLOT_19_00.try_into().unwrap(), k6)
+      .add_one_class(d3, week_calendar::TIMESLOT_19_00, k6)
       .unwrap();
     assert_eq!(count_inconsistent_class_timeslots(&state), 2);
     state
-      .add_one_class(d3, week_calendar::TIMESLOT_18_00.try_into().unwrap(), k6)
+      .add_one_class(d3, week_calendar::TIMESLOT_18_00, k6)
       .unwrap();
     assert_eq!(count_inconsistent_class_timeslots(&state), 1);
     state
-      .add_one_class(d0, week_calendar::TIMESLOT_19_00.try_into().unwrap(), k6)
+      .add_one_class(d0, week_calendar::TIMESLOT_19_00, k6)
       .unwrap();
     assert_eq!(count_inconsistent_class_timeslots(&state), 0);
   }
@@ -396,31 +396,13 @@ mod test {
     let d0 = Day::from_usize(0).unwrap();
     let d1 = Day::from_usize(1).unwrap();
     let d2 = Day::from_usize(2).unwrap();
-    state
-      .add_one_class(d0, TIMESLOT_08_00.try_into().unwrap(), k0)
-      .unwrap();
-    state
-      .add_one_class(d1, TIMESLOT_08_00.try_into().unwrap(), k0)
-      .unwrap();
-    state
-      .add_one_class(d2, TIMESLOT_08_00.try_into().unwrap(), k0)
-      .unwrap();
-    state
-      .add_one_class(d0, TIMESLOT_08_00.try_into().unwrap(), k1)
-      .unwrap();
-    state
-      .add_one_class(d0, TIMESLOT_09_00.try_into().unwrap(), k1)
-      .unwrap();
-    state
-      .add_one_class(d0, TIMESLOT_11_00.try_into().unwrap(), k1)
-      .unwrap();
-    state.move_one_class(
-      d0,
-      TIMESLOT_09_00.try_into().unwrap(),
-      d1,
-      TIMESLOT_08_00.try_into().unwrap(),
-      k1,
-    );
+    state.add_one_class(d0, TIMESLOT_08_00, k0).unwrap();
+    state.add_one_class(d1, TIMESLOT_08_00, k0).unwrap();
+    state.add_one_class(d2, TIMESLOT_08_00, k0).unwrap();
+    state.add_one_class(d0, TIMESLOT_08_00, k1).unwrap();
+    state.add_one_class(d0, TIMESLOT_09_00, k1).unwrap();
+    state.add_one_class(d0, TIMESLOT_11_00, k1).unwrap();
+    state.move_one_class(d0, TIMESLOT_09_00, d1, TIMESLOT_08_00, k1);
   }
 
   #[test]
@@ -436,49 +418,27 @@ mod test {
     let k7: ClassKey = constraints.classes.insert(Default::default());
     let _k8 = constraints.classes.insert(Default::default());
     let k9: ClassKey = constraints.classes.insert(Default::default());
-    state
-      .add_one_class(d2, TIMESLOT_08_00.try_into().unwrap(), k9)
-      .unwrap();
+    state.add_one_class(d2, TIMESLOT_08_00, k9).unwrap();
     assert_eq!(count_incontinuous_classes(&state), 0);
-    state
-      .add_one_class(d2, TIMESLOT_09_00.try_into().unwrap(), k9)
-      .unwrap();
+    state.add_one_class(d2, TIMESLOT_09_00, k9).unwrap();
     assert_eq!(count_incontinuous_classes(&state), 0);
-    state
-      .add_one_class(d2, TIMESLOT_11_00.try_into().unwrap(), k9)
-      .unwrap();
+    state.add_one_class(d2, TIMESLOT_11_00, k9).unwrap();
     assert_eq!(count_incontinuous_classes(&state), 1);
-    state
-      .add_one_class(d2, TIMESLOT_13_00.try_into().unwrap(), k9)
-      .unwrap();
+    state.add_one_class(d2, TIMESLOT_13_00, k9).unwrap();
     assert_eq!(count_incontinuous_classes(&state), 1);
-    state
-      .add_one_class(d3, TIMESLOT_13_00.try_into().unwrap(), k9)
-      .unwrap();
+    state.add_one_class(d3, TIMESLOT_13_00, k9).unwrap();
     assert_eq!(count_incontinuous_classes(&state), 1);
-    state
-      .add_one_class(d3, TIMESLOT_11_00.try_into().unwrap(), k9)
-      .unwrap();
+    state.add_one_class(d3, TIMESLOT_11_00, k9).unwrap();
     assert_eq!(count_incontinuous_classes(&state), 2);
-    state
-      .add_one_class(d2, TIMESLOT_10_00.try_into().unwrap(), k9)
-      .unwrap();
+    state.add_one_class(d2, TIMESLOT_10_00, k9).unwrap();
     assert_eq!(count_incontinuous_classes(&state), 2);
-    state
-      .add_one_class(d2, TIMESLOT_12_00.try_into().unwrap(), k9)
-      .unwrap();
+    state.add_one_class(d2, TIMESLOT_12_00, k9).unwrap();
     assert_eq!(count_incontinuous_classes(&state), 1);
-    state
-      .add_one_class(d2, TIMESLOT_10_00.try_into().unwrap(), k7)
-      .unwrap();
+    state.add_one_class(d2, TIMESLOT_10_00, k7).unwrap();
     assert_eq!(count_incontinuous_classes(&state), 1);
-    state
-      .add_one_class(d3, TIMESLOT_11_00.try_into().unwrap(), k7)
-      .unwrap();
+    state.add_one_class(d3, TIMESLOT_11_00, k7).unwrap();
     assert_eq!(count_incontinuous_classes(&state), 1);
-    state
-      .add_one_class(d3, TIMESLOT_09_00.try_into().unwrap(), k7)
-      .unwrap();
+    state.add_one_class(d3, TIMESLOT_09_00, k7).unwrap();
     assert_eq!(count_incontinuous_classes(&state), 2);
   }
 
