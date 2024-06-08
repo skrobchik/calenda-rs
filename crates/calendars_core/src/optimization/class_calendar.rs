@@ -3,9 +3,7 @@ use crate::week_calendar::WeekCalendar;
 use crate::ClassKey;
 use serde::Deserialize;
 use serde::Serialize;
-use slotmap::new_key_type;
 use slotmap::SecondaryMap;
-use slotmap::SlotMap;
 
 #[derive(PartialEq, Eq, Debug, Clone, Serialize, Deserialize)]
 pub struct SingleClassEntry {
@@ -227,7 +225,7 @@ impl ClassCalendar {
 mod test {
   use crate::{Day, OptimizationConstraints, Timeslot};
 
-use super::*;
+  use super::*;
 
   #[test]
   fn class_calendar_test() {

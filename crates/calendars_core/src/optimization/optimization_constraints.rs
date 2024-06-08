@@ -1,10 +1,10 @@
-use std::{default, fmt::Display};
+use std::fmt::Display;
 
+use crate::week_calendar::WeekCalendar;
 use enumflags2::{bitflags, BitFlags};
 use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SlotMap};
 use strum::{EnumIter, VariantArray};
-use crate::week_calendar::WeekCalendar;
 
 new_key_type! {
   pub struct ProfessorKey;
@@ -36,7 +36,9 @@ pub struct Professor {
   pub priority: f32,
 }
 
-#[derive(Serialize, Deserialize, EnumIter, Clone, Copy, VariantArray, PartialEq, Eq, Debug, Default)]
+#[derive(
+  Serialize, Deserialize, EnumIter, Clone, Copy, VariantArray, PartialEq, Eq, Debug, Default,
+)]
 pub enum Semester {
   #[default]
   S1,
@@ -107,7 +109,9 @@ impl From<&Semester> for u32 {
   }
 }
 
-#[derive(Serialize, Deserialize, EnumIter, Clone, Copy, VariantArray, PartialEq, Eq, Debug, Default)]
+#[derive(
+  Serialize, Deserialize, EnumIter, Clone, Copy, VariantArray, PartialEq, Eq, Debug, Default,
+)]
 pub enum Group {
   #[default]
   G1,

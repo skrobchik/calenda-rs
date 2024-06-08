@@ -9,10 +9,7 @@ pub mod simple_schedule_widget;
 
 use crate::app::MyApp;
 
-use calendars_core::{
-  SimulationOptions, SimulationOutput, TemperatureFunction,
-};
-use indicatif::MultiProgress;
+use calendars_core::SimulationOutput;
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
 

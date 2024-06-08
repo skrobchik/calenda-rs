@@ -1,8 +1,8 @@
-use std::cell::Cell;
 use calendars_core::strum::*;
+use std::cell::Cell;
 
 use calendars_core::{
-  ClassFilter, Classroom, Day, ProfessorKey, SchoolSchedule, Semester, Timeslot
+  ClassFilter, Classroom, Day, ProfessorKey, SchoolSchedule, Semester, Timeslot,
 };
 use egui::{Align2, Color32, FontId, Rect, Rounding, Sense, Stroke};
 use itertools::Itertools;
@@ -150,10 +150,7 @@ impl SimpleScheduleWidget {
     });
 
     ui.horizontal(|ui| {
-      let professor_key = state
-        .get_simulation_constraints()
-        .professors.keys()
-        .next();
+      let professor_key = state.get_simulation_constraints().professors.keys().next();
       ui.add_enabled_ui(professor_key.is_some(), |ui| {
         if ui
           .radio(
@@ -178,7 +175,8 @@ impl SimpleScheduleWidget {
           .show_ui(ui, |ui| {
             let professor_keys: Vec<ProfessorKey> = state
               .get_simulation_constraints()
-              .professors.keys()
+              .professors
+              .keys()
               .collect();
             for i in professor_keys {
               ui.selectable_value(

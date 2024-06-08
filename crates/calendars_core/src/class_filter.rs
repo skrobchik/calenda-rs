@@ -3,7 +3,10 @@ use std::collections::BTreeMap;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
-use crate::{assign_classrooms, ClassCalendar, ClassKey, Classroom, ClassroomAssignmentKey, Day, OptimizationConstraints, ProfessorKey, Semester, Timeslot};
+use crate::{
+  assign_classrooms, ClassCalendar, ClassKey, Classroom, ClassroomAssignmentKey, Day,
+  OptimizationConstraints, ProfessorKey, Semester, Timeslot,
+};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub enum ClassFilter {
@@ -33,14 +36,16 @@ impl ClassFilter {
       ClassFilter::None => true,
       ClassFilter::Semester(s) => {
         simulation_constraints
-          .classes.get(class_key)
+          .classes
+          .get(class_key)
           .unwrap()
           .semester
           == *s
       }
       ClassFilter::Professor(p) => {
         simulation_constraints
-          .classes.get(class_key)
+          .classes
+          .get(class_key)
           .unwrap()
           .professor_key
           == *p

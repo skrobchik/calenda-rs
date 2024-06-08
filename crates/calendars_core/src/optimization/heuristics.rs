@@ -39,7 +39,8 @@ pub(crate) fn count_holes_per_semester(
           for class_key in state.iter_class_keys() {
             if state.get_count(day, t, class_key) >= 1
               && simulation_constraints
-                .classes.get(class_key)
+                .classes
+                .get(class_key)
                 .unwrap()
                 .semester
                 == semester
@@ -78,12 +79,8 @@ pub(crate) fn same_timeslot_classes_count_per_professor(
   simulation_constraints: &OptimizationConstraints,
 ) -> u64 {
   let mut same_timeslot_classes_count: u64 = 0;
-  let mut professor_class_counter: SecondaryMap<ProfessorKey, u64> = SecondaryMap::from_iter(
-    simulation_constraints
-      .professors
-      .keys()
-      .map(|k| (k, 0)),
-  );
+  let mut professor_class_counter: SecondaryMap<ProfessorKey, u64> =
+    SecondaryMap::from_iter(simulation_constraints.professors.keys().map(|k| (k, 0)));
   for (day, timeslot) in iter_week() {
     professor_class_counter.values_mut().for_each(|x| *x = 0);
     for class_key in state.iter_class_keys() {
@@ -310,7 +307,8 @@ mod test {
     school_schedule::SchoolSchedule,
     week_calendar::{
       TIMESLOT_09_00, TIMESLOT_10_00, TIMESLOT_11_00, TIMESLOT_12_00, TIMESLOT_13_00,
-    }, Day, Timeslot,
+    },
+    Day, Timeslot,
   };
 
   use self::week_calendar::TIMESLOT_08_00;

@@ -205,10 +205,7 @@ impl ClassEditor {
         }
       });
     if ui.button("+").clicked() {
-      let professor_key = state
-        .get_simulation_constraints()
-        .professors.keys()
-        .next();
+      let professor_key = state.get_simulation_constraints().professors.keys().next();
       let professor_key = professor_key.unwrap_or_else(|| state.add_new_professor());
       state.add_new_class(professor_key);
     }

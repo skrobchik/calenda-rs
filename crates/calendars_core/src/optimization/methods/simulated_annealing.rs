@@ -5,20 +5,21 @@ use std::{
     atomic::{AtomicU64, Ordering},
     Arc, Barrier, RwLock,
   },
-  thread::{self, JoinHandle},
+  thread::JoinHandle,
 };
 
 use indicatif::{HumanCount, HumanDuration, ProgressStyle};
 use itertools::Itertools;
 use rand::prelude::*;
-use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
 use strum::{IntoEnumIterator, VariantArray};
 
 use crate::{
-  optimization::{class_calendar::ClassEntryDelta, heuristics, stats_tracker::StatsTracker}, school_schedule::ClassroomAssignmentKey, week_calendar, ClassCalendar, ClassCalendarOptimizer, ClassKey, Classroom, ClassroomType, OptimizationConstraints
+  optimization::{class_calendar::ClassEntryDelta, heuristics, stats_tracker::StatsTracker},
+  school_schedule::ClassroomAssignmentKey,
+  week_calendar, ClassCalendar, ClassCalendarOptimizer, ClassKey, Classroom, ClassroomType,
+  OptimizationConstraints,
 };
-
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SimulationOutput {
@@ -47,7 +48,11 @@ pub struct SimulationRunReport {
   pub start_time: std::time::SystemTime,
 }
 
-fn simulated_annealing<R: Rng>(constraints: &OptimizationConstraints, options: SimulationOptions, mut rng: R) -> SimulationOutput {
+fn simulated_annealing<R: Rng>(
+  constraints: &OptimizationConstraints,
+  options: SimulationOptions,
+  mut rng: R,
+) -> SimulationOutput {
   let start_time = std::time::SystemTime::now();
   let start_instant = std::time::Instant::now();
 

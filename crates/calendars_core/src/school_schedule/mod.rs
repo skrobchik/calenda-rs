@@ -1,13 +1,15 @@
 use std::collections::BTreeMap;
 
 use chrono::{Datelike, Days, TimeZone, Timelike, Utc};
-use enumflags2::BitFlags;
 use slotmap::SecondaryMap;
 
-use crate::{week_calendar, AllowedClassroomTypes, Class, ClassCalendar, ClassKey, Classroom, Day, Group, OptimizationConstraints, Professor, ProfessorKey, Semester, Timeslot};
+use crate::{
+  week_calendar, AllowedClassroomTypes, Class, ClassCalendar, ClassKey, Classroom, Day, Group,
+  OptimizationConstraints, Professor, ProfessorKey, Semester, Timeslot,
+};
 use icalendar::{Component, EventLike};
 mod metadata_types;
-use metadata_types::{ProfessorMetadata, ScheduleMetadata, ClassMetadata};
+use metadata_types::{ClassMetadata, ProfessorMetadata, ScheduleMetadata};
 
 use serde::{Deserialize, Serialize};
 
@@ -60,7 +62,11 @@ impl<'a, 'b> ClassEntry<'a> {
           self
             .school_schedule
             .class_calendar
-            .add_one_class(Day::from_usize(0).unwrap(), Timeslot::from_usize(0).unwrap(), self.class_key)
+            .add_one_class(
+              Day::from_usize(0).unwrap(),
+              Timeslot::from_usize(0).unwrap(),
+              self.class_key,
+            )
             .unwrap();
         }
         class.class_hours = class_hours;
@@ -184,8 +190,16 @@ impl SchoolSchedule {
   }
 
   pub fn add_new_class(&mut self, professor_key: ProfessorKey) -> ClassKey {
-    let class_key = self.simulation_constraints.classes.insert(Default::default());
-    self.simulation_constraints.classes.get_mut(class_key).unwrap().professor_key = professor_key;
+    let class_key = self
+      .simulation_constraints
+      .classes
+      .insert(Default::default());
+    self
+      .simulation_constraints
+      .classes
+      .get_mut(class_key)
+      .unwrap()
+      .professor_key = professor_key;
 
     let class_metadata_list = &mut self.metadata.classes;
 
