@@ -1,8 +1,8 @@
 use std::cell::Cell;
+use calendars_core::strum::*;
 
 use calendars_core::{
-  ClassFilter, Classroom, Day, ProfessorKey, SchoolSchedule, Semester, Timeslot, DAY_COUNT,
-  TIMESLOT_COUNT,
+  ClassFilter, Classroom, Day, ProfessorKey, SchoolSchedule, Semester, Timeslot
 };
 use egui::{Align2, Color32, FontId, Rect, Rounding, Sense, Stroke};
 use itertools::Itertools;
@@ -30,8 +30,8 @@ impl SimpleScheduleWidget {
     let (response, painter) = ui.allocate_painter(ui.available_size_before_wrap(), Sense::hover());
     let total_width = response.rect.width();
     let total_height = response.rect.height();
-    let w = total_width / DAY_COUNT as f32;
-    let h: f32 = total_height / TIMESLOT_COUNT as f32;
+    let w = total_width / Day::all().len() as f32;
+    let h: f32 = total_height / Timeslot::all().len() as f32;
     let mut first: bool = true;
     for day in Day::all() {
       for timeslot in Timeslot::all() {
@@ -152,7 +152,7 @@ impl SimpleScheduleWidget {
     ui.horizontal(|ui| {
       let professor_key = state
         .get_simulation_constraints()
-        .iter_professor_keys()
+        .professors.keys()
         .next();
       ui.add_enabled_ui(professor_key.is_some(), |ui| {
         if ui
@@ -178,7 +178,7 @@ impl SimpleScheduleWidget {
           .show_ui(ui, |ui| {
             let professor_keys: Vec<ProfessorKey> = state
               .get_simulation_constraints()
-              .iter_professor_keys()
+              .professors.keys()
               .collect();
             for i in professor_keys {
               ui.selectable_value(

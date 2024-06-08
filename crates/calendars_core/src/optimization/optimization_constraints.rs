@@ -1,65 +1,33 @@
-use std::fmt::Display;
+use std::{default, fmt::Display};
 
 use enumflags2::{bitflags, BitFlags};
 use serde::{Deserialize, Serialize};
-use slotmap::{new_key_type, SecondaryMap, SlotMap};
+use slotmap::{new_key_type, SlotMap};
 use strum::{EnumIter, VariantArray};
-
 use crate::week_calendar::WeekCalendar;
-
-use super::class_calendar::ClassKey;
 
 new_key_type! {
   pub struct ProfessorKey;
 }
 
+new_key_type! {
+  pub struct ClassKey;
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct SimulationConstraints {
-  pub(super) classes: SecondaryMap<ClassKey, Class>,
-  pub(super) professors: SlotMap<ProfessorKey, Professor>,
+pub struct OptimizationConstraints {
+  pub classes: SlotMap<ClassKey, Class>,
+  pub professors: SlotMap<ProfessorKey, Professor>,
 }
 
-impl SimulationConstraints {
-  pub fn get_class(&self, class_key: ClassKey) -> Option<&Class> {
-    self.classes.get(class_key)
-  }
-  pub fn iter_professor_keys(&self) -> impl Iterator<Item = ProfessorKey> + '_ {
-    self.professors.keys()
-  }
-  pub fn get_professors(&self) -> &SlotMap<ProfessorKey, Professor> {
-    &self.professors
-  }
-}
-
-#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default)]
 pub struct Class {
-  pub(super) professor_key: ProfessorKey,
-  pub(super) allowed_classroom_types: AllowedClassroomTypes,
-  pub(super) class_hours: u8,
-  pub(super) semester: Semester,
-  pub(super) group: Group,
-  pub(super) optative: bool,
-}
-
-impl Class {
-  pub fn get_professor_id(&self) -> ProfessorKey {
-    self.professor_key
-  }
-  pub fn get_allowed_classroom_types(&self) -> &AllowedClassroomTypes {
-    &self.allowed_classroom_types
-  }
-  pub fn get_class_hours(&self) -> &u8 {
-    &self.class_hours
-  }
-  pub fn get_semester(&self) -> &Semester {
-    &self.semester
-  }
-  pub fn get_group(&self) -> &Group {
-    &self.group
-  }
-  pub fn is_optative(&self) -> bool {
-    self.optative
-  }
+  pub professor_key: ProfessorKey,
+  pub allowed_classroom_types: AllowedClassroomTypes,
+  pub class_hours: u8,
+  pub semester: Semester,
+  pub group: Group,
+  pub optative: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -68,8 +36,9 @@ pub struct Professor {
   pub priority: f32,
 }
 
-#[derive(Serialize, Deserialize, EnumIter, Clone, Copy, VariantArray, PartialEq, Eq, Debug)]
+#[derive(Serialize, Deserialize, EnumIter, Clone, Copy, VariantArray, PartialEq, Eq, Debug, Default)]
 pub enum Semester {
+  #[default]
   S1,
   S2,
   S3,
@@ -138,8 +107,9 @@ impl From<&Semester> for u32 {
   }
 }
 
-#[derive(Serialize, Deserialize, EnumIter, Clone, Copy, VariantArray, PartialEq, Eq, Debug)]
+#[derive(Serialize, Deserialize, EnumIter, Clone, Copy, VariantArray, PartialEq, Eq, Debug, Default)]
 pub enum Group {
+  #[default]
   G1,
   G2,
   G3,

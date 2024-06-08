@@ -3,7 +3,7 @@ use std::{
   time::{Duration, Instant},
 };
 
-use crate::simulation_options::StopCondition;
+use super::methods::simulated_annealing::StopCondition;
 
 #[derive(thiserror::Error, Debug)]
 pub enum StatsTrackerError {

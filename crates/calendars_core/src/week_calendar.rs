@@ -1,9 +1,8 @@
 use serde::{Deserialize, Serialize};
-
 use std::ops::Range;
 
-pub const TIMESLOT_COUNT: usize = 12;
-pub const DAY_COUNT: usize = 5;
+const TIMESLOT_COUNT: usize = 12;
+const DAY_COUNT: usize = 5;
 const DATA_LEN: usize = TIMESLOT_COUNT * DAY_COUNT;
 
 const DAY_VALUE_RANGE: Range<usize> = std::ops::Range {
@@ -22,42 +21,17 @@ pub struct Timeslot(usize);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct Day(usize);
 
-#[derive(thiserror::Error, Debug)]
-#[error("Timeslot value is outside of range")]
-pub struct TimeslotValueOutOfRangeError {}
-
-impl TryFrom<usize> for Timeslot {
-  type Error = TimeslotValueOutOfRangeError;
-
-  fn try_from(value: usize) -> Result<Self, Self::Error> {
-    if TIMESLOT_VALUE_RANGE.contains(&value) {
-      Ok(Timeslot(value))
-    } else {
-      Err(TimeslotValueOutOfRangeError {})
-    }
-  }
-}
-
 impl From<Timeslot> for usize {
   fn from(val: Timeslot) -> Self {
     val.0
   }
 }
 
-#[derive(thiserror::Error, Debug)]
-#[error("Day value is outside of range")]
-pub struct DayValueOutOfRangeError {}
-
-impl TryFrom<usize> for Day {
-  type Error = DayValueOutOfRangeError;
-
-  fn try_from(value: usize) -> Result<Self, Self::Error> {
-    if DAY_VALUE_RANGE.contains(&value) {
-      Ok(Day(value))
-    } else {
-      Err(DayValueOutOfRangeError {})
-    }
-  }
+/// Contains is still not const, so we make our own for now
+/// https://github.com/rust-lang/rust/issues/108082
+/// This can be removed when the above feature is stabilised
+const fn range_contains(range: Range<usize>, item: usize) -> bool {
+  range.start <= item && item < range.end
 }
 
 impl Timeslot {
@@ -67,6 +41,14 @@ impl Timeslot {
 
   pub fn all() -> impl ExactSizeIterator<Item = Self> {
     TIMESLOT_VALUE_RANGE.map(Timeslot)
+  }
+
+  pub const fn from_usize(value: usize) -> Option<Self> {
+    if range_contains(TIMESLOT_VALUE_RANGE, value) {
+      Some(Timeslot(value))
+    } else {
+      None
+    }
   }
 }
 
@@ -78,6 +60,14 @@ impl Day {
   pub fn all() -> impl ExactSizeIterator<Item = Self> {
     DAY_VALUE_RANGE.map(Day)
   }
+
+  pub const fn from_usize(value: usize) -> Option<Self> {
+    if range_contains(DAY_VALUE_RANGE, value) {
+      Some(Day(value))
+    } else {
+      None
+    }
+  }
 }
 
 impl From<Day> for usize {
@@ -86,34 +76,40 @@ impl From<Day> for usize {
   }
 }
 
-pub fn timeslot_to_hour(timeslot: Timeslot) -> u32 {
-  (timeslot.0 as u32) + 8
+/// const Option::unwrap is not yet stable
+const fn const_unwrap_timeslot(opt: Option<Timeslot>) -> Timeslot {
+  match opt {
+    Some(t) => t,
+    None => panic!(),
+  }
 }
+pub const TIMESLOT_08_00: Timeslot = const_unwrap_timeslot(Timeslot::from_usize(0));
+pub const TIMESLOT_09_00: Timeslot = const_unwrap_timeslot(Timeslot::from_usize(1));
+pub const TIMESLOT_10_00: Timeslot = const_unwrap_timeslot(Timeslot::from_usize(2));
+pub const TIMESLOT_11_00: Timeslot = const_unwrap_timeslot(Timeslot::from_usize(3));
+pub const TIMESLOT_12_00: Timeslot = const_unwrap_timeslot(Timeslot::from_usize(4));
+pub const TIMESLOT_13_00: Timeslot = const_unwrap_timeslot(Timeslot::from_usize(5));
+pub const TIMESLOT_14_00: Timeslot = const_unwrap_timeslot(Timeslot::from_usize(6));
+pub const TIMESLOT_15_00: Timeslot = const_unwrap_timeslot(Timeslot::from_usize(7));
+pub const TIMESLOT_16_00: Timeslot = const_unwrap_timeslot(Timeslot::from_usize(8));
+pub const TIMESLOT_17_00: Timeslot = const_unwrap_timeslot(Timeslot::from_usize(9));
+pub const TIMESLOT_18_00: Timeslot = const_unwrap_timeslot(Timeslot::from_usize(10));
+pub const TIMESLOT_19_00: Timeslot = const_unwrap_timeslot(Timeslot::from_usize(11));
+const _: () = assert!(TIMESLOT_19_00.0 == TIMESLOT_COUNT - 1);
 
-#[allow(unused)]
-pub const TIMESLOT_08_00: usize = 0;
-#[allow(unused)]
-pub const TIMESLOT_09_00: usize = 1;
-#[allow(unused)]
-pub const TIMESLOT_10_00: usize = 2;
-#[allow(unused)]
-pub const TIMESLOT_11_00: usize = 3;
-#[allow(unused)]
-pub const TIMESLOT_12_00: usize = 4;
-#[allow(unused)]
-pub const TIMESLOT_13_00: usize = 5;
-#[allow(unused)]
-pub const TIMESLOT_14_00: usize = 6;
-#[allow(unused)]
-pub const TIMESLOT_15_00: usize = 7;
-#[allow(unused)]
-pub const TIMESLOT_16_00: usize = 8;
-#[allow(unused)]
-pub const TIMESLOT_17_00: usize = 9;
-#[allow(unused)]
-pub const TIMESLOT_18_00: usize = 10;
-#[allow(unused)]
-pub const TIMESLOT_19_00: usize = 11;
+/// const Option::unwrap is not yet stable
+const fn const_unwrap_day(opt: Option<Day>) -> Day {
+  match opt {
+    Some(d) => d,
+    None => panic!(),
+  }
+}
+pub const DAY_MONDAY: Day = const_unwrap_day(Day::from_usize(0));
+pub const DAY_TUESDAY: Day = const_unwrap_day(Day::from_usize(1));
+pub const DAY_WEDNESDAY: Day = const_unwrap_day(Day::from_usize(2));
+pub const DAY_THURSDAY: Day = const_unwrap_day(Day::from_usize(3));
+pub const DAY_FRIDAY: Day = const_unwrap_day(Day::from_usize(4));
+const _: () = assert!(DAY_FRIDAY.0 == DAY_COUNT - 1);
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct WeekCalendar<T> {
@@ -128,8 +124,8 @@ impl<T: Default + Clone> Default for WeekCalendar<T> {
   }
 }
 
-fn get_index(day: Day, timeslot: Timeslot) -> usize {
-  usize::from(day) * TIMESLOT_COUNT + usize::from(timeslot)
+const fn get_index(day: Day, timeslot: Timeslot) -> usize {
+  day.0 * TIMESLOT_COUNT + timeslot.0
 }
 
 impl<T> WeekCalendar<T> {

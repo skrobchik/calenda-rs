@@ -8,14 +8,12 @@ use crate::{
   professor_editor::ProfessorEditor, professor_schedule_widget::ProfessorScheduleWidget,
   simple_schedule_widget::SimpleScheduleWidget,
 };
-use calendars_core::{
-  AdvancedSimulationOptions, ClassCalendar, LiveUpdate, ProfessorKey, ProgressOption,
-  SchoolSchedule, SimulationOptions, SimulationOutput, TemperatureFunction,
-};
+use calendars_core::{AdvancedSimulationOptions, ClassCalendar, LiveUpdate, ProfessorKey, ProgressOption, SchoolSchedule, SimulationOptions, SimulationOutput, TemperatureFunction};
 use egui::Ui;
 use rfd::FileDialog;
 use serde::{Deserialize, Serialize};
 use tracing::info;
+use calendars_core::ClassCalendarOptimizer;
 
 struct CurrentSimulation {
   progress_bar: indicatif::ProgressBar,
@@ -195,18 +193,34 @@ impl eframe::App for MyApp {
               }
               // simulation thread channel no longer active, exit thread
             });
+            let mut optimizer = calendars_core::SimulatedAnnealingOptimizer::default();
             let simulation_thread: JoinHandle<Vec<SimulationOutput>> =
-              calendars_core::generate_schedule(
-                vec![SimulationOptions {
-                  simulation_constraints: local_simulation_constraints,
-                  stop_condition,
-                  initial_state,
-                  temperature_function: TemperatureFunction::Linear,
-                  progress: ProgressOption::ProgressBar(pb),
-                  advanced_options,
-                }],
+            std::thread::spawn(move || {
+              let options = SimulationOptions {
+                stop_condition,
+                initial_state,
+                temperature_function: TemperatureFunction::Linear,
+                progress: ProgressOption::ProgressBar(pb),
+                advanced_options,
+              };
+              let class_calendar = optimizer.generate_class_calendar(
+                local_simulation_constraints,
+                options.clone(),
                 None,
               );
+              let simulation_output: SimulationOutput = SimulationOutput {
+                simulation_options: options,
+                final_calendar: Default::default(),
+                final_cost: Default::default(),
+                start_time: std::time::SystemTime::UNIX_EPOCH,
+                end_time: std::time::SystemTime::UNIX_EPOCH,
+                duration: Default::default(),
+                stats: Default::default(),
+                total_steps: Default::default(),
+                classroom_assignments: Default::default(),
+            };
+              vec![simulation_output]
+            });
             let r = simulation_thread.join().unwrap();
             drop(pb_thread);
             drop(live_update_proxy_thread);

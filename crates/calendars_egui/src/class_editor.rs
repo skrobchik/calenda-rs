@@ -69,7 +69,7 @@ impl ClassEditor {
             let curr_classroom_types = state
               .get_class(class_key)
               .unwrap()
-              .get_allowed_classroom_types();
+              .allowed_classroom_types;
             let classroom_types = ClassroomType::iter()
               .map(|v| (v, curr_classroom_types.contains(v)))
               .collect_vec();
@@ -96,7 +96,7 @@ impl ClassEditor {
       });
       ui.vertical(|ui| {
         {
-          let mut optativa = state.get_class(class_key).unwrap().is_optative();
+          let mut optativa = state.get_class(class_key).unwrap().optative;
           ui.checkbox(&mut optativa, "Optativa");
           state
             .get_class_entry(class_key)
@@ -110,11 +110,11 @@ impl ClassEditor {
               state
                 .get_class(class_key)
                 .unwrap()
-                .get_semester()
+                .semester
                 .to_string(),
             )
             .show_ui(ui, |ui| {
-              let mut semester = *state.get_class(class_key).unwrap().get_semester();
+              let mut semester = state.get_class(class_key).unwrap().semester;
               for semester_variant in Semester::iter() {
                 ui.selectable_value(
                   &mut semester,
@@ -132,9 +132,9 @@ impl ClassEditor {
         ui.horizontal(|ui| {
           ui.label("Groupo");
           ComboBox::from_id_source(format!("group_selector_{:?}", class_key))
-            .selected_text(state.get_class(class_key).unwrap().get_group().to_string())
+            .selected_text(state.get_class(class_key).unwrap().group.to_string())
             .show_ui(ui, |ui| {
-              let mut group = *state.get_class(class_key).unwrap().get_group();
+              let mut group = state.get_class(class_key).unwrap().group;
               for group_variant in Group::iter() {
                 ui.selectable_value(&mut group, group_variant, group_variant.to_string());
               }
@@ -147,15 +147,15 @@ impl ClassEditor {
           ComboBox::from_id_source(egui::Id::new(("professor_combo_box", class_key)))
             .selected_text(
               state
-                .get_professor_metadata(state.get_class(class_key).unwrap().get_professor_id())
+                .get_professor_metadata(state.get_class(class_key).unwrap().professor_key)
                 .map(|professor_metadata| professor_metadata.name.as_str())
                 .unwrap_or("Undefined Professor"),
             )
             .show_ui(ui, |ui| {
-              let selected_professor_id = state.get_class(class_key).unwrap().get_professor_id();
+              let selected_professor_id = state.get_class(class_key).unwrap().professor_key;
               let professor_keys = state
                 .get_simulation_constraints()
-                .iter_professor_keys()
+                .professors.iter().map(|(k, v)| k)
                 .collect_vec();
               for professor_id in professor_keys {
                 if ui
@@ -178,7 +178,7 @@ impl ClassEditor {
             })
         });
         ui.horizontal(|ui| {
-          let original_class_hours = *state.get_class(class_key).unwrap().get_class_hours();
+          let original_class_hours = state.get_class(class_key).unwrap().class_hours;
           let mut class_hours = original_class_hours;
           ui.add(egui::Slider::new(&mut class_hours, 0..=20).text(to_human_time(original_class_hours)));
           state
@@ -207,7 +207,7 @@ impl ClassEditor {
     if ui.button("+").clicked() {
       let professor_key = state
         .get_simulation_constraints()
-        .iter_professor_keys()
+        .professors.keys()
         .next();
       let professor_key = professor_key.unwrap_or_else(|| state.add_new_professor());
       state.add_new_class(professor_key);

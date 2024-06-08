@@ -1,13 +1,11 @@
 use crate::week_calendar;
 use crate::week_calendar::WeekCalendar;
+use crate::ClassKey;
 use serde::Deserialize;
 use serde::Serialize;
 use slotmap::new_key_type;
+use slotmap::SecondaryMap;
 use slotmap::SlotMap;
-
-new_key_type! {
-  pub struct ClassKey;
-}
 
 #[derive(PartialEq, Eq, Debug, Clone, Serialize, Deserialize)]
 pub struct SingleClassEntry {
@@ -53,7 +51,7 @@ pub struct ClassEntryDelta {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ClassCalendar {
-  data: SlotMap<ClassKey, WeekCalendar<u8>>,
+  data: SecondaryMap<ClassKey, WeekCalendar<u8>>,
   class_entries: Vec<SingleClassEntry>,
 }
 
@@ -151,10 +149,6 @@ impl ClassCalendar {
       .unwrap();
   }
 
-  pub(crate) fn new_class(&mut self) -> ClassKey {
-    self.data.insert(Default::default())
-  }
-
   /// Should only be used for testing. Otherwise call through SchoolSchedule
   pub(crate) fn add_one_class(
     &mut self,
@@ -207,7 +201,7 @@ impl ClassCalendar {
   }
 
   /// Time complexity linear with the total count of classes in calendar
-  pub(super) fn remove_one_class_anywhere(
+  pub(crate) fn remove_one_class_anywhere(
     &mut self,
     class_key: ClassKey,
   ) -> Result<u8, RemoveOneClassAnywhereError> {
@@ -231,17 +225,20 @@ impl ClassCalendar {
 
 #[cfg(test)]
 mod test {
-  use super::*;
+  use crate::{Day, OptimizationConstraints, Timeslot};
+
+use super::*;
 
   #[test]
   fn class_calendar_test() {
+    let mut constraints = OptimizationConstraints::default();
+    let k1 = constraints.classes.insert(Default::default());
+    let k2 = constraints.classes.insert(Default::default());
+    let _k4 = constraints.classes.insert(Default::default());
+    let k3 = constraints.classes.insert(Default::default());
+    let d0 = Day::from_usize(0).unwrap();
+    let t1 = Timeslot::from_usize(1).unwrap();
     let mut class_calendar = ClassCalendar::default();
-    let k1 = class_calendar.new_class();
-    let k2 = class_calendar.new_class();
-    let _ = class_calendar.new_class();
-    let k3 = class_calendar.new_class();
-    let d0: week_calendar::Day = 0.try_into().unwrap();
-    let t1: week_calendar::Timeslot = 1.try_into().unwrap();
 
     class_calendar.add_one_class(d0, t1, k3).unwrap();
     class_calendar.add_one_class(d0, t1, k3).unwrap();

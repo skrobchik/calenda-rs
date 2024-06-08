@@ -2,13 +2,14 @@ use itertools::Itertools;
 use slotmap::SecondaryMap;
 use strum::{IntoEnumIterator, VariantArray};
 
-use crate::{
-  school_schedule::{
-    class_calendar::{ClassCalendar, ClassKey},
-    Availability, ClassroomType, ProfessorKey, SimulationConstraints,
-  },
-  week_calendar, Semester,
-};
+use crate::optimization::optimization_constraints::Availability;
+use crate::optimization::optimization_constraints::ClassKey;
+use crate::optimization::optimization_constraints::ClassroomType;
+use crate::optimization::optimization_constraints::OptimizationConstraints;
+use crate::optimization::optimization_constraints::ProfessorKey;
+use crate::optimization::optimization_constraints::Semester;
+use crate::week_calendar;
+use crate::ClassCalendar;
 
 fn iter_class_calendar(
   class_calendar: &ClassCalendar,
@@ -28,7 +29,7 @@ fn iter_week() -> impl Iterator<Item = (week_calendar::Day, week_calendar::Times
 
 pub(crate) fn count_holes_per_semester(
   state: &ClassCalendar,
-  simulation_constraints: &SimulationConstraints,
+  simulation_constraints: &OptimizationConstraints,
 ) -> u64 {
   let mut total: u64 = 0;
   for semester in Semester::iter() {
@@ -37,10 +38,10 @@ pub(crate) fn count_holes_per_semester(
         .map(|t| {
           for class_key in state.iter_class_keys() {
             if state.get_count(day, t, class_key) >= 1
-              && *simulation_constraints
-                .get_class(class_key)
+              && simulation_constraints
+                .classes.get(class_key)
                 .unwrap()
-                .get_semester()
+                .semester
                 == semester
             {
               return true;
@@ -74,12 +75,12 @@ pub(crate) fn count_holes_per_semester(
 
 pub(crate) fn same_timeslot_classes_count_per_professor(
   state: &ClassCalendar,
-  simulation_constraints: &SimulationConstraints,
+  simulation_constraints: &OptimizationConstraints,
 ) -> u64 {
   let mut same_timeslot_classes_count: u64 = 0;
   let mut professor_class_counter: SecondaryMap<ProfessorKey, u64> = SecondaryMap::from_iter(
     simulation_constraints
-      .get_professors()
+      .professors
       .keys()
       .map(|k| (k, 0)),
   );
@@ -87,8 +88,8 @@ pub(crate) fn same_timeslot_classes_count_per_professor(
     professor_class_counter.values_mut().for_each(|x| *x = 0);
     for class_key in state.iter_class_keys() {
       let count = state.get_count(day, timeslot, class_key);
-      let class = simulation_constraints.get_class(class_key).unwrap();
-      let professor_key = class.get_professor_id();
+      let class = simulation_constraints.classes.get(class_key).unwrap();
+      let professor_key = class.professor_key;
       professor_class_counter[professor_key] += count as u64;
     }
     same_timeslot_classes_count += professor_class_counter
@@ -102,7 +103,7 @@ pub(crate) fn same_timeslot_classes_count_per_professor(
 
 pub(crate) fn same_timeslot_classes_count_per_semester(
   state: &ClassCalendar,
-  simulation_constraints: &SimulationConstraints,
+  simulation_constraints: &OptimizationConstraints,
 ) -> u64 {
   let mut same_timeslot_classes_count: u64 = 0;
   let mut semester_class_counter = [0_u64; Semester::VARIANTS.len()];
@@ -110,11 +111,11 @@ pub(crate) fn same_timeslot_classes_count_per_semester(
     semester_class_counter.fill(0);
     for class_key in state.iter_class_keys() {
       let count = state.get_count(day, timeslot, class_key);
-      let class = simulation_constraints.get_class(class_key).unwrap();
-      let semester = class.get_semester();
+      let class = simulation_constraints.classes.get(class_key).unwrap();
+      let semester = class.semester;
       semester_class_counter[Semester::VARIANTS
         .iter()
-        .position(|v| v == semester)
+        .position(|v| v == &semester)
         .unwrap()] += count as u64;
     }
     same_timeslot_classes_count += semester_class_counter
@@ -141,14 +142,14 @@ pub(crate) fn same_timeslot_classes_count(state: &ClassCalendar) -> u64 {
 
 pub(crate) fn count_not_available(
   state: &ClassCalendar,
-  constraints: &SimulationConstraints,
+  constraints: &OptimizationConstraints,
 ) -> u64 {
   let mut not_available_count: u64 = 0;
 
   for (class_key, day, timeslot) in iter_class_calendar(state) {
-    let class = constraints.get_class(class_key).unwrap();
-    let professor_key = class.get_professor_id();
-    let professor = &constraints.get_professors()[professor_key];
+    let class = constraints.classes.get(class_key).unwrap();
+    let professor_key = class.professor_key;
+    let professor = &constraints.professors[professor_key];
     let availability = professor.availability.get(day, timeslot);
     if matches!(availability, Availability::NotAvailable)
       && (state.get_count(day, timeslot, class_key) > 0)
@@ -162,14 +163,14 @@ pub(crate) fn count_not_available(
 
 pub(crate) fn count_available_if_needed(
   state: &ClassCalendar,
-  constraints: &SimulationConstraints,
+  constraints: &OptimizationConstraints,
 ) -> u64 {
   let mut available_if_needed_count: u64 = 0;
 
   for (class_key, day, timeslot) in iter_class_calendar(state) {
-    let class = constraints.get_class(class_key).unwrap();
-    let professor_key = class.get_professor_id();
-    let professor = &constraints.get_professors()[professor_key];
+    let class = constraints.classes.get(class_key).unwrap();
+    let professor_key = class.professor_key;
+    let professor = &constraints.professors[professor_key];
     let availability = professor.availability.get(day, timeslot);
     if matches!(availability, Availability::AvailableIfNeeded)
       && (state.get_count(day, timeslot, class_key) > 0)
@@ -255,13 +256,13 @@ pub(crate) fn count_inconsistent_class_timeslots(state: &ClassCalendar) -> u64 {
 
 pub(crate) fn count_labs_on_different_days(
   state: &ClassCalendar,
-  constraints: &SimulationConstraints,
+  constraints: &OptimizationConstraints,
 ) -> u64 {
   let mut different_days_labs_count = 0;
   let class_keys = state.iter_class_keys();
-  for (class_key, class) in class_keys.map(|k| (k, constraints.get_class(k).unwrap())) {
+  for (class_key, class) in class_keys.map(|k| (k, constraints.classes.get(k).unwrap())) {
     if class
-      .get_allowed_classroom_types()
+      .allowed_classroom_types
       .intersection_c(ClassroomType::LabFisica | ClassroomType::LabQuimica)
       .is_empty()
     {
@@ -309,7 +310,7 @@ mod test {
     school_schedule::SchoolSchedule,
     week_calendar::{
       TIMESLOT_09_00, TIMESLOT_10_00, TIMESLOT_11_00, TIMESLOT_12_00, TIMESLOT_13_00,
-    },
+    }, Day, Timeslot,
   };
 
   use self::week_calendar::TIMESLOT_08_00;
@@ -318,10 +319,10 @@ mod test {
 
   #[test]
   fn count_outside_session_length_test() {
+    let mut constraints = OptimizationConstraints::default();
+    let k0 = constraints.classes.insert(Default::default());
+    let d0: week_calendar::Day = Day::from_usize(0).unwrap();
     let mut state = ClassCalendar::default();
-    let k0 = state.new_class();
-    let d0: week_calendar::Day = 0.try_into().unwrap();
-
     assert_eq!(count_outside_session_length(&state, 2, 4), 0);
     state
       .add_one_class(d0, week_calendar::TIMESLOT_15_00.try_into().unwrap(), k0)
@@ -347,12 +348,13 @@ mod test {
 
   #[test]
   fn count_inconsistent_class_timeslots_test() {
+    let mut constraints = OptimizationConstraints::default();
     let mut state = ClassCalendar::default();
-    let k6 = state.new_class();
-    let k7 = state.new_class();
-    let d0: week_calendar::Day = 0.try_into().unwrap();
-    let d3: week_calendar::Day = 3.try_into().unwrap();
-    let d4: week_calendar::Day = 4.try_into().unwrap();
+    let k6 = constraints.classes.insert(Default::default());
+    let k7 = constraints.classes.insert(Default::default());
+    let d0: week_calendar::Day = Day::from_usize(0).unwrap();
+    let d3: week_calendar::Day = Day::from_usize(3).unwrap();
+    let d4: week_calendar::Day = Day::from_usize(4).unwrap();
     assert_eq!(count_inconsistent_class_timeslots(&state), 0);
     state
       .add_one_class(d0, week_calendar::TIMESLOT_18_00.try_into().unwrap(), k7)
@@ -393,9 +395,9 @@ mod test {
     class_1.set_allowed_classroom_types(ClassroomType::LabFisica | ClassroomType::LabQuimica);
     class_1.set_hours(3);
     let state = schedule.get_class_calendar_mut();
-    let d0 = week_calendar::Day::try_from(0).unwrap();
-    let d1 = week_calendar::Day::try_from(1).unwrap();
-    let d2 = week_calendar::Day::try_from(2).unwrap();
+    let d0 = Day::from_usize(0).unwrap();
+    let d1 = Day::from_usize(1).unwrap();
+    let d2 = Day::from_usize(2).unwrap();
     state
       .add_one_class(d0, TIMESLOT_08_00.try_into().unwrap(), k0)
       .unwrap();
@@ -425,16 +427,17 @@ mod test {
 
   #[test]
   fn test_count_incontinuous_classes() {
+    let mut constraints = OptimizationConstraints::default();
     let mut state = ClassCalendar::default();
     assert_eq!(count_incontinuous_classes(&state), 0);
-    let d2: week_calendar::Day = 2.try_into().unwrap();
-    let d3: week_calendar::Day = 3.try_into().unwrap();
+    let d2: week_calendar::Day = Day::from_usize(2).unwrap();
+    let d3: week_calendar::Day = Day::from_usize(3).unwrap();
     for _i in 1..=6 {
-      let _ki = state.new_class();
+      let _ki = constraints.classes.insert(Default::default());
     }
-    let k7: ClassKey = state.new_class();
-    let _k8 = state.new_class();
-    let k9: ClassKey = state.new_class();
+    let k7: ClassKey = constraints.classes.insert(Default::default());
+    let _k8 = constraints.classes.insert(Default::default());
+    let k9: ClassKey = constraints.classes.insert(Default::default());
     state
       .add_one_class(d2, TIMESLOT_08_00.try_into().unwrap(), k9)
       .unwrap();
@@ -487,8 +490,8 @@ mod test {
     let p0 = schedule.add_new_professor();
     let k0 = schedule.add_new_class(p0);
     let k1 = schedule.add_new_class(p0);
-    let d0 = 0.try_into().unwrap();
-    let t0 = 0.try_into().unwrap();
+    let d0 = Day::from_usize(0).unwrap();
+    let t0 = Timeslot::from_usize(0).unwrap();
     let calendar = schedule.get_class_calendar_mut();
     calendar.add_one_class(d0, t0, k0).unwrap();
     calendar.add_one_class(d0, t0, k1).unwrap();

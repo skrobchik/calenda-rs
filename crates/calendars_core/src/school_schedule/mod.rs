@@ -4,21 +4,14 @@ use chrono::{Datelike, Days, TimeZone, Timelike, Utc};
 use enumflags2::BitFlags;
 use slotmap::SecondaryMap;
 
-use crate::week_calendar;
+use crate::{week_calendar, AllowedClassroomTypes, Class, ClassCalendar, ClassKey, Classroom, Day, Group, OptimizationConstraints, Professor, ProfessorKey, Semester, Timeslot};
 use icalendar::{Component, EventLike};
+mod metadata_types;
+use metadata_types::{ProfessorMetadata, ScheduleMetadata, ClassMetadata};
 
 use serde::{Deserialize, Serialize};
 
-pub mod simulation_types;
-pub use simulation_types::*;
-
-pub mod class_calendar;
-pub mod metadata_types;
-pub use metadata_types::*;
-
 use crate::{class_filter::ClassFilter, week_calendar::WeekCalendar};
-
-use self::class_calendar::{ClassCalendar, ClassKey};
 
 #[derive(thiserror::Error, Debug)]
 #[error("Class hours in calendars do not match.")]
@@ -67,7 +60,7 @@ impl<'a, 'b> ClassEntry<'a> {
           self
             .school_schedule
             .class_calendar
-            .add_one_class(0.try_into().unwrap(), 0.try_into().unwrap(), self.class_key)
+            .add_one_class(Day::from_usize(0).unwrap(), Timeslot::from_usize(0).unwrap(), self.class_key)
             .unwrap();
         }
         class.class_hours = class_hours;
@@ -111,13 +104,13 @@ pub struct ClassroomAssignmentKey {
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct SchoolSchedule {
   metadata: ScheduleMetadata,
-  simulation_constraints: SimulationConstraints,
+  simulation_constraints: OptimizationConstraints,
   class_calendar: ClassCalendar,
   classroom_assignments: BTreeMap<ClassroomAssignmentKey, Classroom>,
 }
 
 impl SchoolSchedule {
-  pub fn get_simulation_constraints(&self) -> &SimulationConstraints {
+  pub fn get_simulation_constraints(&self) -> &OptimizationConstraints {
     &self.simulation_constraints
   }
 
@@ -191,10 +184,10 @@ impl SchoolSchedule {
   }
 
   pub fn add_new_class(&mut self, professor_key: ProfessorKey) -> ClassKey {
-    let class_key = self.class_calendar.new_class();
+    let class_key = self.simulation_constraints.classes.insert(Default::default());
+    self.simulation_constraints.classes.get_mut(class_key).unwrap().professor_key = professor_key;
 
     let class_metadata_list = &mut self.metadata.classes;
-    let class_list = &mut self.simulation_constraints.classes;
 
     class_metadata_list.insert(
       class_key,
@@ -202,18 +195,6 @@ impl SchoolSchedule {
         name: "New Class".to_string(),
         rgba: [255, 255, 224, 255], // Light Yellow
         class_code: "0000".to_string(),
-      },
-    );
-
-    class_list.insert(
-      class_key,
-      Class {
-        professor_key,
-        allowed_classroom_types: BitFlags::empty(),
-        class_hours: 0,
-        semester: Semester::S1,
-        group: Group::G1,
-        optative: false,
       },
     );
 
@@ -304,15 +285,13 @@ impl SchoolSchedule {
       let start_time = semester_start
         .checked_add_days(Days::new(usize::from(class_range.day) as u64))
         .unwrap()
-        .with_hour(crate::week_calendar::timeslot_to_hour(
-          class_range.start_timeslot,
-        ))
+        .with_hour(8 + u32::try_from(usize::from(class_range.start_timeslot)).unwrap())
         .unwrap()
         .with_timezone(&Utc);
       let end_time = semester_start
         .checked_add_days(Days::new(usize::from(class_range.day) as u64))
         .unwrap()
-        .with_hour(crate::week_calendar::timeslot_to_hour(class_range.end_timeslot) + 1) // +1 because end_timeslot is inclusive
+        .with_hour(8 + u32::try_from(usize::from(class_range.end_timeslot)).unwrap()) // +1 because end_timeslot is inclusive
         .unwrap()
         .with_timezone(&Utc);
       event.starts(start_time);

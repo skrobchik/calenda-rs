@@ -38,7 +38,7 @@ impl<'a> ProfessorEditor<'a> {
         let professor_keys: Vec<ProfessorKey> = self
           .state
           .get_simulation_constraints()
-          .iter_professor_keys()
+          .professors.keys()
           .collect();
         for professor_id in professor_keys {
           ui.horizontal(|ui| {

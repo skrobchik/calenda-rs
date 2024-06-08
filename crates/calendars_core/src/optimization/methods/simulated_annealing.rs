@@ -8,12 +8,6 @@ use std::{
   thread::{self, JoinHandle},
 };
 
-use crate::{
-  school_schedule::{Classroom, ClassroomAssignmentKey, ClassroomType},
-  simulation_options::{ProgressOption, SimulationOptions, StopCondition, TemperatureFunction},
-  stats_tracker::StatsTracker,
-  week_calendar, ClassKey,
-};
 use indicatif::{HumanCount, HumanDuration, ProgressStyle};
 use itertools::Itertools;
 use rand::prelude::*;
@@ -22,12 +16,9 @@ use serde::{Deserialize, Serialize};
 use strum::{IntoEnumIterator, VariantArray};
 
 use crate::{
-  heuristics,
-  school_schedule::{
-    class_calendar::{ClassCalendar, ClassEntryDelta},
-    SimulationConstraints,
-  },
+  optimization::{class_calendar::ClassEntryDelta, heuristics, stats_tracker::StatsTracker}, school_schedule::ClassroomAssignmentKey, week_calendar, ClassCalendar, ClassCalendarOptimizer, ClassKey, Classroom, ClassroomType, OptimizationConstraints
 };
+
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SimulationOutput {
@@ -49,32 +40,6 @@ pub struct SimulationOutput {
   pub classroom_assignments: BTreeMap<ClassroomAssignmentKey, Classroom>,
 }
 
-pub fn generate_schedule(
-  options_list: Vec<SimulationOptions>,
-  seed: Option<u64>,
-) -> JoinHandle<Vec<SimulationOutput>> {
-  thread::spawn(move || {
-    let rng = match seed {
-      Some(seed) => ChaCha8Rng::seed_from_u64(seed),
-      None => ChaCha8Rng::from_entropy(),
-    };
-
-    let handles: Vec<JoinHandle<SimulationOutput>> = options_list
-      .into_iter()
-      .enumerate()
-      .map(|(simulation_idx, options)| {
-        let mut rng = rng.clone();
-        rng.set_stream(simulation_idx as u64);
-        thread::spawn(move || simulated_annealing(options, rng))
-      })
-      .collect();
-
-    let results: Vec<SimulationOutput> = handles.into_iter().map(|h| h.join().unwrap()).collect();
-
-    results
-  })
-}
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SimulationRunReport {
   pub num_steps: u64,
@@ -82,11 +47,10 @@ pub struct SimulationRunReport {
   pub start_time: std::time::SystemTime,
 }
 
-fn simulated_annealing<R: Rng>(options: SimulationOptions, mut rng: R) -> SimulationOutput {
+fn simulated_annealing<R: Rng>(constraints: &OptimizationConstraints, options: SimulationOptions, mut rng: R) -> SimulationOutput {
   let start_time = std::time::SystemTime::now();
   let start_instant = std::time::Instant::now();
 
-  let constraints: &SimulationConstraints = &options.simulation_constraints;
   let stop_condition = &options.stop_condition;
   let temperature_function = &options.temperature_function;
 
@@ -106,10 +70,10 @@ fn simulated_annealing<R: Rng>(options: SimulationOptions, mut rng: R) -> Simula
       }
       (ProgressOption::MultiProgress(mp), StopCondition::Steps(total_steps)) => {
         let progress_bar_style = ProgressStyle::with_template(
-            "{spinner:.green} [{elapsed_precise}] [{bar:.cyan/blue}] {human_pos}/{human_len} ({percent} %) ({eta}) ({per_sec})",
-          )
-          .unwrap()
-          .progress_chars("#>-");
+              "{spinner:.green} [{elapsed_precise}] [{bar:.cyan/blue}] {human_pos}/{human_len} ({percent} %) ({eta}) ({per_sec})",
+            )
+            .unwrap()
+            .progress_chars("#>-");
         let pb = indicatif::ProgressBar::new(*total_steps as u64).with_style(progress_bar_style);
         let pb = mp.add(pb);
         Some(pb)
@@ -117,14 +81,14 @@ fn simulated_annealing<R: Rng>(options: SimulationOptions, mut rng: R) -> Simula
       (ProgressOption::MultiProgress(mp), StopCondition::Time(total_duration)) => {
         let human_total_time = HumanDuration(*total_duration);
         let pb_style = ProgressStyle::with_template(
-          format!(
-            "{{spinner:.green}} [{{bar:.cyan/blue}}] ({{percent}} %) [{{elapsed}}/{}] ({{msg}} steps)",
-            human_total_time
+            format!(
+              "{{spinner:.green}} [{{bar:.cyan/blue}}] ({{percent}} %) [{{elapsed}}/{}] ({{msg}} steps)",
+              human_total_time
+            )
+            .as_str(),
           )
-          .as_str(),
-        )
-        .unwrap()
-        .progress_chars("#>-");
+          .unwrap()
+          .progress_chars("#>-");
         let pb = indicatif::ProgressBar::new(total_duration.as_secs())
           .with_style(pb_style)
           .with_message("0");
@@ -215,7 +179,6 @@ fn simulated_annealing<R: Rng>(options: SimulationOptions, mut rng: R) -> Simula
   let classroom_assignments = assign_classrooms(&state, constraints);
   SimulationOutput {
     simulation_options: SimulationOptions {
-      simulation_constraints: options.simulation_constraints,
       initial_state: options.initial_state,
       progress: ProgressOption::None,
       temperature_function: options.temperature_function,
@@ -270,25 +233,25 @@ fn revert_change(state: &mut ClassCalendar, delta: &ClassEntryDelta) {
 }
 
 #[rustfmt::skip]
-const EVALUATORS: [fn(&ClassCalendar, &SimulationConstraints)->u64; 11] = [
-  |state,  constraints| 10000 * (count_classroom_assignment_collisions(state, constraints) as u64),
-  |state,  constraints|  9000 * heuristics::same_timeslot_classes_count_per_professor(state, constraints),
-  |state,  constraints|  5000 * heuristics::same_timeslot_classes_count_per_semester(state, constraints),
-  |state,  constraints|  4500 * heuristics::count_labs_on_different_days(state, constraints),
-  |state,  constraints|  3000 * heuristics::count_not_available(state, constraints),
-  |state, _constraints|  2500 * heuristics::count_incontinuous_classes(state),
-  |state, _constraints|  1500 * heuristics::count_outside_session_length(state, 2, 4),
-  |state,  constraints|  1300 * heuristics::count_holes_per_semester(state, constraints),
-  |state,  constraints|  1250 * heuristics::count_available_if_needed(state, constraints),
-  |state, _constraints|  1000 * heuristics::count_inconsistent_class_timeslots(state),
-  |state, _constraints|   100 * heuristics::same_timeslot_classes_count(state),
-];
+  const EVALUATORS: [fn(&ClassCalendar, &OptimizationConstraints)->u64; 11] = [
+    |state,  constraints| 10000 * (count_classroom_assignment_collisions(state, constraints) as u64),
+    |state,  constraints|  9000 * heuristics::same_timeslot_classes_count_per_professor(state, constraints),
+    |state,  constraints|  5000 * heuristics::same_timeslot_classes_count_per_semester(state, constraints),
+    |state,  constraints|  4500 * heuristics::count_labs_on_different_days(state, constraints),
+    |state,  constraints|  3000 * heuristics::count_not_available(state, constraints),
+    |state, _constraints|  2500 * heuristics::count_incontinuous_classes(state),
+    |state, _constraints|  1500 * heuristics::count_outside_session_length(state, 2, 4),
+    |state,  constraints|  1300 * heuristics::count_holes_per_semester(state, constraints),
+    |state,  constraints|  1250 * heuristics::count_available_if_needed(state, constraints),
+    |state, _constraints|  1000 * heuristics::count_inconsistent_class_timeslots(state),
+    |state, _constraints|   100 * heuristics::same_timeslot_classes_count(state),
+  ];
 const EVALUATORS_FACTOR: u64 = 1000;
 
 fn cost(
   par_eval: &mut ParEvaluator,
   state: &ClassCalendar,
-  constraints: &SimulationConstraints,
+  constraints: &OptimizationConstraints,
 ) -> f64 {
   let r0 = par_eval.eval_cost();
 
@@ -315,7 +278,7 @@ struct ParEvaluator {
 }
 
 impl ParEvaluator {
-  fn new(init_state: ClassCalendar, init_constraints: SimulationConstraints) -> Self {
+  fn new(init_state: ClassCalendar, init_constraints: OptimizationConstraints) -> Self {
     let cost_counter = Arc::new(AtomicU64::new(0));
     let state = Arc::new(RwLock::new(init_state));
     let constraints = Arc::new(RwLock::new(init_constraints));
@@ -383,7 +346,7 @@ impl ParEvaluator {
 
 pub(crate) fn assign_classrooms(
   state: &ClassCalendar,
-  constraints: &SimulationConstraints,
+  constraints: &OptimizationConstraints,
 ) -> BTreeMap<ClassroomAssignmentKey, Classroom> {
   let matching = assign_classrooms_matching(state, constraints);
   matching.collect()
@@ -397,7 +360,7 @@ enum ClassroomAssignmentVertex {
 
 fn timeslot_assign_classrooms<'a>(
   state: &'a ClassCalendar,
-  constraints: &'a SimulationConstraints,
+  constraints: &'a OptimizationConstraints,
   day: week_calendar::Day,
   timeslot: week_calendar::Timeslot,
   available_classrooms: Rc<[Vec<Classroom>; ClassroomType::VARIANTS.len()]>,
@@ -407,9 +370,9 @@ fn timeslot_assign_classrooms<'a>(
     .iter_class_keys()
     .filter(|k| state.get_count(day, timeslot, *k) > 0)
   {
-    let class = constraints.get_class(class_key).unwrap();
+    let class = constraints.classes.get(class_key).unwrap();
     let classrooms = class
-      .get_allowed_classroom_types()
+      .allowed_classroom_types
       .iter()
       .map(|classroom_type| {
         ClassroomType::VARIANTS
@@ -449,7 +412,7 @@ fn iter_week() -> impl Iterator<Item = (week_calendar::Day, week_calendar::Times
 
 fn assign_classrooms_matching<'a>(
   state: &'a ClassCalendar,
-  constraints: &'a SimulationConstraints,
+  constraints: &'a OptimizationConstraints,
 ) -> impl Iterator<Item = (ClassroomAssignmentKey, Classroom)> + 'a {
   let available_classrooms: [Vec<Classroom>; ClassroomType::VARIANTS.len()] =
     ClassroomType::VARIANTS
@@ -477,11 +440,97 @@ fn assign_classrooms_matching<'a>(
 
 fn count_classroom_assignment_collisions(
   state: &ClassCalendar,
-  constraints: &SimulationConstraints,
+  constraints: &OptimizationConstraints,
 ) -> usize {
   state
     .get_entries()
     .len()
     .checked_sub(assign_classrooms_matching(state, constraints).count())
     .expect("Can't be more matching than class entries")
+}
+
+use std::time::Duration;
+
+#[derive(Debug, Clone, Default)]
+pub enum ProgressOption {
+  ProgressBar(indicatif::ProgressBar),
+  MultiProgress(indicatif::MultiProgress),
+  #[default]
+  None,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum TemperatureFunction {
+  Linear,
+}
+
+const _: () = {
+  fn assert_send<T: Send>() {}
+  fn assert_sync<T: Sync>() {}
+  fn assert_all() {
+    assert_send::<SimulationOptions>();
+    assert_sync::<SimulationOptions>();
+  }
+};
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct AdvancedSimulationOptions {
+  pub progress_bar_update_interval: usize,
+  #[serde(skip)]
+  pub live_update: Option<LiveUpdate>,
+}
+
+impl Default for AdvancedSimulationOptions {
+  fn default() -> Self {
+    Self {
+      progress_bar_update_interval: 100,
+      live_update: None,
+    }
+  }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub enum StopCondition {
+  Steps(usize),
+  Time(Duration),
+}
+
+impl Default for StopCondition {
+  fn default() -> Self {
+    StopCondition::Steps(0)
+  }
+}
+
+#[derive(Debug, Clone)]
+pub struct LiveUpdate {
+  pub channel: std::sync::mpsc::Sender<ClassCalendar>,
+  pub live_update_interval: usize,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SimulationOptions {
+  pub stop_condition: StopCondition,
+  pub initial_state: ClassCalendar,
+  #[serde(skip)]
+  pub progress: ProgressOption,
+  pub temperature_function: TemperatureFunction,
+  pub advanced_options: AdvancedSimulationOptions,
+}
+
+#[derive(Default, Debug)]
+pub struct SimulatedAnnealingOptimizer {}
+
+impl ClassCalendarOptimizer for SimulatedAnnealingOptimizer {
+  type OptimizerOptions = SimulationOptions;
+
+  fn generate_class_calendar(
+    &mut self,
+    constraints: crate::OptimizationConstraints,
+    options: Self::OptimizerOptions,
+    cost_function: Option<crate::CostFunction>,
+  ) -> crate::ClassCalendar {
+    let mut rng = thread_rng();
+    let result = simulated_annealing(&constraints, options, &mut rng);
+    result.final_calendar
+  }
 }
