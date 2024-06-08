@@ -213,7 +213,7 @@ impl eframe::App for MyApp {
                 );
                 let simulation_output: SimulationOutput = SimulationOutput {
                   simulation_options: options,
-                  final_calendar: Default::default(),
+                  final_calendar: class_calendar,
                   final_cost: Default::default(),
                   start_time: std::time::SystemTime::UNIX_EPOCH,
                   end_time: std::time::SystemTime::UNIX_EPOCH,

@@ -155,7 +155,7 @@ impl ClassEditor {
               let selected_professor_id = state.get_class(class_key).unwrap().professor_key;
               let professor_keys = state
                 .get_simulation_constraints()
-                .professors.iter().map(|(k, v)| k)
+                .professors.keys()
                 .collect_vec();
               for professor_id in professor_keys {
                 if ui

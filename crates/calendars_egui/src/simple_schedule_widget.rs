@@ -1,4 +1,3 @@
-use calendars_core::strum::*;
 use std::cell::Cell;
 
 use calendars_core::{
