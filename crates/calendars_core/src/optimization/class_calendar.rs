@@ -82,8 +82,7 @@ impl ClassCalendar {
     timeslot: week_calendar::Timeslot,
     class_key: ClassKey,
   ) -> u8 {
-    let calendar = self.get_calendar(class_key);
-    *calendar.get(day, timeslot)
+    self.data.get(class_key).map(|calendar| *calendar.get(day, timeslot)).unwrap_or(0)
   }
 
   fn move_one_class_random_delta<R: rand::Rng>(
@@ -154,7 +153,7 @@ impl ClassCalendar {
     timeslot: week_calendar::Timeslot,
     class_key: ClassKey,
   ) -> Result<u8, AddOneClassError> {
-    let calendar = self.get_calendar_mut(class_key);
+    let calendar = self.data.entry(class_key).unwrap().or_default();
     let r = calendar.get(day, timeslot).checked_add(1);
     match r {
       Some(new_count) => {
