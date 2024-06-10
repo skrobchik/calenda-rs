@@ -119,6 +119,7 @@ impl ClassCalendar {
       .ok_or(MoveOneClassRandomError::RandomChosenDestinationFull)
   }
 
+  /// Moves one random class to a random day and time.
   pub(crate) fn move_one_class_random<R: rand::Rng>(
     &mut self,
     rng: &mut R,
@@ -226,7 +227,9 @@ impl ClassCalendar {
 
 #[cfg(test)]
 mod test {
-  use crate::{Day, OptimizationConstraints, Timeslot};
+  use rand::rngs::ThreadRng;
+
+  use crate::{Day, OptimizationConstraints, Timeslot, DAY_MONDAY, TIMESLOT_08_00};
 
   use super::*;
 
@@ -263,5 +266,32 @@ mod test {
     assert_eq!(class_calendar.get_count(d0, t1, k3), 1);
     class_calendar.remove_one_class_anywhere(k3).unwrap();
     assert_eq!(class_calendar.get_count(d0, t1, k3), 0);
+  }
+
+  #[test]
+  fn test_move_class_random() {
+    let mut rng = ThreadRng::default();
+    let mut constraints = OptimizationConstraints::default();
+    let k1 = constraints.classes.insert(Default::default());
+    let mut calendar = ClassCalendar::default();
+    let result = calendar.move_one_class_random(&mut rng);
+    assert!(matches!(
+      result,
+      Err(MoveOneClassRandomError::NoClassesToMove)
+    ));
+    calendar
+      .add_one_class(DAY_MONDAY, TIMESLOT_08_00, k1)
+      .unwrap();
+    assert_eq!(calendar.get_count(DAY_MONDAY, TIMESLOT_08_00, k1), 1);
+    let delta = calendar.move_one_class_random(&mut rng).unwrap();
+    for day in Day::all() {
+      for timeslot in Timeslot::all() {
+        if day == delta.dst_day && timeslot == delta.dst_timeslot {
+          assert_eq!(calendar.get_count(day, timeslot, k1), 1);
+        } else {
+          assert_eq!(calendar.get_count(day, timeslot, k1), 0);
+        }
+      }
+    }
   }
 }
