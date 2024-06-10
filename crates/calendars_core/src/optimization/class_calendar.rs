@@ -82,7 +82,11 @@ impl ClassCalendar {
     timeslot: week_calendar::Timeslot,
     class_key: ClassKey,
   ) -> u8 {
-    self.data.get(class_key).map(|calendar| *calendar.get(day, timeslot)).unwrap_or(0)
+    self
+      .data
+      .get(class_key)
+      .map(|calendar| *calendar.get(day, timeslot))
+      .unwrap_or(0)
   }
 
   fn move_one_class_random_delta<R: rand::Rng>(
