@@ -54,7 +54,7 @@ pub struct ClassCalendar {
 }
 
 impl ClassCalendar {
-  pub(crate) fn get_entries(&self) -> &Vec<SingleClassEntry> {
+  pub fn class_entries(&self) -> &Vec<SingleClassEntry> {
     &self.class_entries
   }
 

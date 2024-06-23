@@ -195,7 +195,7 @@ impl ClassEditor {
   fn ui(&mut self, ui: &mut egui::Ui, state: &mut SchoolSchedule) {
     ui.text_edit_singleline(&mut self.search_text);
     ui.separator();
-    let class_keys = state.get_class_calendar().iter_class_keys().collect_vec();
+    let class_keys = state.class_calendar().iter_class_keys().collect_vec();
     ScrollArea::vertical()
       .auto_shrink([false; 2])
       .max_height(500.0)

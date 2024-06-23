@@ -5,7 +5,7 @@ use slotmap::SecondaryMap;
 
 use crate::{
   week_calendar, AllowedClassroomTypes, Class, ClassCalendar, ClassKey, Classroom, Day, Group,
-  OptimizationConstraints, Professor, ProfessorKey, Semester, Timeslot,
+  OptimizationConstraints, Professor, ProfessorKey, Semester, SingleClassEntry, Timeslot,
 };
 use icalendar::{Component, EventLike};
 mod metadata_types;
@@ -13,7 +13,17 @@ use metadata_types::{ClassMetadata, ProfessorMetadata, ScheduleMetadata};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{class_filter::ClassFilter, week_calendar::WeekCalendar};
+use crate::week_calendar::WeekCalendar;
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
+pub enum ClassFilter {
+  #[default]
+  Any,
+  None,
+  Professor(ProfessorKey),
+  Classroom(Classroom),
+  Semester(Semester),
+}
 
 #[derive(thiserror::Error, Debug)]
 #[error("Class hours in calendars do not match.")]
@@ -215,13 +225,8 @@ impl SchoolSchedule {
     class_key
   }
 
-  pub fn get_class_calendar(&self) -> &ClassCalendar {
+  pub fn class_calendar(&self) -> &ClassCalendar {
     &self.class_calendar
-  }
-
-  /// Only use for tests
-  pub(crate) fn get_class_calendar_mut(&mut self) -> &mut ClassCalendar {
-    &mut self.class_calendar
   }
 
   pub fn replace_class_calendar(
@@ -235,6 +240,16 @@ impl SchoolSchedule {
     }
     self.class_calendar = class_calendar;
     Ok(())
+  }
+
+  pub fn filter_class(&self, class_entry: &SingleClassEntry, class_filter: &ClassFilter) -> bool {
+    match class_filter {
+      ClassFilter::Professor(professor_key) => todo!(),
+      ClassFilter::Classroom(classroom) => todo!(),
+      ClassFilter::Semester(semester) => todo!(),
+      ClassFilter::Any => true,
+      ClassFilter::None => false,
+    }
   }
 
   pub fn export_ics(&self, class_filter: &ClassFilter) -> icalendar::Calendar {
@@ -260,19 +275,12 @@ impl SchoolSchedule {
       end_timeslot: week_calendar::Timeslot,
     }
     let mut class_ranges: Vec<ClassRange> = Vec::new();
-    let mut first = true;
-    for class_entry in self.class_calendar.get_entries().iter().filter(|entry| {
-      let b = class_filter.filter(
-        entry.class_key,
-        &self.simulation_constraints,
-        &self.class_calendar,
-        entry.day,
-        entry.timeslot,
-        first,
-      );
-      first = false;
-      b
-    }) {
+    for class_entry in self
+      .class_calendar
+      .class_entries()
+      .iter()
+      .filter(|class_entry| self.filter_class(class_entry, class_filter))
+    {
       let new_range = ClassRange {
         class_key: class_entry.class_key,
         day: class_entry.day,

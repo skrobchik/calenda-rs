@@ -382,6 +382,7 @@ mod test {
 
   #[test]
   fn count_labs_on_different_days_test() {
+    // TODO: Where did the asserts go from this test?
     let mut schedule = SchoolSchedule::default();
     let p0 = schedule.add_new_professor();
     let k0 = schedule.add_new_class(p0);
@@ -392,7 +393,7 @@ mod test {
     let mut class_1 = schedule.get_class_entry(k1).unwrap();
     class_1.set_allowed_classroom_types(ClassroomType::LabFisica | ClassroomType::LabQuimica);
     class_1.set_hours(3);
-    let state = schedule.get_class_calendar_mut();
+    let mut state = schedule.class_calendar().clone();
     let d0 = Day::from_usize(0).unwrap();
     let d1 = Day::from_usize(1).unwrap();
     let d2 = Day::from_usize(2).unwrap();
@@ -403,6 +404,7 @@ mod test {
     state.add_one_class(d0, TIMESLOT_09_00, k1).unwrap();
     state.add_one_class(d0, TIMESLOT_11_00, k1).unwrap();
     state.move_one_class(d0, TIMESLOT_09_00, d1, TIMESLOT_08_00, k1);
+    schedule.replace_class_calendar(state).unwrap();
   }
 
   #[test]
@@ -450,12 +452,13 @@ mod test {
     let k1 = schedule.add_new_class(p0);
     let d0 = Day::from_usize(0).unwrap();
     let t0 = Timeslot::from_usize(0).unwrap();
-    let calendar = schedule.get_class_calendar_mut();
+    let mut calendar = schedule.class_calendar().clone();
     calendar.add_one_class(d0, t0, k0).unwrap();
     calendar.add_one_class(d0, t0, k1).unwrap();
+    schedule.replace_class_calendar(calendar).unwrap();
     assert_eq!(
       same_timeslot_classes_count_per_semester(
-        schedule.get_class_calendar(),
+        schedule.class_calendar(),
         schedule.get_simulation_constraints()
       ),
       2

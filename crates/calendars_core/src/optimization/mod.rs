@@ -5,6 +5,7 @@ mod optimization_constraints;
 mod stats_tracker;
 
 pub use class_calendar::ClassCalendar;
+pub use class_calendar::SingleClassEntry;
 pub use optimization_constraints::AllowedClassroomTypes;
 pub use optimization_constraints::Availability;
 pub use optimization_constraints::Class;
@@ -19,8 +20,6 @@ pub use optimization_constraints::Semester;
 
 pub use methods::simulated_annealing::SimulatedAnnealingOptimizer;
 
-#[deprecated]
-pub(crate) use methods::simulated_annealing::assign_classrooms;
 #[deprecated]
 pub use methods::simulated_annealing::AdvancedSimulationOptions;
 #[deprecated]

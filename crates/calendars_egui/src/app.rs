@@ -88,10 +88,7 @@ impl MyApp {
           self.class_editor_widget_open = !self.class_editor_widget_open;
         }
         if ui.button("Calendario").clicked() {
-          self
-            .schedule_widget
-            .open
-            .replace(!(self.schedule_widget.open.get()));
+          self.schedule_widget.open = !self.schedule_widget.open;
         }
       });
     });
@@ -171,7 +168,7 @@ impl eframe::App for MyApp {
           let local_simulation_constraints =
             self.school_schedule.get_simulation_constraints().clone();
           let local_ctx = ctx.clone();
-          let initial_state = self.school_schedule.get_class_calendar().clone();
+          let initial_state = self.school_schedule.class_calendar().clone();
           let join_handle = std::thread::spawn(move || {
             let pb2 = pb.clone();
             let pb_ctx = local_ctx.clone();

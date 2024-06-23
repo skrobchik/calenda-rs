@@ -1,29 +1,28 @@
-use std::cell::Cell;
-
 use calendars_core::{
-  ClassFilter, Classroom, Day, ProfessorKey, SchoolSchedule, Semester, Timeslot,
+  ClassFilter, ClassKey, Classroom, Day, ProfessorKey, SchoolSchedule, Semester, Timeslot,
+  WeekCalendar,
 };
 use egui::{Align2, Color32, FontId, Rect, Rounding, Sense, Stroke};
-use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct SimpleScheduleWidget {
   pub class_filter: ClassFilter,
-  pub open: Cell<bool>,
+  pub open: bool,
 }
 
 impl SimpleScheduleWidget {
   pub fn show(&mut self, ctx: &egui::Context, state: &SchoolSchedule) {
-    let mut local_open = self.open.clone();
+    let mut open = self.open;
     egui::Window::new("Horario")
-      .open(local_open.get_mut())
+      .open(&mut open)
       .vscroll(false)
       .resizable(true)
       .default_height(500.0)
       .show(ctx, |ui| {
         self.ui(ui, state);
       });
+    self.open = open;
   }
   fn ui_calendar(&self, ui: &mut egui::Ui, state: &SchoolSchedule) {
     let (response, painter) = ui.allocate_painter(ui.available_size_before_wrap(), Sense::hover());
@@ -31,30 +30,21 @@ impl SimpleScheduleWidget {
     let total_height = response.rect.height();
     let w = total_width / Day::all().len() as f32;
     let h: f32 = total_height / Timeslot::all().len() as f32;
-    let mut first: bool = true;
+    let mut classes_to_draw: WeekCalendar<Vec<ClassKey>> = Default::default();
+    for class_entry in state
+      .class_calendar()
+      .class_entries()
+      .iter()
+      .filter(|class_entry| state.filter_class(class_entry, &self.class_filter))
+    {
+      classes_to_draw
+        .get_mut(class_entry.day, class_entry.timeslot)
+        .push(class_entry.class_key);
+    }
     for day in Day::all() {
       for timeslot in Timeslot::all() {
-        let classes_to_draw = state
-          .get_class_calendar()
-          .iter_class_keys()
-          .filter(|k| {
-            let b = self.class_filter.filter(
-              *k,
-              state.get_simulation_constraints(),
-              state.get_class_calendar(),
-              day,
-              timeslot,
-              first,
-            );
-            first = false;
-            b
-          })
-          .collect_vec();
-
-        let total_count: u32 = classes_to_draw
-          .iter()
-          .map(|k| state.get_class_calendar().get_count(day, timeslot, *k) as u32)
-          .sum();
+        let classes_to_draw = classes_to_draw.get(day, timeslot);
+        let total_count = classes_to_draw.len();
 
         let class_width = w / total_count as f32;
 
@@ -71,33 +61,26 @@ impl SimpleScheduleWidget {
           Stroke::new(1.0, Color32::from_gray(100)),
         );
 
-        for (class_key, class_count) in classes_to_draw
-          .iter()
-          .map(|&k| (k, state.get_class_calendar().get_count(day, timeslot, k)))
-        {
-          if let Some(class_metadata) = state.get_class_metadata(class_key) {
-            for _ in 0..class_count {
-              let botright: egui::Pos2 = topleft + (class_width, h).into();
-              let rgba = class_metadata.rgba;
-              let class_color =
-                Color32::from_rgba_premultiplied(rgba[0], rgba[1], rgba[2], rgba[3]);
-              painter.rect(
-                Rect::from_two_pos(topleft, botright),
-                Rounding::same(0.02 * w.min(h)),
-                class_color,
-                Stroke::new(1.0, Color32::from_gray(100)),
-              );
-              let class_code = &class_metadata.class_code;
-              painter.text(
-                topleft,
-                Align2::LEFT_TOP,
-                class_code,
-                FontId::default(),
-                Color32::BLACK,
-              );
-              topleft += (class_width, 0.0).into();
-            }
-          }
+        for class_key in classes_to_draw {
+          let class_metadata = state.get_class_metadata(*class_key).unwrap();
+          let botright: egui::Pos2 = topleft + (class_width, h).into();
+          let rgba = class_metadata.rgba;
+          let class_color = Color32::from_rgba_premultiplied(rgba[0], rgba[1], rgba[2], rgba[3]);
+          painter.rect(
+            Rect::from_two_pos(topleft, botright),
+            Rounding::same(0.02 * w.min(h)),
+            class_color,
+            Stroke::new(1.0, Color32::from_gray(100)),
+          );
+          let class_code = &class_metadata.class_code;
+          painter.text(
+            topleft,
+            Align2::LEFT_TOP,
+            class_code,
+            FontId::default(),
+            Color32::BLACK,
+          );
+          topleft += (class_width, 0.0).into();
         }
       }
     }
