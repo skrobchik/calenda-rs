@@ -308,7 +308,7 @@ mod test {
     week_calendar::{
       TIMESLOT_09_00, TIMESLOT_10_00, TIMESLOT_11_00, TIMESLOT_12_00, TIMESLOT_13_00,
     },
-    Day, Timeslot,
+    Day, Timeslot, DAY_MONDAY, DAY_TUESDAY, DAY_WEDNESDAY,
   };
 
   use self::week_calendar::TIMESLOT_08_00;
@@ -386,24 +386,29 @@ mod test {
     let mut schedule = SchoolSchedule::default();
     let p0 = schedule.add_new_professor();
     let k0 = schedule.add_new_class(p0);
-    let mut class_0 = schedule.get_class_entry(k0).unwrap();
-    class_0.set_hours(3);
-    class_0.set_allowed_classroom_types(ClassroomType::AulaSimple | ClassroomType::AulaDoble);
+    schedule
+      .get_class_entry(k0)
+      .unwrap()
+      .set_allowed_classroom_types(ClassroomType::AulaSimple | ClassroomType::AulaDoble);
     let k1 = schedule.add_new_class(p0);
-    let mut class_1 = schedule.get_class_entry(k1).unwrap();
-    class_1.set_allowed_classroom_types(ClassroomType::LabFisica | ClassroomType::LabQuimica);
-    class_1.set_hours(3);
+    schedule
+      .get_class_entry(k1)
+      .unwrap()
+      .set_allowed_classroom_types(ClassroomType::LabFisica | ClassroomType::LabQuimica);
     let mut state = schedule.class_calendar().clone();
-    let d0 = Day::from_usize(0).unwrap();
-    let d1 = Day::from_usize(1).unwrap();
-    let d2 = Day::from_usize(2).unwrap();
-    state.add_one_class(d0, TIMESLOT_08_00, k0).unwrap();
-    state.add_one_class(d1, TIMESLOT_08_00, k0).unwrap();
-    state.add_one_class(d2, TIMESLOT_08_00, k0).unwrap();
-    state.add_one_class(d0, TIMESLOT_08_00, k1).unwrap();
-    state.add_one_class(d0, TIMESLOT_09_00, k1).unwrap();
-    state.add_one_class(d0, TIMESLOT_11_00, k1).unwrap();
-    state.move_one_class(d0, TIMESLOT_09_00, d1, TIMESLOT_08_00, k1);
+    schedule.get_class_entry(k0).unwrap().set_hours(3);
+    schedule.get_class_entry(k1).unwrap().set_hours(3);
+    state.add_one_class(DAY_MONDAY, TIMESLOT_08_00, k0).unwrap();
+    state
+      .add_one_class(DAY_TUESDAY, TIMESLOT_08_00, k0)
+      .unwrap();
+    state
+      .add_one_class(DAY_WEDNESDAY, TIMESLOT_08_00, k0)
+      .unwrap();
+    state.add_one_class(DAY_MONDAY, TIMESLOT_08_00, k1).unwrap();
+    state.add_one_class(DAY_MONDAY, TIMESLOT_09_00, k1).unwrap();
+    state.add_one_class(DAY_MONDAY, TIMESLOT_11_00, k1).unwrap();
+    state.move_one_class(DAY_MONDAY, TIMESLOT_09_00, DAY_TUESDAY, TIMESLOT_08_00, k1);
     schedule.replace_class_calendar(state).unwrap();
   }
 
@@ -453,7 +458,9 @@ mod test {
     let d0 = Day::from_usize(0).unwrap();
     let t0 = Timeslot::from_usize(0).unwrap();
     let mut calendar = schedule.class_calendar().clone();
+    schedule.get_class_entry(k0).unwrap().set_hours(1);
     calendar.add_one_class(d0, t0, k0).unwrap();
+    schedule.get_class_entry(k1).unwrap().set_hours(1);
     calendar.add_one_class(d0, t0, k1).unwrap();
     schedule.replace_class_calendar(calendar).unwrap();
     assert_eq!(
