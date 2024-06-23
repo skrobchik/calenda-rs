@@ -244,9 +244,15 @@ impl SchoolSchedule {
 
   pub fn filter_class(&self, class_entry: &SingleClassEntry, class_filter: &ClassFilter) -> bool {
     match class_filter {
-      ClassFilter::Professor(professor_key) => todo!(),
-      ClassFilter::Classroom(classroom) => todo!(),
-      ClassFilter::Semester(semester) => todo!(),
+      ClassFilter::Professor(professor_key) => {
+        *professor_key == self.get_class(class_entry.class_key).unwrap().professor_key
+      }
+      ClassFilter::Classroom(classroom) => {
+        todo!()
+      }
+      ClassFilter::Semester(semester) => {
+        *semester == self.get_class(class_entry.class_key).unwrap().semester
+      }
       ClassFilter::Any => true,
       ClassFilter::None => false,
     }
