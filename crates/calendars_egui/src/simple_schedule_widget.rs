@@ -98,10 +98,10 @@ impl SimpleScheduleWidget {
   }
   fn ui_control_filters(&mut self, ui: &mut egui::Ui, state: &SchoolSchedule) {
     if ui
-      .radio(matches!(self.class_filter, ClassFilter::None), "Todo")
+      .radio(matches!(self.class_filter, ClassFilter::Any), "Todo")
       .clicked()
     {
-      self.class_filter = ClassFilter::None;
+      self.class_filter = ClassFilter::Any;
     }
 
     ui.horizontal(|ui| {
