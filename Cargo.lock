@@ -682,7 +682,6 @@ dependencies = [
  "icalendar",
  "indicatif",
  "itertools",
- "once_cell",
  "rand",
  "rand_chacha",
  "serde",
