@@ -345,3 +345,29 @@ fn count_class_hours(class_calendar: &ClassCalendar) -> SecondaryMap<ClassKey, u
   }
   class_hour_count
 }
+
+#[cfg(test)]
+mod test {
+  use super::*;
+
+  #[test]
+  fn test_school_schedule() {
+    let mut school_schedule = SchoolSchedule::default();
+    let professor_key = school_schedule.add_new_professor();
+    let class_key = school_schedule.add_new_class(professor_key);
+    school_schedule
+      .get_class_entry(class_key)
+      .unwrap()
+      .set_hours(10);
+    assert_eq!(
+      school_schedule
+        .get_simulation_constraints()
+        .classes
+        .get(class_key)
+        .unwrap()
+        .class_hours,
+      10
+    );
+    assert_eq!(school_schedule.class_calendar.class_entries().len(), 10);
+  }
+}
